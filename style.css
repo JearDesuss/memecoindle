@@ -202,6 +202,14 @@ main { width: 100%; max-width: 620px; padding: 14px; flex: 1; display: flex; fle
   padding: 3px 8px; font-size: 11px; color: var(--dim);
 }
 .coin-card-lore { font-size: 13px; line-height: 1.55; color: var(--text); }
+.chip-down { color: #ffb9c0; border-color: rgba(255, 77, 94, .45); background: var(--red-dim); }
+.chip-peak { color: #b7ffd9; border-color: var(--green); background: var(--green-dim); }
+.empty-hint {
+  border: 1px dashed var(--border); border-radius: var(--radius);
+  padding: 22px 18px; text-align: center; margin-top: 8px;
+}
+.empty-hint-big { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.empty-hint-sub { font-size: 11.5px; color: var(--dim); line-height: 1.6; max-width: 40ch; margin: 0 auto; }
 .wiki-link { display: inline-block; margin-top: 10px; color: var(--accent); font-size: 12px; text-decoration: none; }
 .wiki-link:hover { text-decoration: underline; }
 

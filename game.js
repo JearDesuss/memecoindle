@@ -201,6 +201,13 @@
     renderColHead();
     var board = $("board");
     board.innerHTML = "";
+    if (guesses.length === 0 && !done) {
+      var hint = el("div", "empty-hint", "");
+      hint.appendChild(el("div", "empty-hint-big", COINS.length + " coins are in play"));
+      hint.appendChild(el("div", "empty-hint-sub", "from $DOGE in 2013 to this summer's trenches. First guess narrows the field — the majors make good openers."));
+      board.appendChild(hint);
+      return;
+    }
     guesses.forEach(function (coin, gi) {
       var cells = grade(coin, target);
       var row = el("div", "guess-row");
@@ -281,6 +288,8 @@
     if (done) {
       var delay = 5 * 220 + 500;
       setTimeout(function () { openReveal(); }, delay);
+    } else {
+      $("guess-input").focus();
     }
   }
 
@@ -351,6 +360,12 @@
     [[target.c, "chain"], [target.g, "type"], [String(target.y), "born"], [fmtCap(target.m) + " peak", "peak"], [fmtCap(target.cm) + " now", "now"]].forEach(function (f) {
       facts.appendChild(el("span", "fact-chip", f[0]));
     });
+    var dd = Math.round((1 - target.cm / target.m) * 100);
+    if (dd >= 1) {
+      facts.appendChild(el("span", "fact-chip chip-down", "−" + dd + "% from peak"));
+    } else {
+      facts.appendChild(el("span", "fact-chip chip-peak", "at its peak"));
+    }
     card.appendChild(facts);
     card.appendChild(el("p", "coin-card-lore", target.l));
     if (target.w) {
