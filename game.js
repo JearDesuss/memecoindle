@@ -138,6 +138,35 @@
     return e;
   }
 
+  // ---------- coin logos ----------
+  // Real logo when the manifest has one; otherwise a deterministic procedural
+  // coin badge (ticker-tinted disc with the first letter) so nothing looks broken.
+  function badgeURI(ticker) {
+    var h = 0;
+    for (var i = 0; i < ticker.length; i++) h = ((h << 5) - h + ticker.charCodeAt(i)) | 0;
+    var hue = ((h % 360) + 360) % 360;
+    var ch = ticker.charAt(0).toUpperCase();
+    var svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<defs><radialGradient id="g" cx="35%" cy="30%"><stop offset="0%" stop-color="hsl(' + hue + ',72%,62%)"/>' +
+      '<stop offset="100%" stop-color="hsl(' + hue + ',65%,38%)"/></radialGradient></defs>' +
+      '<circle cx="32" cy="32" r="30" fill="url(#g)"/>' +
+      '<circle cx="32" cy="32" r="30" fill="none" stroke="hsl(' + hue + ',60%,24%)" stroke-width="3"/>' +
+      '<circle cx="32" cy="32" r="24" fill="none" stroke="hsl(' + hue + ',70%,70%)" stroke-width="1.5" stroke-dasharray="3 4" opacity=".8"/>' +
+      '<text x="32" y="43" text-anchor="middle" font-family="Consolas,monospace" font-weight="bold" font-size="30" fill="hsl(' + hue + ',85%,12%)">' + ch + "</text></svg>";
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  }
+  function logoImg(coin, cls) {
+    var img = document.createElement("img");
+    img.className = cls;
+    img.alt = "";
+    img.loading = "lazy";
+    var real = (typeof LOGOS !== "undefined") && LOGOS[coin.t];
+    img.src = real || badgeURI(coin.t);
+    if (real) img.onerror = function () { img.onerror = null; img.src = badgeURI(coin.t); };
+    return img;
+  }
+
   // ---------- rendering ----------
   function renderHeaderMeta() {
     var meta = $("puzzle-meta");
@@ -166,9 +195,11 @@
       var row = el("div", "guess-row");
       var isLast = gi === guesses.length - 1;
       var label = el("div", "coin-label", "");
-      var nm = el("span", "coin-name", coin.n);
-      var tk = el("span", "coin-ticker", "$" + coin.t);
-      label.appendChild(nm); label.appendChild(tk);
+      label.appendChild(logoImg(coin, "coin-logo"));
+      var nameWrap = el("div", "coin-label-text", "");
+      nameWrap.appendChild(el("span", "coin-name", coin.n));
+      nameWrap.appendChild(el("span", "coin-ticker", "$" + coin.t));
+      label.appendChild(nameWrap);
       row.appendChild(label);
       cells.forEach(function (cell, ci) {
         var tile = el("div", "tile s-" + cell.s, "");
@@ -216,6 +247,7 @@
     list.classList.remove("hidden");
     m.forEach(function (c, i) {
       var item = el("div", "ac-item" + (i === acIndex ? " active" : ""), "");
+      item.appendChild(logoImg(c, "ac-logo"));
       item.appendChild(el("span", "ac-name", c.n));
       item.appendChild(el("span", "ac-ticker", "$" + c.t));
       item.addEventListener("mousedown", function (ev) { ev.preventDefault(); submitGuess(c); });
@@ -297,8 +329,11 @@
 
     var card = el("div", "coin-card", "");
     var title = el("div", "coin-card-title", "");
-    title.appendChild(el("span", "coin-card-name", target.n));
-    title.appendChild(el("span", "coin-card-ticker", "$" + target.t));
+    title.appendChild(logoImg(target, "coin-card-logo"));
+    var tWrap = el("div", "coin-card-title-text", "");
+    tWrap.appendChild(el("span", "coin-card-name", target.n));
+    tWrap.appendChild(el("span", "coin-card-ticker", "$" + target.t));
+    title.appendChild(tWrap);
     card.appendChild(title);
     var facts = el("div", "coin-card-facts", "");
     [[target.c, "chain"], [target.g, "type"], [String(target.y), "born"], [fmtCap(target.m) + " peak", "peak"], [fmtCap(target.cm) + " now", "now"]].forEach(function (f) {

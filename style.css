@@ -69,18 +69,24 @@ main { width: 100%; max-width: 620px; padding: 14px; flex: 1; display: flex; fle
   overflow: hidden; box-shadow: 0 12px 30px rgba(0, 0, 0, .5);
 }
 .ac-item {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 14px; cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px; cursor: pointer; font-size: 14px;
 }
 .ac-item:hover, .ac-item.active { background: rgba(0, 210, 106, .1); }
-.ac-ticker { color: var(--dim); font-size: 12px; }
+.ac-logo {
+  width: 24px; height: 24px; border-radius: 50%; flex: none;
+  object-fit: cover; background: var(--panel);
+  border: 1px solid var(--border);
+}
+.ac-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-ticker { color: var(--dim); font-size: 12px; flex: none; }
 
 .guesses-left { text-align: center; color: var(--dim); font-size: 12px; margin: 10px 0 2px; min-height: 15px; }
 
 /* board */
 .col-head, .guess-row {
   display: grid;
-  grid-template-columns: minmax(72px, 1.35fr) repeat(5, 1fr);
+  grid-template-columns: minmax(96px, 1.7fr) repeat(5, 1fr);
   gap: 5px;
 }
 .col-head { margin: 10px 0 4px; }
@@ -89,8 +95,14 @@ main { width: 100%; max-width: 620px; padding: 14px; flex: 1; display: flex; fle
 .guess-row { align-items: stretch; }
 
 .coin-label {
-  display: flex; flex-direction: column; justify-content: center;
-  padding: 4px 6px; overflow: hidden;
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 2px; overflow: hidden;
+}
+.coin-label-text { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.coin-logo {
+  width: 26px; height: 26px; border-radius: 50%; flex: none;
+  object-fit: cover; background: var(--panel-2);
+  border: 1px solid var(--border);
 }
 .coin-name { font-size: 11px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
 .coin-ticker { font-size: 10px; color: var(--dim); }
@@ -174,8 +186,15 @@ main { width: 100%; max-width: 620px; padding: 14px; flex: 1; display: flex; fle
   background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px;
   padding: 16px; margin-bottom: 16px;
 }
-.coin-card-title { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-.coin-card-name { font-size: 18px; font-weight: 800; }
+.coin-card-title { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.coin-card-title-text { display: flex; flex-direction: column; min-width: 0; }
+.coin-card-logo {
+  width: 52px; height: 52px; border-radius: 50%; flex: none;
+  object-fit: cover; background: var(--panel);
+  border: 2px solid var(--border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .4);
+}
+.coin-card-name { font-size: 18px; font-weight: 800; line-height: 1.2; }
 .coin-card-ticker { color: var(--accent); font-size: 13px; }
 .coin-card-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .fact-chip {
@@ -215,5 +234,7 @@ main { width: 100%; max-width: 620px; padding: 14px; flex: 1; display: flex; fle
   .tile { min-height: 46px; }
   .tile-val { font-size: 9.5px; }
   .coin-name { font-size: 10px; }
-  .col-head, .guess-row { gap: 4px; }
+  .col-head, .guess-row { gap: 4px; grid-template-columns: minmax(84px, 1.7fr) repeat(5, 1fr); }
+  .coin-logo { width: 20px; height: 20px; }
+  .coin-label { gap: 4px; }
 }
