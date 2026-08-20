@@ -81,7 +81,12 @@
   }
 
   var COL_NAMES = ["Chain", "Type", "Year", "Peak", "Now"];
-  var SQ = { g: "🟩", y: "🟨", x: "🟥" }; // 🟩 🟨 🟥
+  function squares() {
+    // colorblind mode swaps green/red candles for blue/orange
+    return document.body.classList.contains("cb")
+      ? { g: "🟦", y: "🟨", x: "🟧" }
+      : { g: "🟩", y: "🟨", x: "🟥" };
+  }
 
   // ---------- state ----------
   var mode = "daily"; // 'daily' | 'free'
@@ -171,7 +176,13 @@
   function renderHeaderMeta() {
     var meta = $("puzzle-meta");
     if (mode === "daily") {
-      meta.textContent = "Daily #" + (dayNumber() + 1) + " · guess the memecoin in " + MAX_GUESSES;
+      var txt = "Daily #" + (dayNumber() + 1) + " · guess the memecoin in " + MAX_GUESSES;
+      var d = dayNumber();
+      if (d >= 1) {
+        var yIdx = (((d - 1) % ORDER.length) + ORDER.length) % ORDER.length;
+        txt += " · yesterday: $" + COINS[ORDER[yIdx]].t;
+      }
+      meta.textContent = txt;
     } else {
       meta.textContent = "Unlimited mode · random coin, endless replays";
     }
@@ -278,6 +289,7 @@
     var head = mode === "daily"
       ? "memecoindle #" + (dayNumber() + 1) + " · " + (won ? guesses.length : "X") + "/" + MAX_GUESSES
       : "memecoindle · unlimited · " + (won ? guesses.length : "X") + "/" + MAX_GUESSES;
+    var SQ = squares();
     var rows = guesses.map(function (c) {
       return grade(c, target).map(function (cell) { return SQ[cell.s]; }).join("");
     });
@@ -460,6 +472,14 @@
       m.addEventListener("click", function (ev) { if (ev.target === m) closeModals(); });
     });
     document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") closeModals(); });
+
+    // colorblind mode
+    var cbBox = $("cb-toggle");
+    try { if (localStorage.getItem("mcdl_cb") === "1") { document.body.classList.add("cb"); cbBox.checked = true; } } catch (e) {}
+    cbBox.addEventListener("change", function () {
+      document.body.classList.toggle("cb", cbBox.checked);
+      try { localStorage.setItem("mcdl_cb", cbBox.checked ? "1" : "0"); } catch (e) {}
+    });
 
     // first visit: show help
     try {
