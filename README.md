@@ -92,4 +92,14 @@ Set one now, while it's cheap to be honest:
 
 ## Status
 
-Scaffold only. No game yet.
+**Playable.** Live at https://jeardesuss.github.io/memecoindle/
+
+- Guess the daily memecoin in 6; feedback on five axes: **Chain · Type · Year · Peak mcap · Fate**
+- 151-coin item list built from the [memecoin.wiki](https://memecoin.wiki) catalogue (DOGE 2013 → the August 2026 rotation), graded by order-of-magnitude mcap tiers so approximate data stays honest
+- Spoiler-free share grid in candle colors (🟩🟨🟥), daily streak + stats in localStorage, unlimited mode as the practice valve
+- Zero dependencies, no build step: `index.html` + `style.css` + `game.js` + `data.js`, deployed straight to GitHub Pages
+- Daily puzzle is a deterministic date-seeded pick — every client agrees, no server
+
+Dev: serve the folder (`python -m http.server`) and open it. `test/cdp-test.js`
+drives a full game through headless Chrome via CDP (needs node 22+, Chrome, and
+the local server on :8471 — see comments in the file).
