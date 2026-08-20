@@ -27,9 +27,9 @@ function nowTier(m) { if (m < 1) return 1; if (m < 10) return 2; if (m < 100) re
 var NOW_LABELS = ["", "<$1M", "$1M+", "$10M+", "$100M+", "$1B+"];
 
 var COINS = [
-  { n: "Dogecoin", t: "DOGE", c: "Own chain", y: 2013, m: 88000, cm: 24000, g: "Dog", s: "Icon", l: "The 2013 joke that invented the entire category.", w: "dogecoin" },
-  { n: "Shiba Inu", t: "SHIB", c: "Ethereum", y: 2020, m: 41000, cm: 6000, g: "Dog", s: "Icon", l: "The self-styled Dogecoin killer that hit $41B in 2021.", w: "shiba_inu" },
-  { n: "Pepe", t: "PEPE", c: "Ethereum", y: 2023, m: 11000, cm: 3500, g: "Frog", s: "Icon", l: "The frog that became the largest pure meme coin of its era.", w: "pepe" },
+  { n: "Dogecoin", t: "DOGE", c: "Own chain", y: 2013, m: 88000, cm: 10900, g: "Dog", s: "Icon", l: "The 2013 joke that invented the entire category.", w: "dogecoin" },
+  { n: "Shiba Inu", t: "SHIB", c: "Ethereum", y: 2020, m: 41000, cm: 2600, g: "Dog", s: "Icon", l: "The self-styled Dogecoin killer that hit $41B in 2021.", w: "shiba_inu" },
+  { n: "Pepe", t: "PEPE", c: "Ethereum", y: 2023, m: 11000, cm: 1100, g: "Frog", s: "Icon", l: "The frog that became the largest pure meme coin of its era.", w: "pepe" },
   { n: "Dogwifhat", t: "WIF", c: "Solana", y: 2023, m: 4800, cm: 136, g: "Dog", s: "Icon", l: "A shiba in a knitted hat. It's literally just a dog wif a hat.", w: "dogwifhat" },
   { n: "BONK", t: "BONK", c: "Solana", y: 2022, m: 4000, cm: 250, g: "Dog", s: "Icon", l: "Solana's flagship community dog, airdropped at the chain's lowest hour.", w: "bonk" },
   { n: "Official Trump", t: "TRUMP", c: "Solana", y: 2025, m: 15000, cm: 355, g: "Politics", s: "Scandal", l: "Launched by a sitting president-elect days before inauguration. Briefly among the most valuable memecoins ever.", w: "official_trump" },
@@ -41,7 +41,7 @@ var COINS = [
   { n: "Squid Game", t: "SQUID", c: "BNB Chain", y: 2021, m: 25, cm: 0.1, g: "Brand", s: "Scandal", l: "The rug that made 'rug pull' mainstream news — you could buy, but never sell.", w: null },
   { n: "SLERF", t: "SLERF", c: "Solana", y: 2024, m: 700, cm: 10, g: "Animal", s: "Scandal", l: "Dev fat-fingered $10M of presale funds into the burn address. It mooned anyway.", w: "slerf" },
   { n: "Gen Z Quant", t: "QUANT", c: "Solana", y: 2024, m: 85, cm: 2, g: "Person", s: "Scandal", l: "A 13-year-old rugged his own coin on livestream. CT revenge-pumped it 100x.", w: "quant" },
-  { n: "Pippin", t: "PIPPIN", c: "Solana", y: 2024, m: 900, cm: 30, g: "AI", s: "Scandal", l: "Stick-figure unicorn by the BabyAGI author. Second peak near $900M, then an insider-blamed crash.", w: "pippin" },
+  { n: "Pippin", t: "PIPPIN", c: "Solana", y: 2024, m: 900, cm: 18, g: "AI", s: "Scandal", l: "Stick-figure unicorn by the BabyAGI author. Second peak near $900M, then an insider-blamed crash.", w: "pippin" },
   { n: "Zerebro", t: "ZEREBRO", c: "Solana", y: 2024, m: 500, cm: 5, g: "AI", s: "Scandal", l: "Its creator staged his own death as a stunt. Twice, arguably.", w: "zerebro" },
   { n: "DADDY", t: "DADDY", c: "Solana", y: 2024, m: 280, cm: 3, g: "Celebrity", s: "Scandal", l: "Andrew Tate's entry in the celebrity coin war, dogged by insider-buying allegations.", w: "daddy" },
   { n: "Fartcoin", t: "FARTCOIN", c: "Solana", y: 2024, m: 2500, cm: 140, g: "Joke", s: "Faded", l: "Born from an AI's conversation about flatulence. Reached multiple billions. Hot air, literally.", w: "fartcoin" },
@@ -102,7 +102,7 @@ var COINS = [
   { n: "Titcoin", t: "TITCOIN", c: "Solana", y: 2024, m: 120, cm: 10, g: "Joke", s: "Faded", l: "Flagship of the late-2024 vulgar ticker meta.", w: "titcoin" },
   { n: "Uranus", t: "URANUS", c: "Solana", y: 2025, m: 70, cm: 15, g: "Joke", s: "Faded", l: "The oldest planet pun on the internet, whale-accumulated to $70M.", w: "uranus" },
   { n: "MarsCoin", t: "MARSCOIN", c: "BNB Chain", y: 2026, m: 3, cm: 3, g: "Joke", s: "Alive", l: "Reviving Elon's 2021 promise to CZ: 'There will definitely be a MarsCoin!'", w: "marscoin" },
-  { n: "Mubarak", t: "MUBARAK", c: "BNB Chain", y: 2025, m: 200, cm: 20, g: "Character", s: "Faded", l: "Anchor of the Arabic meme wave on BSC after CZ bought in.", w: "mubarak" },
+  { n: "Mubarak", t: "MUBARAK", c: "BNB Chain", y: 2025, m: 200, cm: 18, g: "Character", s: "Faded", l: "Anchor of the Arabic meme wave on BSC after CZ bought in.", w: "mubarak" },
   { n: "TST", t: "TST", c: "BNB Chain", y: 2025, m: 490, cm: 15, g: "Joke", s: "Faded", l: "A throwaway example token from a BNB tutorial video. Traders made it a $490M joke.", w: "tst" },
   { n: "Broccoli", t: "BROCCOLI", c: "BNB Chain", y: 2025, m: 400, cm: 20, g: "Dog", s: "Faded", l: "CZ revealed his dog's name and BSC launched a hundred broccolis by dinnertime.", w: "broccoli" },
   { n: "Koma Inu", t: "KOMA", c: "BNB Chain", y: 2024, m: 140, cm: 10, g: "Dog", s: "Faded", l: "The self-styled Son of Shiba, with DWF Labs backing.", w: "koma_inu" },
