@@ -69,17 +69,18 @@
     // year
     var ys = guess.y === target.y ? "g" : (Math.abs(guess.y - target.y) <= 1 ? "y" : "x");
     cells.push({ v: String(guess.y), s: ys, d: ys === "g" ? null : (target.y > guess.y ? "up" : "down") });
-    // peak mcap (tier)
+    // peak mcap (range)
     var gt = capTier(guess.m), tt = capTier(target.m);
     var ms = gt === tt ? "g" : (Math.abs(gt - tt) === 1 ? "y" : "x");
     cells.push({ v: fmtCap(guess.m), s: ms, d: ms === "g" ? null : (tt > gt ? "up" : "down") });
-    // fate
-    var fs = guess.s === target.s ? "g" : (FATE_FAMILY[guess.s] === FATE_FAMILY[target.s] ? "y" : "x");
-    cells.push({ v: guess.s, s: fs, d: null });
+    // current mcap (range)
+    var gn = nowTier(guess.cm), tn = nowTier(target.cm);
+    var ns = gn === tn ? "g" : (Math.abs(gn - tn) === 1 ? "y" : "x");
+    cells.push({ v: fmtCap(guess.cm), s: ns, d: ns === "g" ? null : (tn > gn ? "up" : "down") });
     return cells;
   }
 
-  var COL_NAMES = ["Chain", "Type", "Year", "Peak", "Fate"];
+  var COL_NAMES = ["Chain", "Type", "Year", "Peak", "Now"];
   var SQ = { g: "🟩", y: "🟨", x: "🟥" }; // 🟩 🟨 🟥
 
   // ---------- state ----------
@@ -300,7 +301,7 @@
     title.appendChild(el("span", "coin-card-ticker", "$" + target.t));
     card.appendChild(title);
     var facts = el("div", "coin-card-facts", "");
-    [[target.c, "chain"], [target.g, "type"], [String(target.y), "born"], [fmtCap(target.m) + " peak", "mcap"], [target.s, "fate"]].forEach(function (f) {
+    [[target.c, "chain"], [target.g, "type"], [String(target.y), "born"], [fmtCap(target.m) + " peak", "peak"], [fmtCap(target.cm) + " now", "now"]].forEach(function (f) {
       facts.appendChild(el("span", "fact-chip", f[0]));
     });
     card.appendChild(facts);
