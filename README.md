@@ -1,105 +1,47 @@
 # memecoindle
 
-A daily guessing game for the memecoin corner of crypto. One puzzle a day, six
-guesses, a spoiler-free share grid.
+**Play: https://jeardesuss.github.io/memecoindle/**
 
-**Working name.** `memecoindle` is a placeholder — check availability properly
-before it goes anywhere public. See *Prior art* below for why the naming space
-is tight.
+Guess the memecoin of the day in six tries. Every guess grades you on five
+axes — **Chain · Type · Year · Peak mcap · Now mcap** — with a spoiler-free
+candle share grid (🟩🟨🟥) at the end. One hint per day. Streaks. An
+unlimited mode for the addicted. 151 coins, from $DOGE in 2013 to whatever
+rotated on pump.fun this summer.
 
----
+Item list and coin lore built on the [memecoin.wiki](https://memecoin.wiki)
+catalogue, with per-coin figures verified against its articles. Logos via
+CoinGecko/DexScreener. Not financial advice; several of these coins are
+crime scenes.
 
-## The loop
+## Features
 
-The whole engine is the share grid. A player finishes, copies a block of
-coloured squares, and pastes it somewhere. The grid spoils nothing, is
-meaningless to anyone not playing, and carries four messages at once:
+- Daily deterministic puzzle (no server — every client agrees), plus unlimited mode
+- Five-axis feedback with directional arrows; mcap graded by order-of-magnitude range
+- One hint per daily — reveals an unsolved axis, flagged 💡 in your share
+- Real coin logos (64px WebP, 0.3MB total) with procedural badge fallback
+- Streak flame, stats, guess distribution, colorblind mode (blue/orange)
+- Reveal card with lore, drawdown bar, and a memecoin.wiki link
+- Optional global leaderboard + daily winner pot — see [docs/LEADERBOARD.md](docs/LEADERBOARD.md)
 
-- I play this daily
-- I got it in three
-- nothing is spoiled for you
-- …and here is the name of the game
+## Run it
 
-Zero marketing copy. That is the entire distribution strategy, and it is the
-most proven loop of anything considered in the overnight hunt.
+It's a static folder. `python -m http.server` (or any server), open the URL.
+No build, no dependencies.
 
-## The one decision that is actually mine
+## Develop
 
-The format is a commodity. Wordle clone scripts are sold commercially, no-code
-builders generate one from a word you type, and there are step-by-step
-tutorials on freeCodeCamp and Real Python. Nothing about the mechanic is left
-to invent.
+- **Docs**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ·
+  [docs/DATA.md](docs/DATA.md) · [docs/LEADERBOARD.md](docs/LEADERBOARD.md)
+- **Daily schedule (spoilers)**: `node tools/schedule.js 30`
+- **Test** (node 22+, Chrome): serve on :8471, run Chrome with
+  `--remote-debugging-port=9223`, then `node test/cdp-test.js`
+- **Logos**: `node tools/fetch-logos.js` (only fetches missing), then
+  `node tools/resize-logos.js`
+- **Single-file build** (offline/artifact): `node tools/build-artifact.js out.html`
 
-What is left: **the item list, and daily vs. unlimited.** That's it. Everything
-else is copied, and pretending otherwise wastes the season.
+## The bet
 
-So the item list has to carry the whole thing.
-
-## Scope: memecoins, not crypto
-
-This is the load-bearing constraint. "Crypto" is taken several times over
-(below). Memecoins are a narrower, faster, more meme-literate subculture, and
-the existing games do not serve them — they are built on major tickers and
-crypto vocabulary.
-
-Candidate clue axes, to be picked from — not all of them:
-
-- the logo / mascot, cropped or degraded
-- the launch-week chart shape
-- a stat ladder revealed one line at a time — chain, launch year, peak market
-  cap, holder count
-- the ticker itself, as the final reveal
-
-The stat ladder is the most memecoin-native of these: it rewards having *been
-there*, which is precisely the thing this audience wants to prove.
-
-## Prior art — read before building
-
-Not competitors to beat. Evidence about how crowded the shelf is.
-
-| What | Where | Overlap |
-|---|---|---|
-| Cryptle | [github](https://github.com/danielcolinjames/cryptle) | daily crypto **ticker** guessing — the closest thing to this |
-| Cryptordle | [cryptordle.com](https://cryptordle.com/) · [Play Store](https://play.google.com/store/apps/details?id=com.cryptordle.app) · [vercel](https://playcryptordle.vercel.app/) | crypto word puzzle, shipped on three surfaces |
-| Chartdle | — | guess the symbol from price action, crypto included — the **chart** variant |
-| Crypto Wordle | [cryptojobslist.com/wordle](https://cryptojobslist.com/wordle) | crypto vocabulary |
-| Crypto WODL | [Play Store](https://play.google.com/store/apps/details?id=com.a4raf7amdoun.crypto_wodl&hl=en_US) | Binance WODL lineage |
-| Wallstreetle | [listdle](https://listdle.com/games/wallstreetle/) | adjacent finance |
-
-Catalogues worth checking a name against before committing:
-[listdle.com](https://listdle.com/) and
-[wordle.today/games](https://wordle.today/games) (1,027 daily puzzles indexed).
-
-## The honest case against
-
-This is the safest and least original idea on the board — it was ranked **last
-of six** in the overnight dossier, deliberately, and kept only as the low-risk
-option. A named, four-year-old, heavily-copied genre where the sole original
-decision is which fandom you pick.
-
-Nothing kills it in month one. That is the problem: it will work, modestly, and
-it will not feel like yours.
-
-**Use it as an instrument.** Build it in a weekend to find out whether a
-share-grid loop really moves in a fandom you care about — then let that answer
-inform the projects that are actually yours.
-
-## Abandon criterion
-
-Set one now, while it's cheap to be honest:
-
-> If the first public post doesn't clear **~100 comments**, stop. Don't nurse it.
-
-## Status
-
-**Playable.** Live at https://jeardesuss.github.io/memecoindle/
-
-- Guess the daily memecoin in 6; feedback on five axes: **Chain · Type · Year · Peak mcap · Fate**
-- 151-coin item list built from the [memecoin.wiki](https://memecoin.wiki) catalogue (DOGE 2013 → the August 2026 rotation), graded by order-of-magnitude mcap tiers so approximate data stays honest
-- Spoiler-free share grid in candle colors (🟩🟨🟥), daily streak + stats in localStorage, unlimited mode as the practice valve
-- Zero dependencies, no build step: `index.html` + `style.css` + `game.js` + `data.js`, deployed straight to GitHub Pages
-- Daily puzzle is a deterministic date-seeded pick — every client agrees, no server
-
-Dev: serve the folder (`python -m http.server`) and open it. `test/cdp-test.js`
-drives a full game through headless Chrome via CDP (needs node 22+, Chrome, and
-the local server on :8471 — see comments in the file).
+The format is a commodity; the item list and the share grid are the product.
+Original scaffold thesis, prior art, and the abandon criterion (first public
+post under ~100 comments → stop) are preserved in
+[docs/SCAFFOLD.md](docs/SCAFFOLD.md).
