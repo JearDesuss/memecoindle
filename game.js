@@ -93,6 +93,7 @@
   var target = null;
   var guesses = []; // array of coin objects
   var done = false, won = false;
+  var hintAxis = -1; // -1 = hint not used; else index into COL_NAMES
 
   function stateKey() { return "mcdl_daily_v2_" + dayNumber(); }
 
@@ -100,7 +101,7 @@
     if (mode !== "daily") return;
     try {
       localStorage.setItem(stateKey(), JSON.stringify({
-        g: guesses.map(function (c) { return c.n; }), done: done, won: won
+        g: guesses.map(function (c) { return c.n; }), done: done, won: won, h: hintAxis
       }));
     } catch (e) {}
   }
@@ -233,11 +234,99 @@
       board.appendChild(row);
     });
     var left = $("guesses-left");
-    if (done) { left.textContent = ""; }
-    else {
+    left.innerHTML = "";
+    if (!done) {
       var n = MAX_GUESSES - guesses.length;
-      left.textContent = n + (n === 1 ? " guess left" : " guesses left");
+      left.setAttribute("aria-label", n + " guesses left");
+      for (var i = 0; i < MAX_GUESSES; i++) {
+        left.appendChild(el("span", "pip" + (i < guesses.length ? " used" : ""), ""));
+      }
     }
+    renderHint();
+    renderStreak();
+  }
+
+  // ---------- hint (one per daily) ----------
+  function hintText() {
+    var v = [target.c, target.g, String(target.y), fmtCap(target.m), fmtCap(target.cm)][hintAxis];
+    return COL_NAMES[hintAxis] + ": " + v;
+  }
+  function renderHint() {
+    var area = $("hint-area");
+    area.innerHTML = "";
+    if (mode !== "daily") return;
+    if (hintAxis >= 0) {
+      var chip = el("div", "hint-chip", "");
+      chip.appendChild(el("span", "hint-bulb", "💡"));
+      chip.appendChild(el("span", null, hintText()));
+      area.appendChild(chip);
+      return;
+    }
+    if (done || guesses.length < 1) return;
+    var btn = el("button", "hint-btn", "hint (1)");
+    btn.addEventListener("click", function () {
+      // reveal a random axis the player hasn't already solved
+      var solved = {};
+      guesses.forEach(function (c) {
+        grade(c, target).forEach(function (cell, i) { if (cell.s === "g") solved[i] = 1; });
+      });
+      var open = [0, 1, 2, 3, 4].filter(function (i) { return !solved[i]; });
+      if (!open.length) open = [0, 1, 2, 3, 4];
+      hintAxis = open[Math.floor(Math.random() * open.length)];
+      saveDaily();
+      renderHint();
+    });
+    area.appendChild(btn);
+  }
+
+  // ---------- streak pill ----------
+  function renderStreak() {
+    var pill = $("streak-pill");
+    var st = loadStats();
+    var d = dayNumber();
+    var live = st && st.streak > 0 && (st.lastWinDay === d || st.lastWinDay === d - 1);
+    if (live) {
+      pill.textContent = "🔥 " + st.streak;
+      pill.classList.remove("hidden");
+    } else {
+      pill.classList.add("hidden");
+    }
+  }
+
+  // ---------- candle confetti ----------
+  function confettiBurst() {
+    try {
+      if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      var cv = $("confetti");
+      var ctx = cv.getContext("2d");
+      cv.width = window.innerWidth; cv.height = window.innerHeight;
+      var colors = ["#2BD97C", "#2BD97C", "#2BD97C", "#FFC24B", "#FF5C7A", "#7B5CFF"];
+      var parts = [];
+      for (var i = 0; i < 90; i++) {
+        parts.push({
+          x: Math.random() * cv.width, y: -30 - Math.random() * cv.height * 0.4,
+          w: 4 + Math.random() * 4, h: 9 + Math.random() * 9,
+          v: 2.5 + Math.random() * 4, r: Math.random() * Math.PI,
+          vr: (Math.random() - 0.5) * 0.25,
+          c: colors[Math.floor(Math.random() * colors.length)]
+        });
+      }
+      var t0 = performance.now();
+      (function tick(t) {
+        ctx.clearRect(0, 0, cv.width, cv.height);
+        if (t - t0 > 1700) return;
+        parts.forEach(function (p) {
+          p.y += p.v; p.r += p.vr;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r);
+          ctx.fillStyle = p.c;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+          // candle wick
+          ctx.fillRect(-0.75, -p.h / 2 - 3, 1.5, p.h + 6);
+          ctx.restore();
+        });
+        requestAnimationFrame(tick);
+      })(t0);
+    } catch (e) {}
   }
 
   // ---------- autocomplete ----------
@@ -287,7 +376,9 @@
     renderGuesses(true);
     if (done) {
       var delay = 5 * 220 + 500;
+      if (won) setTimeout(confettiBurst, delay - 400);
       setTimeout(function () { openReveal(); }, delay);
+      if (typeof LB !== "undefined") LB.report(mode, won, guesses.length, dayNumber(), hintAxis >= 0);
     } else {
       $("guess-input").focus();
     }
@@ -298,6 +389,7 @@
     var head = mode === "daily"
       ? "memecoindle #" + (dayNumber() + 1) + " · " + (won ? guesses.length : "X") + "/" + MAX_GUESSES
       : "memecoindle · unlimited · " + (won ? guesses.length : "X") + "/" + MAX_GUESSES;
+    if (hintAxis >= 0 && mode === "daily") head += " 💡";
     var SQ = squares();
     var rows = guesses.map(function (c) {
       return grade(c, target).map(function (cell) { return SQ[cell.s]; }).join("");
@@ -367,6 +459,12 @@
       facts.appendChild(el("span", "fact-chip chip-peak", "at its peak"));
     }
     card.appendChild(facts);
+    var bar = el("div", "dd-bar", "");
+    bar.title = "how much of the peak survives";
+    var fill = el("div", "dd-fill", "");
+    fill.style.width = Math.max(0.8, Math.min(100, (target.cm / target.m) * 100)) + "%";
+    bar.appendChild(fill);
+    card.appendChild(bar);
     card.appendChild(el("p", "coin-card-lore", target.l));
     if (target.w) {
       var a = document.createElement("a");
@@ -428,20 +526,21 @@
   // ---------- modes ----------
   function setMode(m) {
     mode = m;
-    $("mode-toggle").textContent = m === "daily" ? "∞" : "📅";
+    $("mode-toggle").textContent = m === "daily" ? "∞" : "1D";
     $("mode-toggle").title = m === "daily" ? "Play unlimited" : "Back to daily";
     if (m === "daily") startDaily(); else startFree();
   }
 
   function startDaily() {
     target = dailyCoin();
-    guesses = []; done = false; won = false;
+    guesses = []; done = false; won = false; hintAxis = -1;
     var saved = loadDaily();
     if (saved && Array.isArray(saved.g)) {
       var byName = {};
       COINS.forEach(function (c) { byName[c.n] = c; });
       saved.g.forEach(function (n) { if (byName[n]) guesses.push(byName[n]); });
       done = !!saved.done; won = !!saved.won;
+      if (typeof saved.h === "number") hintAxis = saved.h;
     }
     renderHeaderMeta();
     renderGuesses(false);
@@ -452,7 +551,7 @@
 
   function startFree() {
     target = randomCoin(target ? target.n : null);
-    guesses = []; done = false; won = false;
+    guesses = []; done = false; won = false; hintAxis = -1;
     renderHeaderMeta();
     renderGuesses(false);
     $("guess-input").disabled = false;
@@ -480,6 +579,7 @@
     $("mode-toggle").addEventListener("click", function () { setMode(mode === "daily" ? "free" : "daily"); });
     $("btn-help").addEventListener("click", function () { openModal("modal-help"); });
     $("btn-stats").addEventListener("click", openStats);
+    $("btn-lb").addEventListener("click", function () { LB.open(dayNumber()); });
     Array.prototype.forEach.call(document.querySelectorAll("[data-close]"), function (b) {
       b.addEventListener("click", closeModals);
     });

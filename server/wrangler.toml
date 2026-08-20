@@ -1,0 +1,8 @@
+name = "memecoindle-api"
+main = "worker.js"
+compatibility_date = "2026-08-01"
+
+# after `wrangler kv namespace create MCDL`, paste the id below
+kv_namespaces = [
+  { binding = "MCDL", id = "PASTE_KV_NAMESPACE_ID_HERE" }
+]

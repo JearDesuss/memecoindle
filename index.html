@@ -9,6 +9,10 @@
 <meta property="og:description" content="Guess the memecoin of the day in 6 tries. Were you there?">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪙</text></svg>">
+<meta name="theme-color" content="#0A0E1A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,14 +20,17 @@
 <header class="top">
   <div class="top-inner">
     <button id="btn-help" class="icon-btn" title="How to play" aria-label="How to play">?</button>
-    <h1 class="logo">MEMECOIN<span>DLE</span></h1>
+    <h1 class="logo">memecoin<span>dle</span></h1>
     <div class="top-right">
+      <span id="streak-pill" class="streak-pill hidden" title="Daily streak"></span>
       <button id="mode-toggle" class="icon-btn" title="Play unlimited" aria-label="Toggle mode">∞</button>
+      <button id="btn-lb" class="icon-btn" title="Leaderboard" aria-label="Leaderboard">🏆</button>
       <button id="btn-stats" class="icon-btn" title="Stats" aria-label="Stats">📊</button>
     </div>
   </div>
   <p id="puzzle-meta" class="meta"></p>
 </header>
+<canvas id="confetti" aria-hidden="true"></canvas>
 
 <main>
   <div class="input-wrap">
@@ -31,6 +38,7 @@
            placeholder="type a coin name or ticker…" aria-label="Guess a memecoin">
     <div id="ac-list" class="ac-list hidden" role="listbox"></div>
   </div>
+  <div id="hint-area" class="hint-area"></div>
   <p id="guesses-left" class="guesses-left"></p>
 
   <div id="col-head" class="col-head hidden"></div>
@@ -89,8 +97,18 @@
   </div>
 </div>
 
+<!-- leaderboard -->
+<div id="modal-lb" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+  <div class="modal">
+    <button class="modal-close" data-close aria-label="Close">×</button>
+    <h2>the board</h2>
+    <div id="lb-body"></div>
+  </div>
+</div>
+
 <script src="data.js"></script>
 <script src="logos.js"></script>
+<script src="lb.js"></script>
 <script src="game.js"></script>
 </body>
 </html>
