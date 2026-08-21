@@ -54,7 +54,7 @@ Every client must agree on each mode's coin with no server. `game.js`:
   everywhere. Three seeds → three different coins per day.
 - Daily coin = `ORDER[mode][day % length]`.
 - **Classic keeps the original `0x5EED1337`**, so its historical sequence is
-  unchanged from before the four-mode split. Never change that seed.
+  unchanged from before the multi-mode split. Never change that seed.
 
 Independent shuffles do occasionally hand the same coin to two modes on the same
 day, which turns solving one into a free hint for the other. `picksFor(day)`
@@ -113,8 +113,8 @@ their streak and today's in-progress board.
 ## Design system
 
 Tokens in `:root` of style.css. Identity: a bright pixel-arcade overworld —
-sky gradient with drifting box-shadow clouds, chunky cream panels with a 3px
-ink border and a hard `0 5px 0` shadow that collapses on `:active`, a grass
+sky gradient with drifting shaded-SVG pixel clouds, cream panels with a 2px
+ink border and a hard `0 4px 0` shadow that collapses on `:active`, a grass
 band that flexes to fill whatever the content doesn't, and a crowd of real coin
 logos standing in it. Luckiest Guy for the logo (layered SVG strokes),
 Silkscreen for shouty labels, DotGothic16 for sentences and data, all with
@@ -146,7 +146,7 @@ they read as a row of poker chips, not characters standing in a field.
    the coin shape we're trying to escape.
 
 A short hand-curated `NOT_A_CHARACTER` list drops wordmarks and bar charts that
-survive the geometry tests but read as debris. 43 of 151 make it through.
+survive the geometry tests but read as debris. 46 of 151 make it through.
 
 `buildCrowd()` deals them into three absolutely-positioned depth bands — back
 band smallest, highest, dimmed and desaturated; front band biggest and
@@ -182,7 +182,7 @@ files, so it can gate a deploy.
 `test/cdp-test.js` drives a real headless Chrome over CDP (no test deps;
 node 22+ for native WebSocket): serve the repo on :8471, run Chrome with
 `--remote-debugging-port=9223`, then `node test/cdp-test.js`. It computes each
-mode's answer independently, then checks the home menu, all four routes, a full
+mode's answer independently, then checks the home menu, every route, a full
 Classic win (grading, reveal, persistence, stats), each stage mode's puzzle and
 clue ladder, unlimited mode, and the colourblind toggle — failing on any page
 error. 45 checks.

@@ -1,0 +1,6 @@
+# Dev-only — none of this is served at runtime.
+test/
+tools/
+docs/
+server/
+dist-artifact.html

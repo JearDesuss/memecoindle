@@ -59,6 +59,19 @@ No build, no dependencies.
 Each mode has its own shuffle seed in the `MODES` array in `game.js`. Classic's
 seed is load-bearing — changing it rewrites the historical daily sequence.
 
+## Deploys
+
+Two hosts, same repo:
+
+- **Vercel** (primary): https://memedle-weld.vercel.app — the project is linked
+  to this GitHub repo, so every push to `master` auto-deploys. `vercel.json`
+  keeps `index.html` on `must-revalidate` and lets the `?v=`-stamped assets
+  cache hard. Manual: `npx vercel deploy --prod`.
+- **GitHub Pages**: https://jeardesuss.github.io/memecoindle/ — served from
+  `master` root.
+
+Run `node tools/bump-assets.js` before any deploy that touches a local asset.
+
 ## The bet
 
 The format is a commodity; the item list and the share grid are the product.
