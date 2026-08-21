@@ -8,7 +8,7 @@ const SCRATCH = require("os").tmpdir();
 // Replicate the page's daily pick so we know every mode's answer up front.
 eval(fs.readFileSync(path.join(GAME_DIR, "data.js"), "utf8"));
 function mulberry32(a){return function(){a|=0;a=(a+0x6D2B79F5)|0;var t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
-const SEEDS = { classic: 0x5EED1337, blur: 0x1D0FBE47, lore: 0x4B19AC03, chart: 0x7C3E5D91 };
+const SEEDS = { classic: 0x5EED1337, blur: 0x1D0FBE47, lore: 0x4B19AC03 };
 const MODES = Object.keys(SEEDS);
 const EPOCH = new Date(2026, 7, 21);
 const now = new Date();
@@ -90,7 +90,7 @@ async function cdp() {
   console.log("\nhome + chrome");
   check("first-visit help modal opens", await evaljs("!document.getElementById('modal-help').classList.contains('hidden')"));
   await closeModals();
-  check("four mode cards on home", await evaljs("document.querySelectorAll('.mode-card').length") === 4);
+  check("three mode cards on home", await evaljs("document.querySelectorAll('.mode-card').length") === 3);
   check("brand logo rendered", await evaljs("!!document.querySelector('.brand svg')"));
   check("crowd populated across 3 depth bands", await evaljs(
     "Array.from(document.querySelectorAll('.crowd-row')).every(function(r){return r.children.length > 4})"));
@@ -112,6 +112,9 @@ async function cdp() {
     const title = await evaljs("document.getElementById('game-title').textContent.toLowerCase()");
     check("#/" + m + " routes to its board", title === m);
   }
+  await goto("#/chart");
+  check("retired #/chart falls back to home", await evaljs("!document.getElementById('view-home').classList.contains('hidden')"));
+  check("three mode tabs, not four", await evaljs("(function(){var n=document.querySelectorAll('.mode-tabs .tab').length;return n===0||n===3})()"));
   await goto("#/");
   check("#/ returns home", await evaljs("!document.getElementById('view-home').classList.contains('hidden')"));
 
@@ -150,7 +153,7 @@ async function cdp() {
   check("home flags the solved mode", /3\/6/.test(await evaljs("(document.querySelector('.mode-flag')||{}).textContent||''")));
 
   console.log("\nstage modes");
-  for (const m of ["blur", "lore", "chart"]) {
+  for (const m of ["blur", "lore"]) {
     const a = answerFor(m);
     await goto("#/" + m);
     check(m + ": stage is visible", await evaljs("!document.getElementById('stage').classList.contains('hidden')"));
@@ -158,7 +161,6 @@ async function cdp() {
     if (m === "lore") check("lore: a sentence is shown", (await evaljs("(document.querySelector('.lore-quote')||{}).textContent||''")).length > 10);
     if (m === "lore") check("lore: coin name is redacted out", !new RegExp(a.n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
       .test(await evaljs("(document.querySelector('.lore-quote')||{}).textContent||''")) || /redacted/.test(await evaljs("document.querySelectorAll('.redacted').length ? 'redacted' : ''")));
-    if (m === "chart") check("chart: an svg curve is drawn", await evaljs("!!document.querySelector('.chart-svg polyline')"));
 
     check(m + ": no clues before a miss", await evaljs("document.querySelectorAll('.clue-chip').length") === 0);
     const w = COINS.filter(c => c.n !== a.n)[0];

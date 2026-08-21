@@ -17,8 +17,7 @@
   var MODES = [
     { id: "classic", name: "Classic", ico: "🔍", blurb: "Get clues on every try",   seed: 0x5EED1337, kind: "grid",  sq: "🟩" },
     { id: "blur",    name: "Blur",    ico: "🔮", blurb: "With a blurry logo",       seed: 0x1D0FBE47, kind: "stage", sq: "🟩" },
-    { id: "lore",    name: "Lore",    ico: "📜", blurb: "With one cursed sentence", seed: 0x4B19AC03, kind: "stage", sq: "🟩" },
-    { id: "chart",   name: "Chart",   ico: "📉", blurb: "With a mystery chart",     seed: 0x7C3E5D91, kind: "stage", sq: "🟩" }
+    { id: "lore",    name: "Lore",    ico: "📜", blurb: "With one cursed sentence", seed: 0x4B19AC03, kind: "stage", sq: "🟩" }
   ];
   var MODE_BY_ID = {};
   MODES.forEach(function (m) { MODE_BY_ID[m.id] = m; });
@@ -26,7 +25,6 @@
   var COL_NAMES = ["Chain", "Type", "Year", "Peak", "Now"];
   var BLUR_STEPS = [26, 18, 12, 7.5, 4, 2];      // px, indexed by wrong-guess count
   var ZOOM_STEPS = [1.55, 1.45, 1.36, 1.28, 1.2, 1.13];
-  var CHART_DETAIL = [10, 16, 26, 42, 68, 110];  // polyline points per reveal level
 
   // ──────────────── rng ────────────────
   function mulberry32(a) {
@@ -133,79 +131,6 @@
     function (c) { return ["Peak", TIER_LABELS[capTier(c.m)]]; },
     function (c) { return ["Now", NOW_LABELS[nowTier(c.cm)]]; }
   ];
-
-  // ──────────────── mystery chart ────────────────
-  // A deterministic pump-and-dump curve derived from the coin's own numbers.
-  // Continuous in t so higher detail levels sharpen the SAME shape.
-  function noiseTable(seed) {
-    var rnd = mulberry32(seed), a = [];
-    for (var i = 0; i < 48; i++) a.push(rnd());
-    return a;
-  }
-  function sampleNoise(tbl, t) {
-    var x = t * (tbl.length - 1);
-    var i = Math.floor(x), f = x - i;
-    var a = tbl[i], b = tbl[Math.min(tbl.length - 1, i + 1)];
-    var s = f * f * (3 - 2 * f);                 // smoothstep
-    return a + (b - a) * s;
-  }
-  var PEAK_AT = { Scandal: .16, Collapsed: .14, Faded: .32, Alive: .46, Icon: .4 };
-
-  function chartShape(coin) {
-    var seed = hashStr(coin.t) ^ 0x9E3779B9;
-    var rnd = mulberry32(seed);
-    var tbl = noiseTable(seed ^ 0x5A5A);
-    var floor = Math.max(.015, Math.min(.9, coin.cm / coin.m));
-    var tp = Math.min(.85, Math.max(.07, (PEAK_AT[coin.s] || .3) + (rnd() - .5) * .16));
-    var riseK = 2.6 + rnd() * 2.4;
-    var fallK = 1.7 + rnd() * 2.2;
-    var bump = .18 + rnd() * .3;                 // secondary leg height
-    var bumpAt = tp + (1 - tp) * (.35 + rnd() * .4);
-    var bumpW = .07 + rnd() * .09;
-    var jitter = .07 + rnd() * .09;
-
-    return function (t) {
-      var v;
-      if (t <= tp) {
-        v = .02 + .98 * Math.pow(t / Math.max(tp, 1e-6), riseK);
-      } else {
-        var k = (t - tp) / Math.max(1 - tp, 1e-6);
-        v = floor + (1 - floor) * Math.pow(1 - k, fallK);
-        var d = (t - bumpAt) / bumpW;
-        v += bump * (1 - floor) * Math.exp(-d * d);
-      }
-      v *= 1 + (sampleNoise(tbl, t) - .5) * jitter * 2;
-      return Math.max(.008, Math.min(1, v));
-    };
-  }
-
-  function chartSVG(coin, level) {
-    var n = CHART_DETAIL[Math.min(level, CHART_DETAIL.length - 1)];
-    var f = chartShape(coin);
-    var W = 300, H = 148, PAD = 8;
-    var pts = [], i, t, v, x, y;
-    for (i = 0; i < n; i++) {
-      t = i / (n - 1);
-      v = f(t);
-      x = PAD + t * (W - PAD * 2);
-      y = H - PAD - v * (H - PAD * 2);
-      pts.push(Math.round(x * 10) / 10 + "," + Math.round(y * 10) / 10);
-    }
-    var line = pts.join(" ");
-    var area = PAD + "," + (H - PAD) + " " + line + " " + (W - PAD) + "," + (H - PAD);
-    var crisp = n <= 26 ? ' shape-rendering="crispEdges"' : "";
-    return '<svg class="chart-svg" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Mystery price chart">' +
-      '<defs><linearGradient id="ms-fill" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="#514769" stop-opacity=".55"/>' +
-      '<stop offset="100%" stop-color="#514769" stop-opacity=".06"/>' +
-      "</linearGradient></defs>" +
-      '<line x1="' + PAD + '" y1="' + (H - PAD) + '" x2="' + (W - PAD) + '" y2="' + (H - PAD) +
-      '" stroke="#241F33" stroke-width="2" opacity=".45"/>' +
-      '<polygon points="' + area + '" fill="url(#ms-fill)"' + crisp + "/>" +
-      '<polyline points="' + line + '" fill="none" stroke="#241F33" stroke-width="3" ' +
-      'stroke-linejoin="miter" stroke-linecap="square"' + crisp + "/>" +
-      "</svg>";
-  }
 
   // ──────────────── lore redaction ────────────────
   var STOP = { with: 1, that: 1, from: 1, into: 1, then: 1, this: 1, coin: 1, token: 1, meme: 1 };
@@ -339,33 +264,57 @@
       "</g></svg>";
   }
 
+  // Soft pixel clouds. Flat white box-shadow blocks read as render glitches, so
+  // each cloud is an SVG of stacked blocks with a shaded underside, like the
+  // reference's painted clouds.
   var CLOUD_SHAPES = [
-    [[0, 0], [1, 0], [-1, 1], [0, 1], [1, 1], [2, 1]],
-    [[0, 0], [1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [2, 1], [3, 1], [-2, 2], [-1, 2], [0, 2], [1, 2], [2, 2], [3, 2], [4, 2]],
-    [[0, 0], [1, 0], [4, 0], [5, 0], [-1, 1], [0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [6, 1]],
-    [[0, 0], [1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [2, 1], [3, 1]]
+    [[2,0],[3,0],[1,1],[2,1],[3,1],[4,1],[0,2],[1,2],[2,2],[3,2],[4,2],[5,2]],
+    [[3,0],[4,0],[5,0],[1,1],[2,1],[3,1],[4,1],[5,1],[6,1],
+     [0,2],[1,2],[2,2],[3,2],[4,2],[5,2],[6,2],[7,2],[8,2]],
+    [[2,0],[3,0],[6,0],[7,0],[1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[7,1],[8,1],
+     [0,2],[1,2],[2,2],[3,2],[4,2],[5,2],[6,2],[7,2],[8,2],[9,2]],
+    [[1,0],[2,0],[0,1],[1,1],[2,1],[3,1]]
   ];
+  function cloudSVG(shape) {
+    var maxX = 0, maxY = 0, i;
+    for (i = 0; i < shape.length; i++) {
+      if (shape[i][0] > maxX) maxX = shape[i][0];
+      if (shape[i][1] > maxY) maxY = shape[i][1];
+    }
+    // lowest block in each column gets the shaded underside
+    var lowest = {};
+    for (i = 0; i < shape.length; i++) {
+      var x = shape[i][0], y = shape[i][1];
+      if (lowest[x] === undefined || y > lowest[x]) lowest[x] = y;
+    }
+    var rects = "";
+    for (i = 0; i < shape.length; i++) {
+      var cx = shape[i][0], cy = shape[i][1];
+      var fill = cy === lowest[cx] ? "%23D9EBF7" : "%23FFFFFF";
+      rects += "%3Crect x='" + cx + "' y='" + cy + "' width='1' height='1' fill='" + fill + "'/%3E";
+    }
+    return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 " +
+      (maxX + 1) + " " + (maxY + 1) + "'%3E" + rects + "%3C/svg%3E";
+  }
   function buildClouds() {
     var wrap = $("clouds");
     if (!wrap) return;
+    clear(wrap);
     var rnd = mulberry32(0xC10D5);
-    for (var i = 0; i < 7; i++) {
+    var n = window.innerWidth <= 480 ? 5 : 8;
+    for (var i = 0; i < n; i++) {
       var shape = CLOUD_SHAPES[Math.floor(rnd() * CLOUD_SHAPES.length)];
-      var size = 6 + Math.round(rnd() * 8);
+      var w = 0;
+      for (var j = 0; j < shape.length; j++) if (shape[j][0] > w) w = shape[j][0];
+      var px = 9 + Math.round(rnd() * 9);
       var c = el("div", "cloud");
-      c.style.width = size + "px";
-      c.style.height = size + "px";
-      c.style.top = (4 + rnd() * 46).toFixed(1) + "%";
-      c.style.left = "0";
-      c.style.opacity = (0.62 + rnd() * 0.3).toFixed(2);
-      var sh = [];
-      for (var j = 0; j < shape.length; j++) {
-        if (shape[j][0] === 0 && shape[j][1] === 0) continue; // element's own box
-        sh.push(shape[j][0] * size + "px " + shape[j][1] * size + "px 0 0 #fff");
-      }
-      c.style.boxShadow = sh.join(",");
-      c.style.animationDuration = (72 + rnd() * 110).toFixed(0) + "s";
-      c.style.animationDelay = "-" + (rnd() * 120).toFixed(0) + "s";
+      c.style.backgroundImage = "url(\"" + cloudSVG(shape) + "\")";
+      c.style.width = (w + 1) * px + "px";
+      c.style.height = 3 * px + "px";
+      c.style.top = (5 + rnd() * 40).toFixed(1) + "%";
+      c.style.opacity = (0.68 + rnd() * 0.26).toFixed(2);
+      c.style.animationDuration = (80 + rnd() * 120).toFixed(0) + "s";
+      c.style.animationDelay = "-" + (rnd() * 140).toFixed(0) + "s";
       wrap.appendChild(c);
     }
   }
@@ -409,7 +358,7 @@
     var vw = window.innerWidth;
     var narrow = vw <= 480;
     // back band is smallest and most numerous, front band biggest and sparsest
-    var HEIGHTS = narrow ? [40, 54, 70] : [52, 70, 92];
+    var HEIGHTS = narrow ? [36, 48, 62] : [44, 58, 76];
 
     var rnd = mulberry32(0x9F17E5);
     var at = 0;
@@ -438,7 +387,7 @@
   var decorTimer = null;
   function refreshDecor() {
     clearTimeout(decorTimer);
-    decorTimer = setTimeout(function () { buildCrowd(); buildFloaters(); }, 220);
+    decorTimer = setTimeout(function () { buildClouds(); buildCrowd(); buildFloaters(); }, 220);
   }
 
   // a couple of them drifting in the sky, like the reference's Mew and Moltres
@@ -649,14 +598,6 @@
       });
       card.appendChild(q);
       stage.appendChild(card);
-
-    } else if (modeId === "chart") {
-      var cw = el("div", "chart-wrap");
-      cw.innerHTML = chartSVG(target, done ? CHART_DETAIL.length - 1 : lvl);
-      cw.appendChild(el("div", "chart-note", done
-        ? "$" + target.t + " · peak " + fmtCap(target.m) + " → " + fmtCap(target.cm)
-        : "no axes, no labels. just the shape."));
-      stage.appendChild(cw);
     }
   }
 

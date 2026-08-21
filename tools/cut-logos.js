@@ -26,7 +26,8 @@ eval(fs.readFileSync(path.join(ROOT, "logos.js"), "utf8")); // -> LOGOS
 // geometry — they read as debris in a crowd of characters, not as someone
 // standing there. Judged by eye from tools/cut-logos.js --dry output.
 const NOT_A_CHARACTER = new Set([
-  "SC", "GRIFFAIN", "ANALOS", "CLANKER", "FARTCOIN", "LIBRA", "TST", "SWARMS"
+  "SC", "GRIFFAIN", "ANALOS", "CLANKER", "FARTCOIN", "LIBRA", "TST", "SWARMS",
+  "GOAT", "ANSEM", "DUPE", "PONS", "GORK"
 ]);
 const TICKERS = Object.keys(LOGOS).filter(t => !NOT_A_CHARACTER.has(t));
 
@@ -71,7 +72,8 @@ window.__cut = function (src) {
         var best = null, bestN = 0, total = 0;
         for (var key in votes) { total += votes[key]; if (votes[key] > bestN) { bestN = votes[key]; best = key; } }
         var uniformity = bestN / total;
-        if (uniformity < 0.7) return resolve({ ok: false, reason: "busy-border(" + uniformity.toFixed(2) + ")" });
+        var UNIF = Number(window.__unif || 0.42);
+        if (uniformity < UNIF) return resolve({ ok: false, reason: "busy-border(" + uniformity.toFixed(2) + ")" });
         var bg = best.split(",").map(function (v) { return parseInt(v, 10) * 8 + 4; });
 
         // flood fill inward from every matching border pixel
@@ -147,6 +149,20 @@ window.__cut = function (src) {
       var circleIoU = uni ? inter / uni : 0;
       if (circleIoU > 0.86) return resolve({ ok: false, reason: "disc(" + circleIoU.toFixed(2) + ")", fill: fill });
 
+      // Near-white line art disappears against a pale sky — it reads as a smudge
+      // in the crowd, not a character. Require some actual dark/coloured mass.
+      var mass = 0;
+      for (var y5 = minY; y5 <= maxY; y5++) {
+        for (var x5 = minX; x5 <= maxX; x5++) {
+          var k5 = (y5 * cw + x5) * 4;
+          if (d[k5 + 3] <= 24) continue;
+          var lum = (d[k5] * 0.299 + d[k5 + 1] * 0.587 + d[k5 + 2] * 0.114);
+          if (lum < 205) mass++;
+        }
+      }
+      var massFrac = opaque ? mass / opaque : 0;
+      if (massFrac < 0.3) return resolve({ ok: false, reason: "washed-out(" + massFrac.toFixed(2) + ")", fill: fill });
+
       var out = document.createElement("canvas");
       out.width = bw; out.height = bh;
       out.getContext("2d").drawImage(cv, minX, minY, bw, bh, 0, 0, bw, bh);
@@ -176,6 +192,9 @@ window.__cut = function (src) {
   await send("Page.enable"); await send("Runtime.enable");
   await send("Page.navigate", { url: "http://127.0.0.1:" + PORT + "/" });
   await new Promise(r => setTimeout(r, 1500));
+  // how uniform the border must be to trust the flood fill. 0.42 keeps the
+  // cast wide; raise it if a logo starts cutting badly.
+  await ev("window.__unif = " + (Number(process.env.UNIF) || 0.42) + ";'ok'");
   await ev(PAGE_FN);
 
   if (!DRY) fs.mkdirSync(OUT_DIR, { recursive: true });

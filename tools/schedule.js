@@ -20,7 +20,7 @@ function mulberry32(a) {
 }
 
 // must match the MODES array in game.js
-const SEEDS = { classic: 0x5EED1337, blur: 0x1D0FBE47, lore: 0x4B19AC03, chart: 0x7C3E5D91 };
+const SEEDS = { classic: 0x5EED1337, blur: 0x1D0FBE47, lore: 0x4B19AC03 };
 const EPOCH = new Date(2026, 7, 21); // must match game.js
 
 const ORDER = {};

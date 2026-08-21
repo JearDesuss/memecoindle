@@ -32,14 +32,13 @@ A hash router, so GitHub Pages needs no rewrite rules:
 and closes any open modal. Modes are declared once in the `MODES` array in
 game.js — id, display name, icon, blurb, shuffle seed, and `kind`.
 
-## The four modes
+## The three modes
 
 | mode | kind | the puzzle | reveal ladder |
 |------|------|-----------|---------------|
 | Classic | `grid` | five-axis feedback per guess | — (feedback *is* the ladder) |
 | Blur | `stage` | the coin's logo, heavily blurred | blur shrinks each miss |
 | Lore | `stage` | one wiki sentence, name redacted | clue chips |
-| Chart | `stage` | the pump-and-dump curve, unlabelled | detail sharpens each miss |
 
 `stage` modes share one engine: six guesses, misses listed as `.miss-row`, and
 one clue chip revealed per miss from the `CLUES` ladder (chain → year → type →
@@ -52,7 +51,7 @@ Every client must agree on each mode's coin with no server. `game.js`:
 - `EPOCH = 2026-08-21` (local time). Day number = whole days since epoch.
 - Each mode has its **own fixed seed**; a mulberry32 Fisher–Yates shuffle of
   the coin indices gives that mode one canonical permutation, identical
-  everywhere. Four seeds → four different coins per day.
+  everywhere. Three seeds → three different coins per day.
 - Daily coin = `ORDER[mode][day % length]`.
 - **Classic keeps the original `0x5EED1337`**, so its historical sequence is
   unchanged from before the four-mode split. Never change that seed.
@@ -91,16 +90,6 @@ Five axes per guess (`grade()` in game.js):
 Ranges are order-of-magnitude tiers (`capTier` / `nowTier` in data.js), which
 is what makes approximate market-cap data safe to ship.
 
-## The mystery chart
-
-`chartShape(coin)` returns a **continuous** function of `t ∈ [0,1]` built from
-the coin's own numbers: `cm/m` sets the floor, `s` (fate) sets roughly when the
-peak lands, and a ticker-seeded value-noise table adds the jitter. Because it's
-continuous in `t` rather than per-index random, sampling it at 10 points and at
-110 points draws the *same* curve at different resolutions — which is what makes
-"sharpens with every miss" work. No axes or labels are ever drawn; the shape is
-the whole puzzle.
-
 ## Lore redaction
 
 `loreParts()` splits the lore sentence on a case-insensitive alternation of the
@@ -127,9 +116,12 @@ Tokens in `:root` of style.css. Identity: a bright pixel-arcade overworld —
 sky gradient with drifting box-shadow clouds, chunky cream panels with a 3px
 ink border and a hard `0 5px 0` shadow that collapses on `:active`, a grass
 band that flexes to fill whatever the content doesn't, and a crowd of real coin
-logos standing in it. Luckiest Guy for the logo (layered SVG strokes), Pixelify
-Sans for everything else, both with system fallbacks so the offline build still
-reads. Bull green / bear red stay reserved for market semantics. Colourblind
+logos standing in it. Luckiest Guy for the logo (layered SVG strokes),
+Silkscreen for shouty labels, DotGothic16 for sentences and data, all with
+system fallbacks so the offline build still reads. Pixelify Sans was the first
+choice and had to go: its C, G and 2 are closed circles, so CLASSIC rendered as
+"OLASSIO" and 2026 as "8026" — verified by rendering eight candidate faces side
+by side. Bull green / bear red stay reserved for market semantics. Colourblind
 mode (`body.cb`) swaps green/red for blue/orange everywhere including the share
 squares. Motion respects the OS `prefers-reduced-motion` setting; there is no
 in-app motion toggle.
@@ -174,14 +166,16 @@ dead-straight line.
 
 GitHub Pages serves every asset with `Cache-Control: max-age=600` and there is
 no bundler to fingerprint filenames, so `index.html` carries a manual `?v=`
-stamp on each local asset. This is not cosmetic: `index.html` and `game.js`
+stamp on each local asset, derived from a hash of their contents. It was a date
+stamp first, which collides on same-day edits and silently serves stale files —
+the exact failure this exists to prevent. This is not cosmetic: `index.html` and `game.js`
 change together, and a visitor holding a 10-minute-old `game.js` against fresh
 markup gets a `TypeError` on the first `getElementById` of a renamed element and
 a blank page — the script dies before it builds the menu, clouds or roster.
 
 `node tools/bump-assets.js` restamps them; run it before any deploy that touches
-style.css, game.js, data.js, logos.js or lb.js. `--check` exits non-zero when the
-stamp is older than the newest asset mtime.
+a local asset. `--check` exits non-zero when the stamp no longer matches the
+files, so it can gate a deploy.
 
 ## Testing
 
@@ -191,4 +185,4 @@ node 22+ for native WebSocket): serve the repo on :8471, run Chrome with
 mode's answer independently, then checks the home menu, all four routes, a full
 Classic win (grading, reveal, persistence, stats), each stage mode's puzzle and
 clue ladder, unlimited mode, and the colourblind toggle — failing on any page
-error. 51 checks.
+error. 45 checks.
