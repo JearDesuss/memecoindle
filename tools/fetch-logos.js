@@ -62,16 +62,22 @@ async function fromDexScreener(coin) {
 
 (async () => {
   const onlyMissing = process.argv.includes("--only") || process.argv.includes("--missing");
+  // --force re-downloads even when a file exists, so a low-res logo can be
+  // replaced with CoinGecko's 250px original. --tickers limits the run.
+  const force = process.argv.includes("--force");
+  const tArg = process.argv.indexOf("--tickers");
+  const onlyTickers = tArg > -1 && process.argv[tArg + 1]
+    ? new Set(process.argv[tArg + 1].split(",").map((t) => t.trim().toUpperCase()))
+    : null;
   const manifest = {};
   let got = 0, missed = [];
   for (const coin of COINS) {
     const dest = path.join(IMG_DIR, coin.t + ".png");
     const rel = "img/" + coin.t + ".png";
-    if (fs.existsSync(dest) && fs.statSync(dest).size > 400) {
-      manifest[coin.t] = rel; got++;
-      if (onlyMissing) continue;
-      else continue; // never refetch existing
-    }
+    const exists = fs.existsSync(dest) && fs.statSync(dest).size > 400;
+    if (exists) { manifest[coin.t] = rel; got++; }
+    if (onlyTickers && !onlyTickers.has(coin.t.toUpperCase())) continue;
+    if (exists && !force) continue;
     let url = await fromCoinGecko(coin);
     let src = "coingecko";
     if (!url) { url = await fromDexScreener(coin); src = "dexscreener"; }

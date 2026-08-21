@@ -1,6 +1,9 @@
-// Downscale img/*.png to 64x64 WebP via headless Chrome canvas (CDP, no deps).
+// Downscale img/*.png to SIZE x SIZE WebP via headless Chrome canvas (CDP, no deps).
+// SIZE defaults to 160: the largest on-screen use is a 52px coin card, so 160
+// covers 2x DPR with room. Run tools/cut-logos.js BEFORE this — the cut-outs
+// want the full-resolution originals.
 // Needs Chrome running with --remote-debugging-port=9223 (any page).
-// Usage: node tools/resize-logos.js
+// Usage: SIZE=160 node tools/resize-logos.js
 const fs = require("fs");
 const path = require("path");
 const ROOT = path.join(__dirname, "..");
@@ -25,15 +28,17 @@ async function main() {
     if (buf.length < 6000) { after += buf.length; done++; continue; } // already tiny
     const mime = buf[0] === 0xff ? "image/jpeg" : (buf.slice(0, 4).toString() === "RIFF" ? "image/webp" : "image/png");
     const dataUri = "data:" + mime + ";base64," + buf.toString("base64");
+    const SZ = Number(process.env.SIZE) || 160;
     const expr = `(async () => {
+      const SZ = ${SZ};
       const img = new Image();
       await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error('load')); img.src = ${JSON.stringify(dataUri)}; });
-      const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+      const c = document.createElement('canvas'); c.width = SZ; c.height = SZ;
       const x = c.getContext('2d');
       x.imageSmoothingQuality = 'high';
-      const s = Math.max(64 / img.width, 64 / img.height);
+      const s = Math.max(SZ / img.width, SZ / img.height);
       const w = img.width * s, h = img.height * s;
-      x.drawImage(img, (64 - w) / 2, (64 - h) / 2, w, h);
+      x.drawImage(img, (SZ - w) / 2, (SZ - h) / 2, w, h);
       return c.toDataURL('image/webp', 0.88).split(',')[1];
     })()`;
     const r = await send("Runtime.evaluate", { expression: expr, awaitPromise: true, returnByValue: true });

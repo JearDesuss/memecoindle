@@ -42,7 +42,7 @@ window.__cut = function (src) {
     img.onload = function () {
       var W = img.naturalWidth, H = img.naturalHeight;
       if (!W || !H) return resolve({ ok: false, reason: "empty" });
-      var S = 256;
+      var S = Number(window.__maxEdge || 256);
       var scale = Math.min(1, S / Math.max(W, H));
       var cw = Math.max(1, Math.round(W * scale)), ch = Math.max(1, Math.round(H * scale));
       var cv = document.createElement("canvas");
@@ -166,7 +166,17 @@ window.__cut = function (src) {
       var out = document.createElement("canvas");
       out.width = bw; out.height = bh;
       out.getContext("2d").drawImage(cv, minX, minY, bw, bh, 0, 0, bw, bh);
-      resolve({ ok: true, dataURL: out.toDataURL("image/png"), w: bw, h: bh, fill: fill, hadAlpha: hadAlpha });
+      // cap the long edge at what the front crowd band actually needs at 2x DPR
+      var CAP = Number(window.__cap || 160);
+      var k = Math.min(1, CAP / Math.max(bw, bh));
+      var fin = document.createElement("canvas");
+      fin.width = Math.max(1, Math.round(bw * k));
+      fin.height = Math.max(1, Math.round(bh * k));
+      var fx = fin.getContext("2d");
+      fx.imageSmoothingQuality = "high";
+      fx.drawImage(out, 0, 0, fin.width, fin.height);
+      resolve({ ok: true, dataURL: fin.toDataURL("image/webp", 0.9),
+                w: fin.width, h: fin.height, fill: fill, hadAlpha: hadAlpha });
     };
     img.src = src;
   });
@@ -194,7 +204,9 @@ window.__cut = function (src) {
   await new Promise(r => setTimeout(r, 1500));
   // how uniform the border must be to trust the flood fill. 0.42 keeps the
   // cast wide; raise it if a logo starts cutting badly.
-  await ev("window.__unif = " + (Number(process.env.UNIF) || 0.42) + ";'ok'");
+  await ev("window.__unif = " + (Number(process.env.UNIF) || 0.42) + ";" +
+    "window.__maxEdge = " + (Number(process.env.MAX_EDGE) || 512) + ";" +
+    "window.__cap = " + (Number(process.env.CAP) || 160) + ";'ok'");
   await ev(PAGE_FN);
 
   if (!DRY) fs.mkdirSync(OUT_DIR, { recursive: true });

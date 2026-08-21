@@ -132,18 +132,42 @@ border, a coloured header bar and a hard `0 6px 0` shadow that collapses on
 `:active`, a grass-and-dirt band that flexes to fill whatever the content
 doesn't, and a crowd of real coin logos standing in it. Every surface shares one
 near-black outline (`--ink`) so the page reads as a single sprite sheet. Luckiest Guy for the logo (layered SVG strokes),
-Jersey 15 for labels, DotGothic16 for sentences and data, all with system
-fallbacks so the offline build still reads.
+Jersey 15 for letter-only labels, Baloo 2 for body copy and for anything
+containing a digit, all with system fallbacks so the offline build still reads.
 
 Two faces were tried and rejected on legibility, both caught by rendering the
 real strings rather than a pangram: **Pixelify Sans** closes its C, G and 2, so
 CLASSIC rendered as "OLASSIO" and 2026 as "8026". **Silkscreen** drops the
 middle vertex of its M, so MEMEDLE rendered as "HEHEDLE" and the section
 heading as "HORE HEHEDLE". If you ever swap the label face again, render
-`MEMEDLE · MORE MEMEDLE · CLASSIC · DAY #2` in it first. Bull green / bear red stay reserved for market semantics. Colourblind
+`MEMEDLE · MORE MEMEDLE · CLASSIC · DAY #2 · 0/6` in it first.
+
+**DotGothic16** was dropped for a different reason: it has no bold weight and
+hairline strokes, so body copy read as spidery grey next to the solid labels.
+**Jersey 15** survives the letter tests but its 6 has a nearly closed counter,
+so "0/6" reads as "0/8" — hence the `--font-num` split: Jersey 15 never renders
+a digit. Bull green / bear red stay reserved for market semantics. Colourblind
 mode (`body.cb`) swaps green/red for blue/orange everywhere including the share
 squares. Motion respects the OS `prefers-reduced-motion` setting; there is no
 in-app motion toggle.
+
+## Image pipeline (order matters)
+
+`fetch-logos.js` pulls CoinGecko's 250px `large` variant, then
+`resize-logos.js` downsamples for the small UI uses. For a long time resize was
+hardcoded to **64px**, which threw the good resolution away — the crowd was
+upscaling 64px art to 82px and every logo looked soft. Now:
+
+1. `node tools/fetch-logos.js --force --tickers A,B,C` — re-download at full
+   size. It skips existing files unless `--force`, so a low-res logo will
+   otherwise stay low-res forever.
+2. `node tools/cut-logos.js` — **before** resizing, so the cut-outs are built
+   from the 250px originals. Output is capped at 160px (what the front crowd
+   band needs at 2x DPR) and written as WebP with alpha.
+3. `SIZE=160 node tools/resize-logos.js` — shrink `img/` afterwards. The largest
+   on-screen use is a 52px coin card, so 160 covers 2x DPR with room.
+
+Running resize before cut is the one ordering that silently degrades the crowd.
 
 ## The background crowd
 

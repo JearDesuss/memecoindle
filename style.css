@@ -42,9 +42,14 @@
 
   /* Silkscreen's M reads as H ("HEHEDLE") and Pixelify's C reads as O
      ("OLASSIO"); Jersey 15 is the compact pixel face that survives both tests. */
+  /* Jersey 15's 6 has a nearly closed counter, so "0/6" reads as "0/8".
+     It is for LETTER-ONLY labels; anything with a digit uses --font-num. */
   --font-pixel: "Jersey 15", ui-monospace, monospace;
+  --font-num: "Baloo 2", "Segoe UI", system-ui, sans-serif;
   --font-display: "Luckiest Guy", "Arial Black", system-ui, sans-serif;
-  --font-ui: "DotGothic16", ui-monospace, "Segoe UI", system-ui, sans-serif;
+  /* DotGothic16 was hairline with no bold weight — body copy read as grey
+     spidery lines next to the solid labels. Baloo 2 has real stroke weight. */
+  --font-ui: "Baloo 2", "Segoe UI", system-ui, sans-serif;
 
   --ease-out: cubic-bezier(.23, 1, .32, 1);
   --ease-pop: cubic-bezier(.2, .9, .3, 1.35);
@@ -64,6 +69,8 @@ body {
   flex-direction: column;
   font-family: var(--font-ui);
   font-size: 16px;
+  font-weight: 600;
+  line-height: 1.45;
   color: var(--ink);
   background: var(--sky-2);
   overflow-x: hidden;
@@ -124,7 +131,7 @@ a { color: inherit; }
   width: 100%;
   max-width: 1180px;
   margin: 0 auto;
-  padding: 16px 16px 24px;
+  padding: 46px 16px 28px;
 }
 
 /* ─────────────── topbar ─────────────── */
@@ -143,8 +150,9 @@ a { color: inherit; }
 .streak-pill {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 12px;
-  font-family: var(--font-pixel);
-  font-size: 15px;
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 800;
   border-radius: 999px;
   background: var(--cream);
   border: 3px solid var(--ink);
@@ -174,8 +182,7 @@ a { color: inherit; }
   margin: 4px 0 18px;
   text-shadow:
     2px 0 0 var(--ink), -2px 0 0 var(--ink), 0 2px 0 var(--ink), 0 -2px 0 var(--ink),
-    2px 2px 0 var(--ink), -2px 2px 0 var(--ink), 2px -2px 0 var(--ink), -2px -2px 0 var(--ink),
-    0 5px 0 rgba(43,44,75,.35);
+    2px 2px 0 var(--ink), -2px 2px 0 var(--ink), 2px -2px 0 var(--ink), -2px -2px 0 var(--ink);
 }
 
 /* ─────────────── 3-column layout ─────────────── */
@@ -210,18 +217,19 @@ a { color: inherit; }
 .bar-ico { font-size: 15px; line-height: 1; flex: none; }
 .panel-title {
   flex: 1; min-width: 0;
-  font-family: var(--font-pixel);
-  font-size: 16px;
-  font-weight: 400;
+  font-family: var(--font-num);
+  font-size: 15px;
+  font-weight: 800;
   letter-spacing: .03em;
   text-transform: uppercase;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .panel-badge {
   flex: none;
-  padding: 2px 9px;
-  font-family: var(--font-pixel);
-  font-size: 14px;
+  padding: 2px 10px;
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 800;
   border-radius: 999px;
   background: var(--yellow);
   border: 3px solid var(--ink);
@@ -275,10 +283,11 @@ a { color: inherit; }
 .mode-flag {
   flex: none;
   display: grid; place-items: center;
-  min-width: 32px; height: 26px;
+  min-width: 34px; height: 26px;
   padding: 0 6px;
-  font-family: var(--font-pixel);
-  font-size: 13px;
+  font-family: var(--font-num);
+  font-size: 12.5px;
+  font-weight: 800;
   border-radius: 6px;
   border: 3px solid var(--ink);
   background: var(--cream-2);
@@ -458,8 +467,9 @@ a { color: inherit; }
 .col-head { margin: 14px 0 5px; }
 .col-name {
   text-align: center;
-  font-family: var(--font-pixel);
-  font-size: 12px;
+  font-family: var(--font-num);
+  font-weight: 800;
+  font-size: 11px;
   text-transform: uppercase;
   color: var(--ink-2);
 }
@@ -533,8 +543,8 @@ a { color: inherit; }
 .yday { display: flex; align-items: center; gap: 10px; }
 .yday img { width: 44px; height: 44px; border-radius: 8px; flex: none; border: 3px solid var(--ink); object-fit: cover; }
 .yday-text { min-width: 0; flex: 1; }
-.yday-label { display: block; font-size: 12px; color: var(--ink-2); }
-.yday-name { display: block; font-family: var(--font-pixel); font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.yday-label { display: block; font-size: 12px; font-weight: 700; color: var(--ink-2); }
+.yday-name { display: block; font-family: var(--font-num); font-weight: 800; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .yday-flag {
   flex: none; display: grid; place-items: center;
   width: 28px; height: 28px;
@@ -554,7 +564,8 @@ a { color: inherit; }
   text-transform: uppercase;
   color: var(--cream);
   margin-bottom: 12px;
-  text-shadow: 2px 0 0 var(--ink), -2px 0 0 var(--ink), 0 2px 0 var(--ink), 0 -2px 0 var(--ink), 0 5px 0 rgba(43,44,75,.35);
+  text-shadow: 2px 0 0 var(--ink), -2px 0 0 var(--ink), 0 2px 0 var(--ink), 0 -2px 0 var(--ink),
+    2px 2px 0 var(--ink), -2px 2px 0 var(--ink), 2px -2px 0 var(--ink), -2px -2px 0 var(--ink);
 }
 .spark { color: var(--yellow); }
 
@@ -609,8 +620,9 @@ a { color: inherit; }
   position: absolute; bottom: -9px; left: 50%;
   transform: translateX(-50%);
   padding: 0 6px;
-  font-family: var(--font-pixel);
-  font-size: 11px;
+  font-family: var(--font-num);
+  font-weight: 800;
+  font-size: 9px;
   line-height: 15px;
   border-radius: 999px;
   background: var(--yellow);
@@ -752,7 +764,7 @@ a { color: inherit; }
 .stat-tab {
   padding: 7px 2px;
   font-family: var(--font-pixel);
-  font-size: 13px; text-transform: uppercase;
+  font-size: 14px; text-transform: uppercase;
   border-radius: 6px;
   background: rgba(255,255,255,.5);
   border: 3px solid var(--cream-3);
@@ -761,7 +773,7 @@ a { color: inherit; }
 .stat-tab.on { background: linear-gradient(to bottom, var(--yellow), var(--yellow-2)); border-color: var(--ink); color: var(--ink); }
 .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
 .stat { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 4px; border-radius: 7px; background: rgba(255,255,255,.6); border: 3px solid var(--cream-3); }
-.stat-num { font-family: var(--font-pixel); font-size: 24px; line-height: 1; }
+.stat-num { font-family: var(--font-num); font-weight: 800; font-size: 23px; line-height: 1; }
 .stat-label { font-size: 10.5px; text-transform: uppercase; color: var(--ink-2); }
 .dist { display: flex; flex-direction: column; gap: 5px; }
 .dist-row { display: flex; align-items: center; gap: 8px; }
@@ -781,11 +793,11 @@ a { color: inherit; }
   transition: background-color 110ms ease, border-color 110ms ease;
 }
 .arch-row:hover { background: #fff; border-color: var(--ink); }
-.arch-day { font-family: var(--font-pixel); font-size: 14px; flex: none; width: 54px; }
+.arch-day { font-family: var(--font-num); font-weight: 800; font-size: 13px; flex: none; width: 54px; }
 .arch-mode { flex: 1; font-size: 13.5px; color: var(--ink-2); }
 .arch-state { font-size: 12px; flex: none; }
 
-.reveal-verdict { font-family: var(--font-display); font-size: 26px; text-align: center; margin: 26px 0 4px; line-height: 1.35; }
+.reveal-verdict { font-family: var(--font-display); font-size: 25px; text-align: center; margin: 26px 0 4px; line-height: 1.35; }
 .reveal-verdict.win { color: var(--bull-2); }
 .reveal-verdict.lose { color: var(--bear-2); }
 .reveal-sub { text-align: center; font-size: 14px; color: var(--ink-2); margin-bottom: 14px; }
@@ -793,7 +805,7 @@ a { color: inherit; }
 .coin-card-title { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .coin-card-logo { width: 52px; height: 52px; border-radius: 9px; flex: none; border: 4px solid var(--ink); object-fit: cover; }
 .coin-card-title-text { display: flex; flex-direction: column; min-width: 0; }
-.coin-card-name { font-family: var(--font-pixel); font-size: 18px; line-height: 1.3; overflow-wrap: anywhere; }
+.coin-card-name { font-family: var(--font-num); font-weight: 800; font-size: 17px; line-height: 1.3; overflow-wrap: anywhere; }
 .coin-card-ticker { font-size: 13px; color: var(--ink-2); }
 .coin-card-facts { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
 .fact-chip { padding: 3px 9px; font-size: 12px; border-radius: 999px; background: var(--cream); border: 3px solid var(--cream-3); }
@@ -819,8 +831,8 @@ a { color: inherit; }
 .btn:active { transform: translateY(4px); box-shadow: 0 0 0 var(--ink); }
 .btn-primary { background: linear-gradient(to bottom, #9FE68B, var(--green)); }
 .btn-danger { background: linear-gradient(to bottom, #FF8A82, var(--bear)); color: #fff; flex: 0 1 auto; }
-.countdown-label { text-align: center; font-family: var(--font-pixel); font-size: 13px; text-transform: uppercase; color: var(--ink-2); margin-top: 14px; }
-.countdown { text-align: center; font-family: var(--font-pixel); font-size: 28px; }
+.countdown-label { text-align: center; font-family: var(--font-num); font-weight: 800; font-size: 11px; text-transform: uppercase; color: var(--ink-2); margin-top: 14px; }
+.countdown { text-align: center; font-family: var(--font-num); font-weight: 800; font-size: 26px; }
 
 .lb-empty { font-size: 13.5px; line-height: 1.7; color: var(--ink-2); }
 .lb-row { display: flex; align-items: center; gap: 10px; padding: 7px 4px; border-bottom: 3px solid var(--cream-3); font-size: 14px; }
@@ -837,7 +849,7 @@ a { color: inherit; }
   .col-right .panel { flex: 1; }
 }
 @media (max-width: 760px) {
-  .app { padding: 14px 12px 20px; }
+  .app { padding: 26px 12px 20px; }
   .layout { grid-template-columns: 1fr; gap: 13px; }
   .col-mid { order: 1; }
   .col-left { order: 2; }
