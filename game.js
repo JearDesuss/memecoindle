@@ -1,29 +1,27 @@
-/* Memedle — game engine. Four modes, one daily coin each, no dependencies. */
+/* Memedle — game engine. One dashboard, three modes, no dependencies. */
 (function () {
   "use strict";
 
   // ──────────────── constants ────────────────
   var EPOCH = new Date(2026, 7, 21);   // puzzle #1 = Aug 21 2026 (local time)
   var MAX_GUESSES = 6;
-  var SITE_URL = "jeardesuss.github.io/memecoindle";
+  var SITE_URL = "memedle-weld.vercel.app";
 
-  // Socials. Leave a URL empty and its button renders as a dead "soon" chip
-  // instead of a link, so nothing ever points at a 404.
-  var SOCIAL = [
-    { id: "x", label: "Follow on X", url: "" }
-  ];
+  // Leave a URL empty and the button renders as a dead "soon" chip instead of a
+  // link, so nothing ever points at a 404.
+  var SOCIAL = [{ id: "x", label: "Follow on X", url: "" }];
 
   // Classic keeps the original seed so its daily sequence never shifts.
   var MODES = [
-    { id: "classic", name: "Classic", ico: "🔍", blurb: "Get clues on every try",   seed: 0x5EED1337, kind: "grid",  sq: "🟩" },
-    { id: "blur",    name: "Blur",    ico: "🔮", blurb: "With a blurry logo",       seed: 0x1D0FBE47, kind: "stage", sq: "🟩" },
-    { id: "lore",    name: "Lore",    ico: "📜", blurb: "With one cursed sentence", seed: 0x4B19AC03, kind: "stage", sq: "🟩" }
+    { id: "classic", name: "Classic", icon: "DOGE", blurb: "Guess from attributes.",        seed: 0x5EED1337, kind: "grid" },
+    { id: "blur",    name: "Blur",    icon: "PEPE", blurb: "Logo starts cursed. It clears.", seed: 0x1D0FBE47, kind: "stage" },
+    { id: "lore",    name: "Lore",    icon: "SHIB", blurb: "One unhinged sentence.",         seed: 0x4B19AC03, kind: "stage" }
   ];
   var MODE_BY_ID = {};
   MODES.forEach(function (m) { MODE_BY_ID[m.id] = m; });
 
   var COL_NAMES = ["Chain", "Type", "Year", "Peak", "Now"];
-  var BLUR_STEPS = [26, 18, 12, 7.5, 4, 2];      // px, indexed by wrong-guess count
+  var BLUR_STEPS = [26, 18, 12, 7.5, 4, 2];
   var ZOOM_STEPS = [1.55, 1.45, 1.36, 1.28, 1.2, 1.13];
 
   // ──────────────── rng ────────────────
@@ -34,11 +32,6 @@
       t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
-  }
-  function hashStr(s) {
-    var h = 0x811C9DC5;
-    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
-    return h >>> 0;
   }
 
   // ──────────────── daily selection ────────────────
@@ -62,10 +55,10 @@
   }
   // Independent shuffles occasionally hand the same coin to two modes on the
   // same day, which turns solving one into a free hint for the other. Assign in
-  // a fixed mode order and walk forward past collisions — classic is first, so
-  // its historical sequence is never touched.
-  // 151 is prime, so any stride walks the whole permutation; a big one keeps a
-  // displaced pick far from that mode's neighbouring days.
+  // a fixed mode order and walk past collisions — classic is first, so its
+  // historical sequence is never touched. 151 is prime, so any stride walks the
+  // whole permutation; a big one keeps a displaced pick far from that mode's
+  // neighbouring days (a +1 walk would land on its own next day).
   var STRIDE = 61;
   var dayPicks = {};
   function picksFor(day) {
@@ -123,7 +116,6 @@
       : { g: "🟩", y: "🟨", x: "🟥" };
   }
 
-  // clue ladder used by the non-classic modes
   var CLUES = [
     function (c) { return ["Chain", c.c]; },
     function (c) { return ["Born", String(c.y)]; },
@@ -146,21 +138,20 @@
     });
     uniq.sort(function (a, b) { return b.length - a.length; });
     var re = new RegExp("(" + uniq.map(reEsc).join("|") + ")", "gi");
-    // split keeps the captured group, so pieces alternate plain / match
-    return coin.l.split(re);
+    return coin.l.split(re);   // split keeps the group: pieces alternate plain / match
   }
 
   // ──────────────── state ────────────────
-  var view = "home";        // 'home' | 'game'
   var modeId = "classic";
   var unlimited = false;
+  var playDay = 0;              // which puzzle number is on the board
   var target = null;
   var guesses = [];
   var done = false, won = false;
   var hintAxis = -1;
-  var statsMode = "classic"; // which mode the stats modal is showing
+  var statsMode = "classic";
 
-  function dayKey() { return "md_day_" + modeId + "_" + dayNumber(); }
+  function isArchive() { return !unlimited && playDay !== dayNumber(); }
   function statsKey(m) { return "md_stats_v1_" + m; }
   var defaultStats = { played: 0, wins: 0, streak: 0, maxStreak: 0, lastWinDay: -2, lastPlayedDay: -2, dist: [0, 0, 0, 0, 0, 0] };
 
@@ -169,7 +160,7 @@
 
   function saveDaily() {
     if (unlimited) return;
-    lsSet(dayKey(), JSON.stringify({
+    lsSet("md_day_" + modeId + "_" + playDay, JSON.stringify({
       g: guesses.map(function (c) { return c.n; }), done: done, won: won, h: hintAxis
     }));
   }
@@ -180,7 +171,7 @@
     try { return JSON.parse(lsGet(statsKey(m))) || null; } catch (e) { return null; }
   }
   function recordResult(win, n) {
-    if (unlimited) return;
+    if (unlimited || isArchive()) return;   // archive runs never touch the streak
     var st = loadStats(modeId) || JSON.parse(JSON.stringify(defaultStats));
     var d = dayNumber();
     if (st.lastPlayedDay === d) return;
@@ -218,7 +209,7 @@
     if (text != null) e.textContent = text;
     return e;
   }
-  function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+  function clear(node) { while (node && node.firstChild) node.removeChild(node.firstChild); }
 
   // ──────────────── logos ────────────────
   function badgeURI(ticker) {
@@ -228,10 +219,8 @@
     var ch = ticker.charAt(0).toUpperCase();
     var svg =
       '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
-      '<defs><radialGradient id="g" cx="35%" cy="30%"><stop offset="0%" stop-color="hsl(' + hue + ',75%,64%)"/>' +
-      '<stop offset="100%" stop-color="hsl(' + hue + ',66%,40%)"/></radialGradient></defs>' +
-      '<rect width="64" height="64" rx="14" fill="url(#g)"/>' +
-      '<text x="32" y="44" text-anchor="middle" font-family="Consolas,monospace" font-weight="bold" font-size="32" fill="hsl(' + hue + ',85%,14%)">' + ch + "</text></svg>";
+      '<rect width="64" height="64" rx="12" fill="hsl(' + hue + ',66%,52%)"/>' +
+      '<text x="32" y="44" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="32" fill="hsl(' + hue + ',85%,14%)">' + ch + "</text></svg>";
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
   }
   function logoImg(coin, cls) {
@@ -244,29 +233,35 @@
     if (real) img.onerror = function () { img.onerror = null; img.src = badgeURI(coin.t); };
     return img;
   }
-
-  // ──────────────── decor: brand, clouds, roster ────────────────
-  function brandSVG(sfx) {
-    var gid = "bg-" + sfx;
-    var t = function (attrs) {
-      return '<text x="262" y="100" text-anchor="middle" ' + attrs + ">Memedle</text>";
-    };
-    return '<svg viewBox="0 0 524 138" role="img" aria-label="Memedle">' +
-      '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="#FFF6B8"/><stop offset="44%" stop-color="#FFD23D"/>' +
-      '<stop offset="53%" stop-color="#F0A016"/><stop offset="100%" stop-color="#FFE484"/>' +
-      "</linearGradient></defs>" +
-      '<g font-family="Luckiest Guy, Arial Black, Impact, sans-serif" font-size="94">' +
-      t('transform="translate(0,8)" fill="#13224C" opacity=".34" stroke="#13224C" stroke-width="27" stroke-linejoin="round" paint-order="stroke"') +
-      t('fill="#13224C" stroke="#13224C" stroke-width="27" stroke-linejoin="round" paint-order="stroke"') +
-      t('fill="#4C8DF6" stroke="#4C8DF6" stroke-width="16" stroke-linejoin="round" paint-order="stroke"') +
-      t('fill="url(#' + gid + ')" stroke="#FFFDF0" stroke-width="3" stroke-linejoin="round" paint-order="stroke"') +
-      "</g></svg>";
+  function logoByTicker(ticker, cls) {
+    var img = document.createElement("img");
+    img.className = cls;
+    img.alt = "";
+    img.src = ((typeof LOGOS !== "undefined") && LOGOS[ticker]) || badgeURI(ticker);
+    return img;
   }
 
-  // Soft pixel clouds. Flat white box-shadow blocks read as render glitches, so
-  // each cloud is an SVG of stacked blocks with a shaded underside, like the
-  // reference's painted clouds.
+  // ──────────────── brand: chunky extruded pixel wordmark ────────────────
+  function brandSVG(sfx) {
+    var gid = "bg-" + sfx;
+    var DEPTH = 9;
+    function line(y, fill, stroke) {
+      return '<text x="280" y="' + y + '" text-anchor="middle" ' +
+        'font-family="Luckiest Guy, Arial Black, sans-serif" font-size="80" fill="' + fill +
+        '" stroke="' + stroke + '" stroke-width="14" stroke-linejoin="round" ' +
+        'paint-order="stroke">MEMEDLE</text>';
+    }
+    var out = '<svg viewBox="0 0 560 140" role="img" aria-label="Memedle">' +
+      '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="#FFF3A6"/><stop offset="48%" stop-color="#FFD93B"/>' +
+      '<stop offset="100%" stop-color="#FFC01F"/></linearGradient></defs><g>';
+    // extrusion slabs, deepest first, each outlined so the stack reads as one solid
+    for (var i = DEPTH; i >= 1; i--) out += line(88 + i, "#E08A12", "#2B2C4B");
+    out += line(88, "url(#" + gid + ")", "#2B2C4B");
+    return out + "</g></svg>";
+  }
+
+  // ──────────────── clouds: outlined pixel blocks ────────────────
   var CLOUD_SHAPES = [
     [[2,0],[3,0],[1,1],[2,1],[3,1],[4,1],[0,2],[1,2],[2,2],[3,2],[4,2],[5,2]],
     [[3,0],[4,0],[5,0],[1,1],[2,1],[3,1],[4,1],[5,1],[6,1],
@@ -276,51 +271,68 @@
     [[1,0],[2,0],[0,1],[1,1],[2,1],[3,1]]
   ];
   function cloudSVG(shape) {
-    var maxX = 0, maxY = 0, i;
+    var has = {}, i, x, y;
+    for (i = 0; i < shape.length; i++) has[shape[i][0] + "," + shape[i][1]] = 1;
+    // outline = every empty cell orthogonally touching the shape
+    var outline = {};
     for (i = 0; i < shape.length; i++) {
-      if (shape[i][0] > maxX) maxX = shape[i][0];
-      if (shape[i][1] > maxY) maxY = shape[i][1];
+      x = shape[i][0]; y = shape[i][1];
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(function (d) {
+        var k = (x + d[0]) + "," + (y + d[1]);
+        if (!has[k]) outline[k] = 1;
+      });
     }
-    // lowest block in each column gets the shaded underside
+    var minX = 0, minY = 0, maxX = 0, maxY = 0, first = true;
+    function span(k) {
+      var p = k.split(","), px = +p[0], py = +p[1];
+      if (first) { minX = maxX = px; minY = maxY = py; first = false; }
+      if (px < minX) minX = px; if (px > maxX) maxX = px;
+      if (py < minY) minY = py; if (py > maxY) maxY = py;
+    }
+    Object.keys(has).forEach(span); Object.keys(outline).forEach(span);
     var lowest = {};
     for (i = 0; i < shape.length; i++) {
-      var x = shape[i][0], y = shape[i][1];
+      x = shape[i][0]; y = shape[i][1];
       if (lowest[x] === undefined || y > lowest[x]) lowest[x] = y;
     }
-    var rects = "";
+    var r = "";
+    Object.keys(outline).forEach(function (k) {
+      var p = k.split(",");
+      r += "%3Crect x='" + (+p[0] - minX) + "' y='" + (+p[1] - minY) + "' width='1' height='1' fill='%232B2C4B'/%3E";
+    });
     for (i = 0; i < shape.length; i++) {
-      var cx = shape[i][0], cy = shape[i][1];
-      var fill = cy === lowest[cx] ? "%23D9EBF7" : "%23FFFFFF";
-      rects += "%3Crect x='" + cx + "' y='" + cy + "' width='1' height='1' fill='" + fill + "'/%3E";
+      x = shape[i][0]; y = shape[i][1];
+      var fill = y === lowest[x] ? "%23C9E4F5" : "%23FFFFFF";
+      r += "%3Crect x='" + (x - minX) + "' y='" + (y - minY) + "' width='1' height='1' fill='" + fill + "'/%3E";
     }
-    return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 " +
-      (maxX + 1) + " " + (maxY + 1) + "'%3E" + rects + "%3C/svg%3E";
+    return {
+      uri: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 " +
+        (maxX - minX + 1) + " " + (maxY - minY + 1) + "'%3E" + r + "%3C/svg%3E",
+      w: maxX - minX + 1, h: maxY - minY + 1
+    };
   }
   function buildClouds() {
     var wrap = $("clouds");
     if (!wrap) return;
     clear(wrap);
     var rnd = mulberry32(0xC10D5);
-    var n = window.innerWidth <= 480 ? 5 : 8;
+    var n = window.innerWidth <= 760 ? 5 : 8;
     for (var i = 0; i < n; i++) {
-      var shape = CLOUD_SHAPES[Math.floor(rnd() * CLOUD_SHAPES.length)];
-      var w = 0;
-      for (var j = 0; j < shape.length; j++) if (shape[j][0] > w) w = shape[j][0];
-      var px = 9 + Math.round(rnd() * 9);
+      var svg = cloudSVG(CLOUD_SHAPES[Math.floor(rnd() * CLOUD_SHAPES.length)]);
+      var px = 5 + Math.round(rnd() * 5);
       var c = el("div", "cloud");
-      c.style.backgroundImage = "url(\"" + cloudSVG(shape) + "\")";
-      c.style.width = (w + 1) * px + "px";
-      c.style.height = 3 * px + "px";
-      c.style.top = (5 + rnd() * 40).toFixed(1) + "%";
-      c.style.opacity = (0.68 + rnd() * 0.26).toFixed(2);
-      c.style.animationDuration = (80 + rnd() * 120).toFixed(0) + "s";
-      c.style.animationDelay = "-" + (rnd() * 140).toFixed(0) + "s";
+      c.style.backgroundImage = 'url("' + svg.uri + '")';
+      c.style.width = svg.w * px + "px";
+      c.style.height = svg.h * px + "px";
+      c.style.top = (3 + rnd() * 30).toFixed(1) + "%";
+      c.style.opacity = (0.75 + rnd() * 0.25).toFixed(2);
+      c.style.animationDuration = (85 + rnd() * 120).toFixed(0) + "s";
+      c.style.animationDelay = "-" + (rnd() * 150).toFixed(0) + "s";
       wrap.appendChild(c);
     }
   }
 
-  // The crowd standing in the grass — background-removed character art, three
-  // depth bands deep, the way pokedle.net's lineup reads. See tools/cut-logos.js.
+  // ──────────────── the crowd standing in the grass ────────────────
   function cutList() {
     if (typeof CUTOUTS === "undefined") return [];
     var keys = Object.keys(CUTOUTS);
@@ -331,35 +343,23 @@
     }
     return keys;
   }
-
   function cutImg(ticker, h) {
-    var dims = CUTOUTS[ticker];                  // [w, h] of the trimmed art
+    var dims = CUTOUTS[ticker];
     var img = document.createElement("img");
-    // the single-file build swaps the folder for inlined data URIs
     img.src = (typeof CUT_SRC !== "undefined" && CUT_SRC[ticker]) || ("img/cut/" + ticker + ".png");
-    img.alt = "";
-    img.loading = "lazy";
-    img.decoding = "async";
-    img.title = ticker;
-    img.height = h;
+    img.alt = ""; img.loading = "lazy"; img.decoding = "async"; img.title = ticker;
     img.style.height = h + "px";
     img.style.width = Math.max(8, Math.round(h * (dims[0] / dims[1]))) + "px";
     return img;
   }
-
   function buildCrowd() {
     var wrap = $("crowd");
     if (!wrap) return;
     var rows = wrap.querySelectorAll(".crowd-row");
-    if (!rows.length) return;
     var keys = cutList();
-    if (!keys.length) return;
-
+    if (!rows.length || !keys.length) return;
     var vw = window.innerWidth;
-    var narrow = vw <= 480;
-    // back band is smallest and most numerous, front band biggest and sparsest
-    var HEIGHTS = narrow ? [36, 48, 62] : [44, 58, 76];
-
+    var HEIGHTS = vw <= 760 ? [36, 48, 62] : [46, 62, 82];
     var rnd = mulberry32(0x9F17E5);
     var at = 0;
     for (var b = 0; b < rows.length && b < HEIGHTS.length; b++) {
@@ -367,30 +367,17 @@
       clear(row);
       // fill the viewport rather than a fixed count, or the crowd sits as a
       // small clump in the middle of a wide screen
-      var advance = bh * 0.78;
-      var n = Math.ceil(vw / advance) + 2;
+      var n = Math.ceil(vw / (bh * 0.78)) + 2;
       for (var i = 0; i < n; i++) {
-        var ticker = keys[at % keys.length]; at++;
         var h = Math.round(bh * (0.82 + rnd() * 0.4));
-        var img = cutImg(ticker, h);
-        // overlap so they read as a crowd rather than a queue
+        var img = cutImg(keys[at % keys.length], h); at++;
         img.style.marginInline = "-" + Math.round(h * (0.04 + rnd() * 0.11)) + "px";
-        // let a few sink deeper into the grass
         img.style.marginBottom = "-" + Math.round(rnd() * 7) + "px";
         if (rnd() < 0.5) img.style.transform = "scaleX(-1)";
         row.appendChild(img);
       }
     }
   }
-
-  // the crowd and floaters are sized off the viewport, so refill after a resize
-  var decorTimer = null;
-  function refreshDecor() {
-    clearTimeout(decorTimer);
-    decorTimer = setTimeout(function () { buildClouds(); buildCrowd(); buildFloaters(); }, 220);
-  }
-
-  // a couple of them drifting in the sky, like the reference's Mew and Moltres
   function buildFloaters() {
     var wrap = $("floaters");
     if (!wrap || typeof CUTOUTS === "undefined") return;
@@ -398,141 +385,141 @@
     if (!keys.length) return;
     clear(wrap);
     var rnd = mulberry32(0x5C1E5);
-    // desktop: keep them in the gutters beside the 620px column so they read as
-    // sky, not as debris peeking out from behind a card
-    var spots = window.innerWidth <= 480
-      ? [[13, 15], [87, 10]]
-      : [[7, 13], [93, 9], [5, 33], [95, 28]];
+    // keep them in the gutters beside the column so they read as sky, not as
+    // fragments peeking out from behind a panel
+    var spots = window.innerWidth <= 760
+      ? [[12, 13], [88, 9]]
+      : [[6, 12], [94, 8], [4, 34], [96, 29]];
     for (var i = 0; i < spots.length; i++) {
-      var img = cutImg(keys[(keys.length - 1 - i + keys.length) % keys.length], 30 + Math.round(rnd() * 18));
+      var img = cutImg(keys[(keys.length - 1 - i + keys.length) % keys.length], 32 + Math.round(rnd() * 16));
       img.className = "floater";
       img.style.left = spots[i][0] + "%";
       img.style.top = spots[i][1] + "%";
-      img.style.opacity = (0.72 + rnd() * 0.22).toFixed(2);
+      img.style.opacity = (0.78 + rnd() * 0.2).toFixed(2);
       img.style.animationDuration = (3.4 + rnd() * 2.6).toFixed(1) + "s";
       img.style.animationDelay = "-" + (rnd() * 3).toFixed(1) + "s";
       wrap.appendChild(img);
     }
   }
 
-  // ──────────────── home ────────────────
+  var decorTimer = null;
+  function refreshDecor() {
+    clearTimeout(decorTimer);
+    decorTimer = setTimeout(function () { buildClouds(); buildCrowd(); buildFloaters(); }, 220);
+  }
+
+  // ──────────────── mode rail ────────────────
   function dayStatusFor(m) {
     var s = loadDay(m, dayNumber());
     if (!s || !s.g) return null;
-    return { done: !!s.done, won: !!s.won, n: s.g.length, started: s.g.length > 0 };
+    return { done: !!s.done, won: !!s.won, n: s.g.length };
   }
 
-  function renderHome() {
+  function renderModeRail() {
     var list = $("mode-list");
     clear(list);
     MODES.forEach(function (m) {
       var a = document.createElement("a");
-      a.className = "mode-card";
+      a.className = "mode-card" + (m.id === modeId ? " on" : "");
       a.href = "#/" + m.id;
 
-      var name = el("span", "mode-name", m.name);
-      a.appendChild(name);
+      a.appendChild(logoByTicker(m.icon, "mode-ico"));
 
-      var pill = el("div", "mode-pill");
-      var ico = el("span", "mode-pill-ico", m.ico);
-      pill.appendChild(ico);
-      pill.appendChild(el("span", "mode-pill-text", m.blurb));
-      a.appendChild(pill);
+      var txt = el("div", "mode-text");
+      txt.appendChild(el("span", "mode-name", m.name));
+      txt.appendChild(el("span", "mode-blurb", m.blurb));
+      a.appendChild(txt);
 
       var st = dayStatusFor(m.id);
+      var flag = el("span", "mode-flag");
       if (st && st.done) {
-        var flag = el("span", "mode-flag" + (st.won ? "" : " lost"), st.won ? "✓ " + st.n + "/" + MAX_GUESSES : "✕ missed");
-        a.appendChild(flag);
-      } else if (st && st.started) {
-        a.appendChild(el("span", "mode-flag open", st.n + "/" + MAX_GUESSES));
+        flag.classList.add(st.won ? "win" : "lost");
+        flag.textContent = st.won ? st.n + "/" + MAX_GUESSES : "✕";
+      } else {
+        flag.textContent = ((st && st.n) || 0) + "/" + MAX_GUESSES;
       }
+      a.appendChild(flag);
+
+      var prog = el("div", "mode-prog");
+      var fill = el("i");
+      var pct = st ? Math.round(100 * Math.min(st.n, MAX_GUESSES) / MAX_GUESSES) : 0;
+      fill.style.width = (st && st.done && st.won ? 100 : pct) + "%";
+      prog.appendChild(fill);
+      a.appendChild(prog);
+
       list.appendChild(a);
     });
   }
 
-  var SOCIAL_ICON = {
-    x: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>'
-  };
-  function renderSocial() {
-    var row = $("social-row");
-    if (!row) return;
-    clear(row);
-    SOCIAL.forEach(function (s) {
-      var live = !!s.url;
-      var node = document.createElement(live ? "a" : "button");
-      node.className = "social-btn" + (live ? "" : " soon");
-      node.innerHTML = SOCIAL_ICON[s.id] || "";
-      if (live) {
-        node.href = s.url;
-        node.target = "_blank";
-        node.rel = "noopener";
-        node.title = s.label;
-        node.setAttribute("aria-label", s.label);
-      } else {
-        node.type = "button";
-        node.title = s.label + " — coming soon";
-        node.setAttribute("aria-label", s.label + ", coming soon");
-        node.appendChild(el("span", "soon-tag", "soon"));
-        node.addEventListener("click", function () {
-          node.classList.add("nudge");
-          setTimeout(function () { node.classList.remove("nudge"); }, 420);
-        });
-      }
-      row.appendChild(node);
-    });
-  }
-
-  function renderHelpModes() {
-    var box = $("help-modes");
+  // ──────────────── right rail: yesterday ────────────────
+  function renderYesterday() {
+    var box = $("yesterday-body");
     if (!box) return;
     clear(box);
-    MODES.forEach(function (m) {
-      var row = el("div", "help-mode");
-      row.appendChild(el("span", "help-mode-ico", m.ico));
-      row.appendChild(el("span", "help-mode-name", m.name));
-      row.appendChild(el("span", "help-mode-desc", m.blurb));
-      box.appendChild(row);
-    });
+    var d = dayNumber() - 1;
+    if (d < 0) {
+      box.appendChild(el("p", "lb-empty", "Nothing yet — today is puzzle #1."));
+      return;
+    }
+    var coin = dailyCoin(modeId, d);
+    var st = loadDay(modeId, d);
+    var row = el("div", "yday");
+    row.appendChild(logoImg(coin, ""));
+    var txt = el("div", "yday-text");
+    txt.appendChild(el("span", "yday-label", MODE_BY_ID[modeId].name + " #" + (d + 1)));
+    txt.appendChild(el("span", "yday-name", "$" + coin.t));
+    row.appendChild(txt);
+    var flag = el("span", "yday-flag");
+    if (st && st.done) {
+      flag.classList.add(st.won ? "win" : "lost");
+      flag.textContent = st.won ? "✓" : "✕";
+    } else { flag.textContent = "–"; flag.title = "not played"; }
+    row.appendChild(flag);
+    box.appendChild(row);
   }
 
-  // ──────────────── game chrome ────────────────
-  function renderTabs() {
-    var nav = $("mode-tabs");
-    clear(nav);
+  // ──────────────── more memedle pills ────────────────
+  function renderPills() {
+    var row = $("pill-row");
+    if (!row) return;
+    clear(row);
+    var tones = ["pill-green", "pill-cream"];
+    var t = 0;
     MODES.forEach(function (m) {
+      if (m.id === modeId) return;
       var a = document.createElement("a");
-      a.className = "tab" + (m.id === modeId ? " on" : "");
+      a.className = "pill " + tones[t++ % tones.length];
       a.href = "#/" + m.id;
       a.textContent = m.name;
-      var st = dayStatusFor(m.id);
-      if (st && st.done && st.won) a.classList.add("done");
-      nav.appendChild(a);
+      row.appendChild(a);
     });
+    var endless = el("a", "pill pill-purple", "∞ Endless");
+    endless.href = "#/" + modeId + "/unlimited";
+    row.appendChild(endless);
+    var arch = el("button", "pill pill-yellow", "🏆 Archive");
+    arch.addEventListener("click", openArchive);
+    row.appendChild(arch);
   }
 
-  function renderMeta() {
+  // ──────────────── panel chrome ────────────────
+  function renderPanelChrome() {
     var m = MODE_BY_ID[modeId];
-    $("game-title").textContent = m.name;
+    var label = unlimited ? "Endless" : (isArchive() ? "Archive #" + (playDay + 1) : "Day #" + (playDay + 1));
+    $("game-title").textContent = label + " · " + m.name;
+    $("panel-badge").textContent = (MAX_GUESSES - guesses.length) + "/" + MAX_GUESSES;
+
     var meta = $("game-meta");
-    if (unlimited) {
-      meta.textContent = "Unlimited · random coin, endless replays";
-    } else {
-      var txt = "Daily #" + (dayNumber() + 1);
-      var d = dayNumber();
-      if (d >= 1) txt += " · yesterday $" + dailyCoin(modeId, d - 1).t;
-      meta.textContent = txt;
-    }
-    var tog = $("btn-mode-toggle");
-    tog.querySelector(".ico").textContent = unlimited ? "1D" : "∞";
-    tog.title = unlimited ? "Back to the daily" : "Unlimited mode";
+    if (unlimited) meta.textContent = "Endless mode · random coin, replay forever.";
+    else if (isArchive()) meta.textContent = "Archive run — your streak is safe.";
+    else meta.textContent = "Guess the memecoin in " + MAX_GUESSES + " tries.";
   }
 
   function renderStreak() {
     var pill = $("streak-pill");
     var st = loadStats(modeId);
     var d = dayNumber();
-    if (!unlimited && st && st.streak > 0 && (st.lastWinDay === d || st.lastWinDay === d - 1)) {
-      pill.textContent = "🔥 " + st.streak;
+    if (st && st.streak > 0 && (st.lastWinDay === d || st.lastWinDay === d - 1)) {
+      pill.textContent = "🔥 " + st.streak + " day streak";
       pill.classList.remove("hidden");
     } else {
       pill.classList.add("hidden");
@@ -550,14 +537,29 @@
   var lastBlur = null;
   function renderStage() {
     var stage = $("stage");
-    var kind = MODE_BY_ID[modeId].kind;
-    if (kind !== "stage") { stage.classList.add("hidden"); clear(stage); return; }
-    stage.classList.remove("hidden");
     clear(stage);
+    stage.classList.remove("burst");
+    var kind = MODE_BY_ID[modeId].kind;
     var lvl = revealLevel();
 
+    if (kind === "grid") {
+      // classic has no image to show, so the panel gets the mystery coin
+      stage.classList.add("burst");
+      if (done) {
+        var solved = logoImg(target, "");
+        solved.style.cssText = "position:relative;width:108px;height:108px;border-radius:50%;border:5px solid var(--ink);object-fit:cover";
+        stage.appendChild(solved);
+        stage.appendChild(el("div", "stage-cap", won ? "Called it." : "It was $" + target.t + "."));
+      } else {
+        var coin = el("div", "mystery");
+        coin.appendChild(el("span", null, "?"));
+        stage.appendChild(coin);
+        stage.appendChild(el("div", "stage-cap", "Who is today's coin?"));
+      }
+      return;
+    }
+
     if (modeId === "blur") {
-      var wrap = el("div", "blur-wrap");
       var img = logoImg(target, "blur-img");
       img.removeAttribute("loading");
       var to = done
@@ -577,16 +579,14 @@
       lastBlur = done ? null : lvl;
       var frame = el("div", "blur-frame");
       frame.appendChild(img);
-      wrap.appendChild(frame);
-      wrap.appendChild(el("div", "blur-note", done ? "there it is." : "sharpens with every miss"));
-      stage.appendChild(wrap);
+      stage.appendChild(frame);
+      stage.appendChild(el("div", "blur-note", done ? "There it is." : "Sharpens with every miss"));
 
     } else if (modeId === "lore") {
       var card = el("div", "lore-card");
       card.appendChild(el("span", "lore-mark", "“"));
       var q = el("p", "lore-quote");
-      var parts = loreParts(target);
-      parts.forEach(function (piece, i) {
+      loreParts(target).forEach(function (piece, i) {
         if (!piece) return;
         if (i % 2 === 1 && !done) {
           var r = el("span", "redacted", piece);
@@ -603,9 +603,8 @@
 
   function renderClues() {
     var strip = $("clue-strip");
-    if (MODE_BY_ID[modeId].kind !== "stage") { strip.classList.add("hidden"); clear(strip); return; }
+    if (MODE_BY_ID[modeId].kind !== "stage" || done) { strip.classList.add("hidden"); clear(strip); return; }
     var n = Math.min(wrongCount(), CLUES.length);
-    if (done) n = 0;
     if (n === 0) { strip.classList.add("hidden"); clear(strip); return; }
     strip.classList.remove("hidden");
     clear(strip);
@@ -620,11 +619,9 @@
 
   // ──────────────── board ────────────────
   function renderBoard(animateLast) {
-    var board = $("board");
-    var head = $("col-head");
+    var board = $("board"), head = $("col-head");
     var isGrid = MODE_BY_ID[modeId].kind === "grid";
-    clear(board);
-    clear(head);
+    clear(board); clear(head);
 
     if (isGrid && guesses.length > 0) {
       head.classList.remove("hidden");
@@ -635,15 +632,11 @@
     }
 
     if (guesses.length === 0 && !done) {
-      var note = el("div", "empty-note");
-      note.appendChild(el("div", "empty-big", COINS.length + " coins are in play"));
-      note.appendChild(el("div", "empty-sub", isGrid
-        ? "From $DOGE in 2013 to this summer's trenches. The majors make good openers."
+      board.appendChild(el("div", "empty-note", isGrid
+        ? COINS.length + " coins are in play. The majors make good openers."
         : "Every miss hands you one more clue. Spend them wisely."));
-      board.appendChild(note);
     } else if (isGrid) {
       guesses.forEach(function (coin, gi) {
-        var cells = grade(coin, target);
         var row = el("div", "guess-row");
         var isLast = gi === guesses.length - 1;
         var label = el("div", "coin-label");
@@ -654,13 +647,13 @@
         label.title = coin.n + " ($" + coin.t + ")";
         label.appendChild(nw);
         row.appendChild(label);
-        cells.forEach(function (cell, ci) {
+        grade(coin, target).forEach(function (cell, ci) {
           var tile = el("div", "tile s-" + cell.s);
           tile.appendChild(el("span", "tile-val", cell.v));
           if (cell.d) tile.appendChild(el("span", "tile-dir", cell.d === "up" ? "▲" : "▼"));
           if (animateLast && isLast) {
             tile.classList.add("flip");
-            tile.style.animationDelay = (ci * 0.2) + "s";
+            tile.style.animationDelay = (ci * 0.18) + "s";
           }
           row.appendChild(tile);
         });
@@ -668,7 +661,7 @@
       });
     } else {
       guesses.forEach(function (coin) {
-        if (coin.n === target.n) return;   // the winning guess shows up in the reveal
+        if (coin.n === target.n) return;   // the winning guess shows in the reveal
         var row = el("div", "miss-row");
         row.appendChild(logoImg(coin, "coin-logo"));
         row.appendChild(el("span", "miss-name", coin.n + " · $" + coin.t));
@@ -679,12 +672,10 @@
 
     var pips = $("pips");
     clear(pips);
-    if (!done) {
-      pips.setAttribute("aria-label", (MAX_GUESSES - guesses.length) + " guesses left");
-      for (var i = 0; i < MAX_GUESSES; i++) {
-        pips.appendChild(el("span", "pip" + (i < guesses.length ? " used" : "")));
-      }
+    for (var i = 0; i < MAX_GUESSES; i++) {
+      pips.appendChild(el("span", "pip" + (i < guesses.length ? " used" : "")));
     }
+    pips.setAttribute("aria-label", (MAX_GUESSES - guesses.length) + " guesses left");
   }
 
   // ──────────────── hint (classic daily only) ────────────────
@@ -701,7 +692,7 @@
       return;
     }
     if (done || guesses.length < 1) return;
-    var btn = el("button", "hint-btn", "hint (1)");
+    var btn = el("button", "hint-btn", "💡 hint (1)");
     btn.addEventListener("click", function () {
       var solved = {};
       guesses.forEach(function (c) {
@@ -717,8 +708,10 @@
   }
 
   function renderAll(animateLast) {
-    renderMeta();
-    renderTabs();
+    renderPanelChrome();
+    renderModeRail();
+    renderYesterday();
+    renderPills();
     renderStage();
     renderBoard(animateLast);
     renderClues();
@@ -735,12 +728,12 @@
       if (reducedMotion()) return;
       var cv = $("confetti"), ctx = cv.getContext("2d");
       cv.width = window.innerWidth; cv.height = window.innerHeight;
-      var colors = ["#45CE7D", "#45CE7D", "#FFCE3A", "#FF8FD2", "#4C8DF6", "#F4635A"];
+      var colors = ["#4FD16B", "#FFD93B", "#FF7BC4", "#B08BF0", "#F4635A"];
       var parts = [];
       for (var i = 0; i < 96; i++) {
         parts.push({
           x: Math.random() * cv.width, y: -30 - Math.random() * cv.height * 0.4,
-          w: 5 + Math.random() * 5, h: 5 + Math.random() * 10,
+          w: 6 + Math.random() * 5, h: 6 + Math.random() * 9,
           v: 2.6 + Math.random() * 4.2, r: Math.random() * Math.PI,
           vr: (Math.random() - 0.5) * 0.26,
           c: colors[Math.floor(Math.random() * colors.length)]
@@ -755,7 +748,7 @@
           ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r);
           ctx.fillStyle = p.c;
           ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
-          ctx.strokeStyle = "rgba(36,31,51,.55)"; ctx.lineWidth = 1;
+          ctx.strokeStyle = "#2B2C4B"; ctx.lineWidth = 2;
           ctx.strokeRect(-p.w / 2, -p.h / 2, p.w, p.h);
           ctx.restore();
         });
@@ -796,6 +789,10 @@
       list.appendChild(item);
     });
   }
+  function submitTyped() {
+    var m = acMatches($("guess-input").value);
+    if (m.length) submitGuess(m[acIndex >= 0 ? acIndex : 0]);
+  }
 
   function submitGuess(coin) {
     if (done || guesses.length >= MAX_GUESSES) return;
@@ -810,10 +807,12 @@
     saveDaily();
     renderAll(true);
     if (done) {
-      var delay = MODE_BY_ID[modeId].kind === "grid" ? 5 * 200 + 460 : 520;
-      if (won) setTimeout(confettiBurst, Math.max(0, delay - 380));
+      $("guess-input").disabled = true;
+      $("btn-go").disabled = true;
+      var delay = MODE_BY_ID[modeId].kind === "grid" ? 5 * 180 + 420 : 500;
+      if (won) setTimeout(confettiBurst, Math.max(0, delay - 360));
       setTimeout(openReveal, delay);
-      if (typeof LB !== "undefined") LB.report(modeId, won, guesses.length, dayNumber(), hintAxis >= 0);
+      if (typeof LB !== "undefined" && !isArchive()) LB.report(modeId, won, guesses.length, dayNumber(), hintAxis >= 0);
     } else {
       $("guess-input").focus();
     }
@@ -823,19 +822,13 @@
   function shareText() {
     var m = MODE_BY_ID[modeId];
     var score = (won ? guesses.length : "X") + "/" + MAX_GUESSES;
-    var head = unlimited
-      ? "Memedle " + m.name + " · unlimited · " + score
-      : "Memedle " + m.name + " #" + (dayNumber() + 1) + " · " + score;
+    var head = unlimited ? "Memedle " + m.name + " · endless · " + score
+      : "Memedle " + m.name + " #" + (playDay + 1) + " · " + score;
     if (hintAxis >= 0 && modeId === "classic" && !unlimited) head += " 💡";
     var SQ = squares();
-    var rows;
-    if (m.kind === "grid") {
-      rows = guesses.map(function (c) {
-        return grade(c, target).map(function (cell) { return SQ[cell.s]; }).join("");
-      });
-    } else {
-      rows = [guesses.map(function (c) { return c.n === target.n ? SQ.g : SQ.x; }).join("")];
-    }
+    var rows = m.kind === "grid"
+      ? guesses.map(function (c) { return grade(c, target).map(function (cell) { return SQ[cell.s]; }).join(""); })
+      : [guesses.map(function (c) { return c.n === target.n ? SQ.g : SQ.x; }).join("")];
     return head + "\n\n" + rows.join("\n") + "\n\n" + SITE_URL;
   }
   function copyShare(btn) {
@@ -847,9 +840,8 @@
       try { document.execCommand("copy"); } catch (e) {}
       document.body.removeChild(ta);
     }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(txt).catch(fallback);
-    } else fallback();
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).catch(fallback);
+    else fallback();
     var old = btn.textContent;
     btn.textContent = "copied ✓";
     setTimeout(function () { btn.textContent = old; }, 1600);
@@ -863,7 +855,6 @@
     });
     if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   }
-
   function countdownStr() {
     var now = new Date();
     var next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
@@ -876,11 +867,10 @@
   function openReveal() {
     var box = $("reveal-body");
     clear(box);
-    var verdict = won
-      ? ["You were early.", "Got it in " + guesses.length + "/" + MAX_GUESSES + "."]
-      : ["Rugged.", "The coin walks free."];
-    box.appendChild(el("div", "reveal-verdict " + (won ? "win" : "lose"), verdict[0]));
-    box.appendChild(el("div", "reveal-sub", verdict[1]));
+    box.appendChild(el("div", "reveal-verdict " + (won ? "win" : "lose"), won ? "You were early." : "Rugged."));
+    box.appendChild(el("div", "reveal-sub", won
+      ? "Got it in " + guesses.length + "/" + MAX_GUESSES + "."
+      : "The coin walks free."));
 
     var card = el("div", "coin-card");
     var title = el("div", "coin-card-title");
@@ -923,7 +913,7 @@
     box.appendChild(card);
 
     var row = el("div", "btn-row");
-    var share = el("button", "btn btn-primary", "share result");
+    var share = el("button", "btn btn-primary", "share");
     share.addEventListener("click", function () { copyShare(share); });
     row.appendChild(share);
 
@@ -933,26 +923,28 @@
       row.appendChild(again);
       box.appendChild(row);
     } else {
-      var nextMode = null;
+      var next = null;
       for (var i = 0; i < MODES.length; i++) {
         var s = dayStatusFor(MODES[i].id);
-        if (MODES[i].id !== modeId && !(s && s.done)) { nextMode = MODES[i]; break; }
+        if (MODES[i].id !== modeId && !(s && s.done)) { next = MODES[i]; break; }
       }
-      if (nextMode) {
-        var nm = el("button", "btn", "play " + nextMode.name.toLowerCase() + " →");
-        nm.addEventListener("click", function () { closeModals(); location.hash = "#/" + nextMode.id; });
+      if (next) {
+        var nm = el("button", "btn", "play " + next.name);
+        nm.addEventListener("click", function () { closeModals(); location.hash = "#/" + next.id; });
         row.appendChild(nm);
       } else {
-        var inf = el("button", "btn", "unlimited ∞");
+        var inf = el("button", "btn", "endless ∞");
         inf.addEventListener("click", function () { closeModals(); location.hash = "#/" + modeId + "/unlimited"; });
         row.appendChild(inf);
       }
       box.appendChild(row);
-      box.appendChild(el("div", "countdown-label", "next daily in"));
-      var cd = el("div", "countdown", countdownStr());
-      box.appendChild(cd);
-      if (countdownTimer) clearInterval(countdownTimer);
-      countdownTimer = setInterval(function () { cd.textContent = countdownStr(); }, 1000);
+      if (!isArchive()) {
+        box.appendChild(el("div", "countdown-label", "next daily in"));
+        var cd = el("div", "countdown", countdownStr());
+        box.appendChild(cd);
+        if (countdownTimer) clearInterval(countdownTimer);
+        countdownTimer = setInterval(function () { cd.textContent = countdownStr(); }, 1000);
+      }
     }
     openModal("modal-reveal");
   }
@@ -983,23 +975,85 @@
       tabs.appendChild(b);
     });
   }
-  function openStats() {
-    statsMode = view === "game" ? modeId : "classic";
-    renderStats();
-    openModal("modal-stats");
+  function openStats() { statsMode = modeId; renderStats(); openModal("modal-stats"); }
+
+  function openArchive() {
+    var box = $("archive-body");
+    clear(box);
+    var today = dayNumber();
+    var rows = 0;
+    for (var d = today - 1; d >= 0 && rows < 60; d--) {
+      MODES.forEach(function (m) {
+        var st = loadDay(m.id, d);
+        var btn = el("button", "arch-row");
+        btn.appendChild(el("span", "arch-day", "#" + (d + 1)));
+        btn.appendChild(el("span", "arch-mode", m.name));
+        btn.appendChild(el("span", "arch-state", st && st.done ? (st.won ? "✓ " + st.n + "/6" : "✕") : "play →"));
+        btn.addEventListener("click", function () {
+          closeModals();
+          location.hash = "#/" + m.id + "/d" + d;
+        });
+        box.appendChild(btn);
+      });
+      rows++;
+    }
+    if (!rows) box.appendChild(el("p", "lb-empty", "No past puzzles yet — come back tomorrow."));
+    openModal("modal-archive");
+  }
+
+  function renderHelpModes() {
+    var box = $("help-modes");
+    if (!box) return;
+    clear(box);
+    MODES.forEach(function (m) {
+      var row = el("div", "help-mode");
+      row.appendChild(logoByTicker(m.icon, "help-mode-ico"));
+      row.appendChild(el("span", "help-mode-name", m.name));
+      row.appendChild(el("span", "help-mode-desc", m.blurb));
+      box.appendChild(row);
+    });
+  }
+
+  // ──────────────── socials ────────────────
+  var SOCIAL_ICON = {
+    x: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>'
+  };
+  function renderSocial() {
+    var row = $("social-row");
+    if (!row) return;
+    clear(row);
+    SOCIAL.forEach(function (s) {
+      var live = !!s.url;
+      var node = document.createElement(live ? "a" : "button");
+      node.className = "social-btn" + (live ? "" : " soon");
+      node.innerHTML = SOCIAL_ICON[s.id] || "";
+      if (live) {
+        node.href = s.url; node.target = "_blank"; node.rel = "noopener";
+        node.title = s.label; node.setAttribute("aria-label", s.label);
+      } else {
+        node.type = "button";
+        node.title = s.label + " — coming soon";
+        node.setAttribute("aria-label", s.label + ", coming soon");
+        node.appendChild(el("span", "soon-tag", "soon"));
+        node.addEventListener("click", function () {
+          node.classList.add("nudge");
+          setTimeout(function () { node.classList.remove("nudge"); }, 400);
+        });
+      }
+      row.appendChild(node);
+    });
   }
 
   // ──────────────── start / route ────────────────
   function startGame() {
     var input = $("guess-input");
-    guesses = []; done = false; won = false; hintAxis = -1;
-    lastBlur = null;
+    guesses = []; done = false; won = false; hintAxis = -1; lastBlur = null;
 
     if (unlimited) {
       target = randomCoin(target ? target.n : null);
     } else {
-      target = dailyCoin(modeId, dayNumber());
-      var saved = loadDay(modeId, dayNumber());
+      target = dailyCoin(modeId, playDay);
+      var saved = loadDay(modeId, playDay);
       if (saved && Array.isArray(saved.g)) {
         var byName = {};
         COINS.forEach(function (c) { byName[c.n] = c; });
@@ -1010,35 +1064,26 @@
     }
 
     input.disabled = done;
+    $("btn-go").disabled = done;
     input.value = "";
-    input.placeholder = done ? "come back tomorrow" : "name or ticker…";
+    input.placeholder = done ? "Come back tomorrow" : "Type a memecoin…";
     renderAll(false);
     if (done) setTimeout(openReveal, 320);
     else if (!("ontouchstart" in window)) input.focus();
   }
 
-  function parseHash() {
+  function route() {
     var h = (location.hash || "").replace(/^#\/?/, "");
     var parts = h.split("/").filter(Boolean);
-    return { mode: parts[0] || null, unlimited: parts[1] === "unlimited" };
-  }
-
-  function route() {
-    var p = parseHash();
-    closeModals();
-    if (p.mode && MODE_BY_ID[p.mode]) {
-      view = "game";
-      modeId = p.mode;
-      unlimited = p.unlimited;
-      $("view-home").classList.add("hidden");
-      $("view-game").classList.remove("hidden");
-      startGame();
-    } else {
-      view = "home";
-      $("view-game").classList.add("hidden");
-      $("view-home").classList.remove("hidden");
-      renderHome();
+    modeId = MODE_BY_ID[parts[0]] ? parts[0] : "classic";
+    unlimited = parts[1] === "unlimited";
+    playDay = dayNumber();
+    if (parts[1] && /^d\d+$/.test(parts[1])) {
+      var d = parseInt(parts[1].slice(1), 10);
+      if (d >= 0 && d <= dayNumber()) playDay = d;
     }
+    closeModals();
+    startGame();
     window.scrollTo(0, 0);
   }
 
@@ -1047,28 +1092,22 @@
     if (!box) return;
     box.checked = lsGet(key) === "1";
     document.body.classList.toggle(cls, box.checked);
+    box.setAttribute("data-sync", key);
     box.addEventListener("change", function () {
       document.body.classList.toggle(cls, box.checked);
       lsSet(key, box.checked ? "1" : "0");
-      // keep the twin checkbox in the other modal in sync
       Array.prototype.forEach.call(document.querySelectorAll('input[data-sync="' + key + '"]'), function (o) {
         if (o !== box) o.checked = box.checked;
       });
-      if (view === "game") renderAll(false);
+      renderAll(false);
     });
-    box.setAttribute("data-sync", key);
   }
 
   function init() {
     migrate();
-
     $("brand-slot").innerHTML = brandSVG("a");
-    $("brand-slot-sm").innerHTML = brandSVG("b");
-    buildClouds();
-    buildCrowd();
-    buildFloaters();
-    renderSocial();
-    renderHelpModes();
+    buildClouds(); buildCrowd(); buildFloaters();
+    renderHelpModes(); renderSocial();
 
     var input = $("guess-input");
     input.addEventListener("input", function () { acIndex = -1; renderAC(); });
@@ -1076,34 +1115,26 @@
       var m = acMatches(input.value);
       if (ev.key === "ArrowDown") { ev.preventDefault(); if (m.length) { acIndex = (acIndex + 1) % m.length; renderAC(); } }
       else if (ev.key === "ArrowUp") { ev.preventDefault(); if (m.length) { acIndex = (acIndex - 1 + m.length) % m.length; renderAC(); } }
-      else if (ev.key === "Enter") {
-        ev.preventDefault();
-        if (m.length) submitGuess(m[acIndex >= 0 ? acIndex : 0]);
-      } else if (ev.key === "Escape") { input.value = ""; renderAC(); }
+      else if (ev.key === "Enter") { ev.preventDefault(); submitTyped(); }
+      else if (ev.key === "Escape") { input.value = ""; renderAC(); }
     });
     input.addEventListener("blur", function () {
       setTimeout(function () { $("ac-list").classList.add("hidden"); }, 150);
     });
     input.addEventListener("focus", renderAC);
+    $("btn-go").addEventListener("click", function () { submitTyped(); input.focus(); });
 
     $("btn-help").addEventListener("click", function () { openModal("modal-help"); });
+    $("btn-help-2").addEventListener("click", function () { openModal("modal-help"); });
     $("btn-settings").addEventListener("click", function () { openModal("modal-settings"); });
-    $("btn-settings-2").addEventListener("click", function () { openModal("modal-settings"); });
-    $("btn-stats").addEventListener("click", openStats);
-    $("btn-lb").addEventListener("click", function () { LB.open(dayNumber()); });
-    $("btn-mode-toggle").addEventListener("click", function () {
-      location.hash = "#/" + modeId + (unlimited ? "" : "/unlimited");
-    });
 
     Array.prototype.forEach.call(document.querySelectorAll("[data-go]"), function (b) {
       b.addEventListener("click", function () {
         var go = b.getAttribute("data-go");
-        if (go === "unlimited") location.hash = "#/classic/unlimited";
-        else if (go === "stats") openStats();
+        if (go === "stats") openStats();
         else if (go === "board") LB.open(dayNumber());
       });
     });
-
     Array.prototype.forEach.call(document.querySelectorAll("[data-close]"), function (b) {
       b.addEventListener("click", closeModals);
     });
@@ -1120,10 +1151,7 @@
       if (b.getAttribute("data-armed") !== "1") {
         b.setAttribute("data-armed", "1");
         b.textContent = "tap again to confirm";
-        setTimeout(function () {
-          b.removeAttribute("data-armed");
-          b.textContent = "Erase my record";
-        }, 4000);
+        setTimeout(function () { b.removeAttribute("data-armed"); b.textContent = "Erase my record"; }, 4000);
         return;
       }
       try {

@@ -4,22 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Memedle — daily memecoin guessing game</title>
-<meta name="description" content="Guess the memecoin of the day. Four modes: clues, a blurry logo, one cursed sentence, or just the chart. New puzzles every day.">
+<meta name="description" content="Guess the memecoin of the day. Three modes: clues, a blurry logo, or one unhinged sentence. New puzzles every day.">
 <meta property="og:title" content="Memedle">
-<meta property="og:description" content="Daily guess a memecoin. Four modes. Were you there?">
+<meta property="og:description" content="Daily guess a memecoin. Three modes. Were you there?">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪙</text></svg>">
-<meta name="theme-color" content="#7EC8EC">
+<meta name="theme-color" content="#5CC0F0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Silkscreen:wght@400;700&family=DotGothic16&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=a24e8f2b">
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Jersey+15&family=DotGothic16&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=f5d8b82b">
 </head>
 <body>
 
 <div class="sky" aria-hidden="true">
   <div class="sun"></div>
-  <div class="rays"></div>
   <div class="clouds" id="clouds"></div>
   <div class="floaters" id="floaters"></div>
 </div>
@@ -27,82 +26,95 @@
 
 <div class="app">
 
-<!-- ===================== HOME ===================== -->
-<section id="view-home" class="view">
-  <header class="home-head">
-    <button class="ico-btn" id="btn-settings" title="Settings" aria-label="Settings"><span class="ico">⚙</span></button>
+  <header class="topbar">
+    <div class="topbar-side left">
+      <span id="streak-pill" class="streak-pill hidden"></span>
+    </div>
     <h1 class="brand" id="brand-slot"></h1>
-    <button class="ico-btn" id="btn-help" title="How to play" aria-label="How to play"><span class="ico">?</span></button>
+    <div class="topbar-side right">
+      <button class="ico-btn" id="btn-help" title="How to play" aria-label="How to play"><span class="ico">?</span></button>
+      <button class="ico-btn" id="btn-settings" title="Settings" aria-label="Settings"><span class="ico">⚙</span></button>
+    </div>
   </header>
 
   <p class="tagline">Daily guess a memecoin!</p>
 
-  <nav class="mode-list" id="mode-list" aria-label="Game modes"></nav>
+  <div class="layout">
 
-  <div class="night-panel">
-    <p class="night-title">Want more?</p>
-    <p class="night-sub">No cooldown, no mercy:</p>
-    <div class="night-links">
-      <button class="night-link" data-go="unlimited"><span class="nl-ico">∞</span><span class="nl-label">Unlimited</span></button>
-      <button class="night-link" data-go="stats"><span class="nl-ico">📊</span><span class="nl-label">Stats</span></button>
-      <button class="night-link" data-go="board"><span class="nl-ico">🏆</span><span class="nl-label">Board</span></button>
-      <a class="night-link" href="https://memecoin.wiki" target="_blank" rel="noopener"><span class="nl-ico">📖</span><span class="nl-label">The wiki</span></a>
-    </div>
+    <!-- ── left rail: mode switcher ── -->
+    <aside class="col col-left">
+      <nav class="mode-list" id="mode-list" aria-label="Game modes"></nav>
+    </aside>
+
+    <!-- ── centre: the live game ── -->
+    <main class="col col-mid">
+      <section class="panel game-panel">
+        <div class="panel-bar">
+          <h2 class="panel-title" id="game-title">Day #1 · Classic</h2>
+          <span class="panel-badge" id="panel-badge">6/6</span>
+        </div>
+        <div class="panel-body">
+
+          <div id="stage" class="stage"></div>
+
+          <p class="game-meta" id="game-meta"></p>
+
+          <div class="input-wrap">
+            <input id="guess-input" type="text" autocomplete="off" autocapitalize="off"
+                   spellcheck="false" placeholder="Type a memecoin…" aria-label="Guess a memecoin">
+            <button class="go-btn" id="btn-go" aria-label="Submit guess">→</button>
+            <div id="ac-list" class="ac-list hidden" role="listbox"></div>
+          </div>
+
+          <div id="pips" class="pips" aria-live="polite"></div>
+          <div id="hint-area" class="hint-area"></div>
+          <div id="clue-strip" class="clue-strip hidden"></div>
+
+          <div id="col-head" class="col-head hidden"></div>
+          <div id="board" class="board" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ── right rail: yesterday + rules ── -->
+    <aside class="col col-right">
+      <section class="panel panel-pink">
+        <div class="panel-bar">
+          <span class="bar-ico">🏆</span>
+          <h2 class="panel-title">Yesterday</h2>
+        </div>
+        <div class="panel-body" id="yesterday-body"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-bar dark">
+          <span class="bar-ico">🎮</span>
+          <h2 class="panel-title">How to play</h2>
+        </div>
+        <div class="panel-body">
+          <ul class="rule-list">
+            <li><span class="tick">✓</span> 6 guesses</li>
+            <li><span class="tick">✓</span> Use meme knowledge</li>
+            <li><span class="tick">✓</span> Guess the memecoin</li>
+          </ul>
+          <button class="degen-chip" id="btn-help-2">🏆 Think like a degen.</button>
+        </div>
+      </section>
+    </aside>
   </div>
 
-  <div class="social-row" id="social-row"></div>
-
-  <footer class="site-foot">
-    <p class="foot-strong">memedle · 2026</p>
-    <p>An unofficial fan game. Coin lore via <a href="https://memecoin.wiki" target="_blank" rel="noopener">memecoin.wiki</a>.</p>
-    <p>Nothing here is financial advice. Several of these coins are crime scenes.</p>
-  </footer>
-</section>
-
-<!-- ===================== GAME ===================== -->
-<section id="view-game" class="view hidden">
-  <header class="game-head">
-    <a class="ico-btn" href="#/" title="Home" aria-label="Home"><span class="ico">◂</span></a>
-    <a class="brand brand-sm" href="#/" id="brand-slot-sm" aria-label="Memedle home"></a>
-    <button class="ico-btn" id="btn-settings-2" title="Settings" aria-label="Settings"><span class="ico">⚙</span></button>
-  </header>
-
-  <nav class="mode-tabs" id="mode-tabs" aria-label="Switch mode"></nav>
-
-  <div class="panel game-panel">
-    <div class="panel-head">
-      <div class="ph-left">
-        <h2 class="game-title" id="game-title">Classic</h2>
-        <p class="game-meta" id="game-meta"></p>
-      </div>
-      <div class="ph-right">
-        <span id="streak-pill" class="streak-pill hidden" title="Daily streak"></span>
-        <button class="ico-btn sm" id="btn-mode-toggle" title="Unlimited mode" aria-label="Unlimited mode"><span class="ico">∞</span></button>
-        <button class="ico-btn sm" id="btn-stats" title="Stats" aria-label="Stats"><span class="ico">📊</span></button>
-        <button class="ico-btn sm" id="btn-lb" title="Leaderboard" aria-label="Leaderboard"><span class="ico">🏆</span></button>
-      </div>
-    </div>
-
-    <div id="stage" class="stage hidden"></div>
-
-    <div class="input-wrap">
-      <input id="guess-input" type="text" autocomplete="off" autocapitalize="off"
-             spellcheck="false" placeholder="name or ticker…" aria-label="Guess a memecoin">
-      <div id="ac-list" class="ac-list hidden" role="listbox"></div>
-    </div>
-
-    <div id="pips" class="pips" aria-live="polite"></div>
-    <div id="hint-area" class="hint-area"></div>
-    <div id="clue-strip" class="clue-strip hidden"></div>
-
-    <div id="col-head" class="col-head hidden"></div>
-    <div id="board" class="board" aria-live="polite"></div>
-  </div>
-
-  <footer class="site-foot game-foot">
-    <p>An unofficial fan game · lore via <a href="https://memecoin.wiki" target="_blank" rel="noopener">memecoin.wiki</a></p>
-  </footer>
-</section>
+  <!-- ── more memedle ── -->
+  <section class="more">
+    <h2 class="more-title"><span class="spark">✦</span> More Memedle <span class="spark">✦</span></h2>
+    <div class="pill-row" id="pill-row"></div>
+    <p class="text-links">
+      <button data-go="stats">Stats</button><span>·</span>
+      <button data-go="board">Leaderboard</button><span>·</span>
+      <a href="https://memecoin.wiki" target="_blank" rel="noopener">Meme Wiki</a>
+    </p>
+    <div class="social-row" id="social-row"></div>
+    <p class="fineprint">An unofficial fan game · lore via memecoin.wiki · not financial advice</p>
+  </section>
 
 </div><!-- /.app -->
 
@@ -112,7 +124,7 @@
     <div class="crowd-row" data-band="1"></div>
     <div class="crowd-row" data-band="2"></div>
   </div>
-  <div class="ground"></div>
+  <div class="ground"><div class="dirt"></div></div>
 </div>
 
 <!-- ===================== MODALS ===================== -->
@@ -167,6 +179,15 @@
   </div>
 </div>
 
+<div id="modal-archive" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="arch-h">
+  <div class="modal">
+    <button class="modal-close" data-close aria-label="Close">✕</button>
+    <h2 id="arch-h">Archive</h2>
+    <p class="fine">Every puzzle you've missed. Playing one won't touch your streak.</p>
+    <div id="archive-body" class="archive-body"></div>
+  </div>
+</div>
+
 <div id="modal-reveal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
   <div class="modal">
     <button class="modal-close" data-close aria-label="Close">✕</button>
@@ -182,10 +203,10 @@
   </div>
 </div>
 
-<script src="data.js?v=a24e8f2b"></script>
-<script src="cutouts.js?v=a24e8f2b"></script>
-<script src="logos.js?v=a24e8f2b"></script>
-<script src="lb.js?v=a24e8f2b"></script>
-<script src="game.js?v=a24e8f2b"></script>
+<script src="data.js?v=f5d8b82b"></script>
+<script src="logos.js?v=f5d8b82b"></script>
+<script src="cutouts.js?v=f5d8b82b"></script>
+<script src="lb.js?v=f5d8b82b"></script>
+<script src="game.js?v=f5d8b82b"></script>
 </body>
 </html>

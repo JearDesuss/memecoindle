@@ -4,7 +4,7 @@ Zero-dependency static site. No build step, no framework, no bundler. Four
 scripts loaded in order; everything else is optional.
 
 ```
-index.html      home menu + game shell + modals (help/settings/stats/reveal/board)
+index.html      the whole dashboard + modals (help/settings/stats/archive/reveal/board)
 style.css       the whole design system (tokens up top in :root)
 data.js         the item list — 151 coins + enums + tier functions
 logos.js        generated manifest: ticker -> img/<TICKER>.png
@@ -18,18 +18,31 @@ tools/          dev scripts (fetch/resize logos, schedule, artifact build)
 test/           CDP end-to-end test
 ```
 
+## Layout
+
+One screen, no home/game split: a three-column dashboard over the overworld.
+Left rail switches mode, centre is the live board, right rail carries Yesterday
+and the rules. Below it sits "More Memedle" (the other modes, Endless, Archive)
+and the text links. At 1040px the right rail drops to a full-width row; at 760px
+everything stacks with the board ordered first, since that is what you came for.
+
 ## Routing
 
-A hash router, so GitHub Pages needs no rewrite rules:
+A hash router, so static hosting needs no rewrite rules:
 
-| hash | view |
-|------|------|
-| `#/` (or empty) | home menu |
-| `#/<mode>` | that mode's daily |
+| hash | board |
+|------|-------|
+| `#/` (or empty, or anything unknown) | classic, today |
+| `#/<mode>` | that mode, today |
 | `#/<mode>/unlimited` | that mode, endless random coins |
+| `#/<mode>/d<N>` | that mode, archived puzzle N |
 
-`route()` runs on load and on `hashchange`, swaps `#view-home` / `#view-game`,
-and closes any open modal. Modes are declared once in the `MODES` array in
+`route()` runs on load and on `hashchange`, rebuilds the board in place, and
+closes any open modal.
+
+Archive runs write their own `md_day_<mode>_<N>` progress but `recordResult()`
+skips them, so replaying an old puzzle can never inflate or break a streak.
+This is asserted in the test suite. Modes are declared once in the `MODES` array in
 game.js — id, display name, icon, blurb, shuffle seed, and `kind`.
 
 ## The three modes
@@ -104,6 +117,7 @@ All localStorage, versioned keys:
 - `md_day_<mode>_<day>` — `{g: [names], done, won, h: hintAxis}`
 - `md_stats_v1_<mode>` — played/wins/streak/maxStreak/dist, one record per day
 - `md_cb` (colourblind), `md_seen`, `md_migrated_v1`
+- archive runs share the `md_day_*` keys but never touch `md_stats_v1_*`
 - `mcdl_name`, `mcdl_cid`, `mcdl_lb_pending` — leaderboard client
 
 `migrate()` runs once and copies the pre-Memedle `mcdl_stats_v1` and the last
@@ -113,15 +127,20 @@ their streak and today's in-progress board.
 ## Design system
 
 Tokens in `:root` of style.css. Identity: a bright pixel-arcade overworld —
-sky gradient with drifting shaded-SVG pixel clouds, cream panels with a 2px
-ink border and a hard `0 4px 0` shadow that collapses on `:active`, a grass
-band that flexes to fill whatever the content doesn't, and a crowd of real coin
-logos standing in it. Luckiest Guy for the logo (layered SVG strokes),
-Silkscreen for shouty labels, DotGothic16 for sentences and data, all with
-system fallbacks so the offline build still reads. Pixelify Sans was the first
-choice and had to go: its C, G and 2 are closed circles, so CLASSIC rendered as
-"OLASSIO" and 2026 as "8026" — verified by rendering eight candidate faces side
-by side. Bull green / bear red stay reserved for market semantics. Colourblind
+sky gradient with drifting outlined pixel clouds, cream panels with a 4px ink
+border, a coloured header bar and a hard `0 6px 0` shadow that collapses on
+`:active`, a grass-and-dirt band that flexes to fill whatever the content
+doesn't, and a crowd of real coin logos standing in it. Every surface shares one
+near-black outline (`--ink`) so the page reads as a single sprite sheet. Luckiest Guy for the logo (layered SVG strokes),
+Jersey 15 for labels, DotGothic16 for sentences and data, all with system
+fallbacks so the offline build still reads.
+
+Two faces were tried and rejected on legibility, both caught by rendering the
+real strings rather than a pangram: **Pixelify Sans** closes its C, G and 2, so
+CLASSIC rendered as "OLASSIO" and 2026 as "8026". **Silkscreen** drops the
+middle vertex of its M, so MEMEDLE rendered as "HEHEDLE" and the section
+heading as "HORE HEHEDLE". If you ever swap the label face again, render
+`MEMEDLE · MORE MEMEDLE · CLASSIC · DAY #2` in it first. Bull green / bear red stay reserved for market semantics. Colourblind
 mode (`body.cb`) swaps green/red for blue/orange everywhere including the share
 squares. Motion respects the OS `prefers-reduced-motion` setting; there is no
 in-app motion toggle.
@@ -185,4 +204,4 @@ node 22+ for native WebSocket): serve the repo on :8471, run Chrome with
 mode's answer independently, then checks the home menu, every route, a full
 Classic win (grading, reveal, persistence, stats), each stage mode's puzzle and
 clue ladder, unlimited mode, and the colourblind toggle — failing on any page
-error. 45 checks.
+error. 51 checks.

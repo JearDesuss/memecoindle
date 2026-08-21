@@ -2,7 +2,7 @@
 
 **Play: https://jeardesuss.github.io/memecoindle/**
 
-Guess the memecoin of the day — three ways. 151 coins, from $DOGE
+Guess the memecoin of the day — three ways, on one screen. 151 coins, from $DOGE
 in 2013 to whatever rotated on pump.fun this summer. Six tries each, a fresh
 coin per mode every day, and a spoiler-free share grid at the end.
 
@@ -19,7 +19,9 @@ crime scenes.
 
 ## Features
 
+- One dashboard: mode rail, live board, yesterday's answer and the rules
 - Three daily puzzles, one per mode, deterministic with no server
+- Archive: replay any past puzzle without risking your streak
 - Six tries each; misses hand you clues (chain → year → type → peak → now)
 - One hint per Classic daily, flagged 💡 in your share
 - Real coin logos (64px WebP, 0.3MB total) with a procedural badge fallback
@@ -40,8 +42,8 @@ No build, no dependencies.
   [docs/DATA.md](docs/DATA.md) · [docs/LEADERBOARD.md](docs/LEADERBOARD.md)
 - **Daily schedule (spoilers)**: `node tools/schedule.js 30`
 - **Test** (node 22+, Chrome): serve on :8471, run Chrome with
-  `--remote-debugging-port=9223`, then `node test/cdp-test.js` — 45 checks
-  across all three modes
+  `--remote-debugging-port=9223`, then `node test/cdp-test.js` — 51 checks
+  across all three modes, endless and the archive
 - **Logos**: `node tools/fetch-logos.js` (only fetches missing), then
   `node tools/resize-logos.js`
 - **Background crowd**: `node tools/cut-logos.js` (needs the :8471 server and
