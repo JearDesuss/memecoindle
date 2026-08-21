@@ -8,9 +8,11 @@ index.html      home menu + game shell + modals (help/settings/stats/reveal/boar
 style.css       the whole design system (tokens up top in :root)
 data.js         the item list — 151 coins + enums + tier functions
 logos.js        generated manifest: ticker -> img/<TICKER>.png
+cutouts.js      generated manifest: ticker -> [w,h] of img/cut/<TICKER>.png
 lb.js           leaderboard/pot client (dormant until LB_API is set)
 game.js         the engine (IIFE, no globals except what data/lb expose)
 img/            64x64 WebP logos (misnamed .png — content sniffing wins)
+img/cut/        background-removed character art for the background crowd
 server/         optional Cloudflare Worker for leaderboard + pot
 tools/          dev scripts (fetch/resize logos, schedule, artifact build)
 test/           CDP end-to-end test
@@ -112,7 +114,7 @@ All localStorage, versioned keys:
 
 - `md_day_<mode>_<day>` — `{g: [names], done, won, h: hintAxis}`
 - `md_stats_v1_<mode>` — played/wins/streak/maxStreak/dist, one record per day
-- `md_cb` (colourblind), `md_rm` (reduce motion), `md_seen`, `md_migrated_v1`
+- `md_cb` (colourblind), `md_seen`, `md_migrated_v1`
 - `mcdl_name`, `mcdl_cid`, `mcdl_lb_pending` — leaderboard client
 
 `migrate()` runs once and copies the pre-Memedle `mcdl_stats_v1` and the last
@@ -129,7 +131,44 @@ logos standing in it. Luckiest Guy for the logo (layered SVG strokes), Pixelify
 Sans for everything else, both with system fallbacks so the offline build still
 reads. Bull green / bear red stay reserved for market semantics. Colourblind
 mode (`body.cb`) swaps green/red for blue/orange everywhere including the share
-squares; `body.rm` kills every non-essential animation.
+squares. Motion respects the OS `prefers-reduced-motion` setting; there is no
+in-app motion toggle.
+
+## The background crowd
+
+pokedle.net ships one 3.3MB `Background.png` containing sky, the Pokemon lineup
+and grass. We can't: the cast has to come from the same 151 logos the game uses,
+and those are square avatars with a flat baked-in background — rendered as-is
+they read as a row of poker chips, not characters standing in a field.
+
+`tools/cut-logos.js` fixes that offline. In a headless Chrome canvas it:
+
+1. votes on the dominant border colour and bails if the border isn't uniform
+   (a photo or gradient background can't be cut cleanly),
+2. flood-fills that colour inward **from the edges only**, so a white belly
+   stays white while a white background disappears,
+3. feathers the boundary so there's no hard fringe,
+4. trims to the subject's bounding box,
+5. rejects the result if the silhouette is basically a square (`fill > 0.88`) or
+   scores `IoU > 0.86` against a perfect inscribed circle — a cut disc is still
+   the coin shape we're trying to escape.
+
+A short hand-curated `NOT_A_CHARACTER` list drops wordmarks and bar charts that
+survive the geometry tests but read as debris. 43 of 151 make it through.
+
+`buildCrowd()` deals them into three absolutely-positioned depth bands — back
+band smallest, highest, dimmed and desaturated; front band biggest and
+full-strength — with seeded size jitter, random horizontal mirroring and
+negative margins for overlap. Counts are derived from `window.innerWidth`, not
+fixed, or the crowd sits as a clump in the middle of a wide screen; a debounced
+`resize` listener refills. `buildFloaters()` puts a few in the sky, positioned
+in the gutters beside the 620px column so they read as sky rather than as
+fragments peeking out from behind a card.
+
+Two ranks of grass blades are drawn as `.ground::before` / `::after` SVG tiles.
+`.ground` needs `z-index: 4` to sit above `.crowd-row`'s 1-3 — without it the
+blades paint behind the crowd and the horizon slices every character off in a
+dead-straight line.
 
 ## Cache busting
 
@@ -152,4 +191,4 @@ node 22+ for native WebSocket): serve the repo on :8471, run Chrome with
 mode's answer independently, then checks the home menu, all four routes, a full
 Classic win (grading, reveal, persistence, stats), each stage mode's puzzle and
 clue ladder, unlimited mode, and the colourblind toggle — failing on any page
-error. 45 checks.
+error. 51 checks.

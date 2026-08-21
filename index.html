@@ -21,6 +21,7 @@
   <div class="sun"></div>
   <div class="rays"></div>
   <div class="clouds" id="clouds"></div>
+  <div class="floaters" id="floaters"></div>
 </div>
 <canvas id="confetti" aria-hidden="true"></canvas>
 
@@ -48,6 +49,8 @@
       <a class="night-link" href="https://memecoin.wiki" target="_blank" rel="noopener"><span class="nl-ico">📖</span><span class="nl-label">The wiki</span></a>
     </div>
   </div>
+
+  <div class="social-row" id="social-row"></div>
 
   <footer class="site-foot">
     <p class="foot-strong">memedle · 2026</p>
@@ -104,7 +107,11 @@
 </div><!-- /.app -->
 
 <div class="ground-layer" aria-hidden="true">
-  <div class="roster" id="roster"></div>
+  <div class="crowd" id="crowd">
+    <div class="crowd-row" data-band="0"></div>
+    <div class="crowd-row" data-band="1"></div>
+    <div class="crowd-row" data-band="2"></div>
+  </div>
   <div class="ground"></div>
 </div>
 
@@ -138,7 +145,6 @@
     <button class="modal-close" data-close aria-label="Close">✕</button>
     <h2 id="set-h">Settings</h2>
     <label class="cb-row"><input type="checkbox" id="cb-toggle-2"> High-contrast tiles (blue / orange)</label>
-    <label class="cb-row"><input type="checkbox" id="rm-toggle"> Reduce motion</label>
     <h3>Danger zone</h3>
     <p class="fine">Wipes today's progress, your streak and every stat on this device.</p>
     <button class="btn btn-danger" id="btn-wipe">Erase my record</button>
@@ -177,6 +183,7 @@
 </div>
 
 <script src="data.js?v=20260822"></script>
+<script src="cutouts.js?v=20260822"></script>
 <script src="logos.js?v=20260822"></script>
 <script src="lb.js?v=20260822"></script>
 <script src="game.js?v=20260822"></script>

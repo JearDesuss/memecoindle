@@ -38,6 +38,20 @@ try {
   }
 } catch (e) { /* no logos yet — badges only */ }
 
+// inline the background-crowd cut-outs the same way
+let cutsInline = {};
+try {
+  eval(fs.readFileSync(path.join(ROOT, "cutouts.js"), "utf8")); // defines CUTOUTS
+  for (const ticker of Object.keys(CUTOUTS)) {
+    const f = path.join(ROOT, "img", "cut", ticker + ".png");
+    if (!fs.existsSync(f)) continue;
+    const buf = fs.readFileSync(f);
+    cutsInline[ticker] = { d: CUTOUTS[ticker], u: "data:" + mimeOf(buf) + ";base64," + buf.toString("base64") };
+  }
+} catch (e) { /* no cut-outs yet — the crowd just stays empty */ }
+const cutDims = Object.fromEntries(Object.entries(cutsInline).map(([k, v]) => [k, v.d]));
+const cutSrc = Object.fromEntries(Object.entries(cutsInline).map(([k, v]) => [k, v.u]));
+
 const bodyInner = html.split("<body>")[1].split("<script src=")[0];
 // webfont links: load fine in a browser/preview; a CSP-sandboxed artifact
 // blocks them and falls back to the system stacks — harmless either way
@@ -48,9 +62,11 @@ const fonts =
 const out =
   "<title>Memedle</title>\n" + fonts + "<style>\n" + css + "\n</style>\n" + bodyInner +
   "\n<script>\n" + data + "\n</script>\n<script>\nvar LOGOS = " + JSON.stringify(logosInline) +
+  ";\n</script>\n<script>\nvar CUTOUTS = " + JSON.stringify(cutDims) +
+  ";\nvar CUT_SRC = " + JSON.stringify(cutSrc) +
   ";\n</script>\n<script>\n" + lb + "\n</script>\n<script>\n" + game + "\n</script>\n";
 
 const outFile = process.argv[2] || path.join(ROOT, "dist-artifact.html");
 fs.writeFileSync(outFile, out);
 console.log("built " + outFile + " — " + (out.length / 1024 / 1024).toFixed(2) + "MB, " +
-  Object.keys(logosInline).length + " logos inlined");
+  Object.keys(logosInline).length + " logos + " + Object.keys(cutsInline).length + " cut-outs inlined");

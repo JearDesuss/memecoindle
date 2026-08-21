@@ -92,7 +92,18 @@ async function cdp() {
   await closeModals();
   check("four mode cards on home", await evaljs("document.querySelectorAll('.mode-card').length") === 4);
   check("brand logo rendered", await evaljs("!!document.querySelector('.brand svg')"));
-  check("coin roster populated", await evaljs("document.querySelectorAll('.roster img').length") > 10);
+  check("crowd populated across 3 depth bands", await evaljs(
+    "Array.from(document.querySelectorAll('.crowd-row')).every(function(r){return r.children.length > 4})"));
+  check("crowd spans the viewport", await evaljs(
+    "(function(){var r=document.querySelector('.crowd-row[data-band=\"2\"]');" +
+    "return r ? r.scrollWidth >= document.documentElement.clientWidth : false})()"));
+  check("crowd uses cut-outs, not coin discs", await evaljs(
+    "Array.from(document.querySelectorAll('.crowd-row img')).every(function(i){return /img\\/cut\\/|^data:/.test(i.getAttribute('src'))})"));
+  check("sky floaters present", await evaljs("document.querySelectorAll('.floater').length") > 0);
+  check("every cut-out actually loaded", await evaljs(
+    "Array.from(document.querySelectorAll('.crowd-row img,.floater')).filter(function(i){return i.complete && i.naturalWidth===0}).length") === 0);
+  check("X social button rendered", await evaljs("!!document.querySelector('.social-btn')"));
+  check("no reduce-motion toggle in settings", await evaljs("!document.getElementById('rm-toggle')"));
   check("no horizontal overflow", await evaljs("document.documentElement.scrollWidth <= document.documentElement.clientWidth"));
 
   console.log("\nrouting");

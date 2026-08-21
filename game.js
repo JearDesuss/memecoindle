@@ -7,6 +7,12 @@
   var MAX_GUESSES = 6;
   var SITE_URL = "jeardesuss.github.io/memecoindle";
 
+  // Socials. Leave a URL empty and its button renders as a dead "soon" chip
+  // instead of a link, so nothing ever points at a 404.
+  var SOCIAL = [
+    { id: "x", label: "Follow on X", url: "" }
+  ];
+
   // Classic keeps the original seed so its daily sequence never shifts.
   var MODES = [
     { id: "classic", name: "Classic", ico: "🔍", blurb: "Get clues on every try",   seed: 0x5EED1337, kind: "grid",  sq: "🟩" },
@@ -364,29 +370,98 @@
     }
   }
 
-  function buildRoster() {
-    var wrap = $("roster");
-    if (!wrap) return;
-    var idx = COINS.map(function (_, i) { return i; });
+  // The crowd standing in the grass — background-removed character art, three
+  // depth bands deep, the way pokedle.net's lineup reads. See tools/cut-logos.js.
+  function cutList() {
+    if (typeof CUTOUTS === "undefined") return [];
+    var keys = Object.keys(CUTOUTS);
     var rnd = mulberry32(0x120573);
-    for (var i = idx.length - 1; i > 0; i--) {
+    for (var i = keys.length - 1; i > 0; i--) {
       var j = Math.floor(rnd() * (i + 1));
-      var t = idx[i]; idx[i] = idx[j]; idx[j] = t;
+      var t = keys[i]; keys[i] = keys[j]; keys[j] = t;
     }
-    var narrow = window.innerWidth <= 480;
-    var base = narrow ? 34 : 44;
-    var n = narrow ? 34 : 52;
-    for (var k = 0; k < n && k < idx.length; k++) {
-      var coin = COINS[idx[k]];
-      var img = logoImg(coin, "");
-      img.title = coin.n;
-      var s = 0.74 + rnd() * 0.6;
-      var px = Math.round(base * s);
-      img.style.width = px + "px";
-      img.style.height = px + "px";
-      img.style.marginInline = "-" + Math.round(px * 0.27) + "px";
-      img.style.marginBottom = Math.round(rnd() * 13) + "px";
-      img.style.zIndex = String(Math.round(s * 100));
+    return keys;
+  }
+
+  function cutImg(ticker, h) {
+    var dims = CUTOUTS[ticker];                  // [w, h] of the trimmed art
+    var img = document.createElement("img");
+    // the single-file build swaps the folder for inlined data URIs
+    img.src = (typeof CUT_SRC !== "undefined" && CUT_SRC[ticker]) || ("img/cut/" + ticker + ".png");
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.title = ticker;
+    img.height = h;
+    img.style.height = h + "px";
+    img.style.width = Math.max(8, Math.round(h * (dims[0] / dims[1]))) + "px";
+    return img;
+  }
+
+  function buildCrowd() {
+    var wrap = $("crowd");
+    if (!wrap) return;
+    var rows = wrap.querySelectorAll(".crowd-row");
+    if (!rows.length) return;
+    var keys = cutList();
+    if (!keys.length) return;
+
+    var vw = window.innerWidth;
+    var narrow = vw <= 480;
+    // back band is smallest and most numerous, front band biggest and sparsest
+    var HEIGHTS = narrow ? [40, 54, 70] : [52, 70, 92];
+
+    var rnd = mulberry32(0x9F17E5);
+    var at = 0;
+    for (var b = 0; b < rows.length && b < HEIGHTS.length; b++) {
+      var row = rows[b], bh = HEIGHTS[b];
+      clear(row);
+      // fill the viewport rather than a fixed count, or the crowd sits as a
+      // small clump in the middle of a wide screen
+      var advance = bh * 0.78;
+      var n = Math.ceil(vw / advance) + 2;
+      for (var i = 0; i < n; i++) {
+        var ticker = keys[at % keys.length]; at++;
+        var h = Math.round(bh * (0.82 + rnd() * 0.4));
+        var img = cutImg(ticker, h);
+        // overlap so they read as a crowd rather than a queue
+        img.style.marginInline = "-" + Math.round(h * (0.04 + rnd() * 0.11)) + "px";
+        // let a few sink deeper into the grass
+        img.style.marginBottom = "-" + Math.round(rnd() * 7) + "px";
+        if (rnd() < 0.5) img.style.transform = "scaleX(-1)";
+        row.appendChild(img);
+      }
+    }
+  }
+
+  // the crowd and floaters are sized off the viewport, so refill after a resize
+  var decorTimer = null;
+  function refreshDecor() {
+    clearTimeout(decorTimer);
+    decorTimer = setTimeout(function () { buildCrowd(); buildFloaters(); }, 220);
+  }
+
+  // a couple of them drifting in the sky, like the reference's Mew and Moltres
+  function buildFloaters() {
+    var wrap = $("floaters");
+    if (!wrap || typeof CUTOUTS === "undefined") return;
+    var keys = cutList();
+    if (!keys.length) return;
+    clear(wrap);
+    var rnd = mulberry32(0x5C1E5);
+    // desktop: keep them in the gutters beside the 620px column so they read as
+    // sky, not as debris peeking out from behind a card
+    var spots = window.innerWidth <= 480
+      ? [[13, 15], [87, 10]]
+      : [[7, 13], [93, 9], [5, 33], [95, 28]];
+    for (var i = 0; i < spots.length; i++) {
+      var img = cutImg(keys[(keys.length - 1 - i + keys.length) % keys.length], 30 + Math.round(rnd() * 18));
+      img.className = "floater";
+      img.style.left = spots[i][0] + "%";
+      img.style.top = spots[i][1] + "%";
+      img.style.opacity = (0.72 + rnd() * 0.22).toFixed(2);
+      img.style.animationDuration = (3.4 + rnd() * 2.6).toFixed(1) + "s";
+      img.style.animationDelay = "-" + (rnd() * 3).toFixed(1) + "s";
       wrap.appendChild(img);
     }
   }
@@ -423,6 +498,38 @@
         a.appendChild(el("span", "mode-flag open", st.n + "/" + MAX_GUESSES));
       }
       list.appendChild(a);
+    });
+  }
+
+  var SOCIAL_ICON = {
+    x: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>'
+  };
+  function renderSocial() {
+    var row = $("social-row");
+    if (!row) return;
+    clear(row);
+    SOCIAL.forEach(function (s) {
+      var live = !!s.url;
+      var node = document.createElement(live ? "a" : "button");
+      node.className = "social-btn" + (live ? "" : " soon");
+      node.innerHTML = SOCIAL_ICON[s.id] || "";
+      if (live) {
+        node.href = s.url;
+        node.target = "_blank";
+        node.rel = "noopener";
+        node.title = s.label;
+        node.setAttribute("aria-label", s.label);
+      } else {
+        node.type = "button";
+        node.title = s.label + " — coming soon";
+        node.setAttribute("aria-label", s.label + ", coming soon");
+        node.appendChild(el("span", "soon-tag", "soon"));
+        node.addEventListener("click", function () {
+          node.classList.add("nudge");
+          setTimeout(function () { node.classList.remove("nudge"); }, 420);
+        });
+      }
+      row.appendChild(node);
     });
   }
 
@@ -680,7 +787,6 @@
 
   // ──────────────── confetti ────────────────
   function reducedMotion() {
-    if (document.body.classList.contains("rm")) return true;
     return !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
   }
   function confettiBurst() {
@@ -1018,7 +1124,9 @@
     $("brand-slot").innerHTML = brandSVG("a");
     $("brand-slot-sm").innerHTML = brandSVG("b");
     buildClouds();
-    buildRoster();
+    buildCrowd();
+    buildFloaters();
+    renderSocial();
     renderHelpModes();
 
     var input = $("guess-input");
@@ -1065,7 +1173,6 @@
 
     bindToggle($("cb-toggle"), "cb", "md_cb");
     bindToggle($("cb-toggle-2"), "cb", "md_cb");
-    bindToggle($("rm-toggle"), "rm", "md_rm");
 
     $("btn-wipe").addEventListener("click", function () {
       var b = $("btn-wipe");
@@ -1090,6 +1197,7 @@
     });
 
     window.addEventListener("hashchange", route);
+    window.addEventListener("resize", refreshDecor);
 
     route();
 

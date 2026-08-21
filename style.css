@@ -716,23 +716,38 @@ a { color: inherit; }
   margin-top: 16px;
 }
 
-.roster {
+.crowd {
+  position: relative;
+  height: 168px;
+  margin-bottom: -26px;
+  overflow: hidden;
+}
+/* three depth bands: further back = smaller, higher, behind */
+.crowd-row {
+  position: absolute;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  height: 76px;
-  overflow: hidden;
-  margin-bottom: -20px;
 }
-.roster img {
-  position: relative;
+.crowd-row[data-band="0"] { bottom: 54px; z-index: 1; filter: brightness(.84) saturate(.72); }
+.crowd-row[data-band="1"] { bottom: 26px; z-index: 2; filter: brightness(.94) saturate(.9); }
+.crowd-row[data-band="2"] { bottom: 0;    z-index: 3; }
+.crowd-row img {
   flex: none;
-  border-radius: 50%;
-  object-fit: cover;
-  filter: drop-shadow(0 2px 2px rgba(20, 40, 70, .32));
+  display: block;
+  object-fit: contain;
+  object-position: bottom;
+  image-rendering: auto;
+  filter: drop-shadow(0 2px 1px rgba(20, 45, 25, .35));
 }
 
 .ground {
+  position: relative;
+  /* above .crowd-row's 1-3 — the blades have to paint over the characters'
+     feet, otherwise the horizon slices them off in a dead-straight line */
+  z-index: 4;
   flex: 1;
   min-height: 104px;
   background:
@@ -740,11 +755,32 @@ a { color: inherit; }
       rgba(255, 255, 255, .035) 0 5px,
       rgba(0, 0, 0, .025) 5px 10px),
     linear-gradient(to bottom,
-      var(--ground-1) 0px, var(--ground-1) 8px,
-      var(--ground-2) 8px, var(--ground-2) 19px,
-      var(--ground-3) 19px, var(--ground-3) 100%),
+      var(--ground-2) 0px, var(--ground-2) 13px,
+      var(--ground-3) 13px, var(--ground-3) 100%),
     var(--ground-3);
-  border-top: 3px solid #C2EDAF;
+}
+/* blades along the horizon so the crowd stands *in* the grass, not on a line */
+/* two ranks of blades in front of the crowd, so they stand *in* the grass
+   instead of being sliced off by a ruler-straight horizon */
+.ground::before,
+.ground::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+.ground::before {           /* back rank, darker, sits deeper */
+  top: -10px;
+  height: 12px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='23' height='12'%3E%3Cpath d='M0 12 L4 2 L8 12 L11 5 L15 12 L18 1 L23 12 Z' fill='%235FAA4F'/%3E%3C/svg%3E") repeat-x;
+  background-size: 23px 12px;
+}
+.ground::after {            /* front rank, bright tips */
+  top: -15px;
+  height: 17px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='31' height='17'%3E%3Cpath d='M0 17 L3 6 L6 17 L10 1 L14 17 L17 8 L21 17 L25 3 L28 17 L30 9 L31 17 Z' fill='%238ED27A'/%3E%3C/svg%3E") repeat-x;
+  background-size: 31px 17px;
 }
 
 /* ─────────────────── modals ─────────────────── */
@@ -1005,7 +1041,9 @@ a { color: inherit; }
   .coin-logo { width: 26px; height: 26px; }
   .coin-ticker { font-size: 11px; }
   .coin-name { font-size: 9.5px; }
-  .roster { height: 64px; margin-bottom: -17px; }
+  .crowd { height: 138px; margin-bottom: -20px; }
+  .crowd-row[data-band="0"] { bottom: 42px; }
+  .crowd-row[data-band="1"] { bottom: 20px; }
   .ground { min-height: 86px; }
   .blur-frame { width: 146px; height: 146px; }
   .lore-quote { font-size: 15.5px; }
@@ -1016,9 +1054,6 @@ a { color: inherit; }
 @media (prefers-reduced-motion: reduce), (scripting: none) {
   .rays { animation: none; }
 }
-body.rm .cloud, body.rm .rays { animation: none !important; }
-body.rm .mode-card { animation: none !important; opacity: 1; transform: none; }
-body.rm .flip, body.rm .clue-chip, body.rm .miss-row, body.rm .modal, body.rm .ac-list { animation: none !important; }
 
 @media (prefers-reduced-motion: reduce) {
   .cloud { animation: none !important; }
@@ -1027,3 +1062,73 @@ body.rm .flip, body.rm .clue-chip, body.rm .miss-row, body.rm .modal, body.rm .a
   .modal, .modal-backdrop, .ac-list { animation-duration: 1ms !important; }
   html { scroll-behavior: auto; }
 }
+
+/* ─────────────────── socials ─────────────────── */
+.social-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+.social-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, var(--night) 0%, var(--night-2) 100%);
+  border: 3px solid var(--ink);
+  box-shadow: 0 4px 0 0 var(--drop), 0 8px 12px rgba(15, 25, 50, .25);
+  color: #FFFFFF;
+  text-decoration: none;
+  transition: transform 130ms var(--ease-out), box-shadow 130ms var(--ease-out), filter 130ms ease;
+}
+.social-btn svg { width: 20px; height: 20px; display: block; }
+@media (hover: hover) and (pointer: fine) {
+  .social-btn:hover { filter: brightness(1.35); transform: translateY(-2px); box-shadow: 0 6px 0 0 var(--drop), 0 11px 16px rgba(15, 25, 50, .3); }
+}
+.social-btn:active { transform: translateY(4px); box-shadow: 0 0 0 0 var(--drop); }
+
+/* no URL yet — reads as a placeholder, never navigates */
+.social-btn.soon { cursor: default; opacity: .82; }
+.social-btn.soon svg { opacity: .75; }
+.soon-tag {
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 6px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  line-height: 15px;
+  border-radius: 999px;
+  background: linear-gradient(to bottom, var(--gold), var(--gold-2));
+  border: 2px solid var(--ink);
+  color: #40260A;
+}
+.social-btn.nudge { animation: nudge 400ms var(--ease-out); }
+@keyframes nudge {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+@media (prefers-reduced-motion: reduce) { .social-btn.nudge { animation: none; } }
+
+/* ─────────────────── sky floaters ─────────────────── */
+.floaters { position: absolute; inset: 0; }
+.floater {
+  position: absolute;
+  display: block;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 3px 3px rgba(20, 45, 80, .25));
+  animation: bob ease-in-out infinite alternate;
+  will-change: translate;
+}
+@keyframes bob {
+  from { translate: 0 -8px; }
+  to   { translate: 0 8px; }
+}
+@media (prefers-reduced-motion: reduce) { .floater { animation: none; } }
