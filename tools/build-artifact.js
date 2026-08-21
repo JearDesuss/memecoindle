@@ -1,5 +1,5 @@
-// Build the single-file (Claude Artifact / offline) version of memecoindle.
-// Inlines CSS, data, game code, and every fetched logo as a data URI.
+// Build the single-file (Claude Artifact / offline) version of Memedle.
+// Inlines CSS, data, leaderboard client, game code, and every logo as a data URI.
 // Usage: node tools/build-artifact.js [outfile]
 const fs = require("fs");
 const path = require("path");
@@ -16,6 +16,7 @@ function mimeOf(buf) {
 const css = fs.readFileSync(path.join(ROOT, "style.css"), "utf8");
 const data = fs.readFileSync(path.join(ROOT, "data.js"), "utf8");
 let game = fs.readFileSync(path.join(ROOT, "game.js"), "utf8");
+const lb = fs.readFileSync(path.join(ROOT, "lb.js"), "utf8");
 const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 
 // artifact build: no external URL in the share text
@@ -38,10 +39,16 @@ try {
 } catch (e) { /* no logos yet — badges only */ }
 
 const bodyInner = html.split("<body>")[1].split("<script src=")[0];
+// webfont links: load fine in a browser/preview; a CSP-sandboxed artifact
+// blocks them and falls back to the system stacks — harmless either way
+const fonts =
+  '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+  '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
+  '<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">\n';
 const out =
-  "<title>memecoindle</title>\n<style>\n" + css + "\n</style>\n" + bodyInner +
+  "<title>Memedle</title>\n" + fonts + "<style>\n" + css + "\n</style>\n" + bodyInner +
   "\n<script>\n" + data + "\n</script>\n<script>\nvar LOGOS = " + JSON.stringify(logosInline) +
-  ";\n</script>\n<script>\n" + game + "\n</script>\n";
+  ";\n</script>\n<script>\n" + lb + "\n</script>\n<script>\n" + game + "\n</script>\n";
 
 const outFile = process.argv[2] || path.join(ROOT, "dist-artifact.html");
 fs.writeFileSync(outFile, out);

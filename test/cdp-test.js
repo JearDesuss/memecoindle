@@ -1,35 +1,62 @@
-// CDP gameplay test for memecoindle — no deps, node 22+.
+// CDP gameplay test for Memedle — no deps, node 22+.
+// Serve the repo on :8471 and run Chrome with --remote-debugging-port=9223 first.
 const fs = require("fs");
 const path = require("path");
-const GAME_DIR = require("path").join(__dirname, "..");
+const GAME_DIR = path.join(__dirname, "..");
 const SCRATCH = require("os").tmpdir();
 
-// Replicate deterministic daily pick to know today's answer
+// Replicate the page's daily pick so we know every mode's answer up front.
 eval(fs.readFileSync(path.join(GAME_DIR, "data.js"), "utf8"));
 function mulberry32(a){return function(){a|=0;a=(a+0x6D2B79F5)|0;var t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+const SEEDS = { classic: 0x5EED1337, blur: 0x1D0FBE47, lore: 0x4B19AC03, chart: 0x7C3E5D91 };
+const MODES = Object.keys(SEEDS);
 const EPOCH = new Date(2026, 7, 21);
 const now = new Date();
-const day = Math.round((new Date(now.getFullYear(),now.getMonth(),now.getDate()) - EPOCH)/86400000);
-const idx = COINS.map((_,i)=>i);
-const rnd = mulberry32(0x5EED1337);
-for (let i=idx.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
-const answer = COINS[idx[((day%idx.length)+idx.length)%idx.length]];
-console.log("day#", day+1, "| today's answer:", answer.n, "$"+answer.t);
+const day = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - EPOCH) / 86400000);
+const ORDER = {};
+for (const m of MODES) {
+  const idx = COINS.map((_, i) => i);
+  const rnd = mulberry32(SEEDS[m]);
+  for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+  ORDER[m] = idx;
+}
+const STRIDE = 61; // must match game.js
+// mirrors dailyCoin() in game.js: fixed mode order, walk forward past collisions
+function answerFor(mode) {
+  const used = {};
+  for (const m of MODES) {
+    const o = ORDER[m], len = o.length;
+    let chosen = null;
+    for (let k = 0; k < len; k++) {
+      const c = COINS[o[((((day + k * STRIDE) % len) + len) % len)]];
+      if (!used[c.t]) { chosen = c; break; }
+    }
+    if (!chosen) chosen = COINS[o[(((day % len) + len) % len)]];
+    used[chosen.t] = 1;
+    if (m === mode) return chosen;
+  }
+}
+console.log("day #" + (day + 1) + " answers:", MODES.map(m => m + "=$" + answerFor(m).t).join("  "));
+
+let pass = 0, fail = 0;
+function check(name, ok, detail) {
+  if (ok) { pass++; console.log("  PASS  " + name); }
+  else { fail++; console.log("  FAIL  " + name + (detail ? "  → " + detail : "")); }
+}
 
 async function cdp() {
   const list = await (await fetch("http://localhost:9223/json")).json();
   const page = list.find(t => t.type === "page");
   const ws = new WebSocket(page.webSocketDebuggerUrl);
-  let id = 0; const pending = new Map();
-  const errors = [];
+  let id = 0; const pending = new Map(); const errors = [];
   ws.onmessage = (ev) => {
     const m = JSON.parse(ev.data);
     if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
-    if (m.method === "Runtime.exceptionThrown") errors.push(JSON.stringify(m.params.exceptionDetails.exception));
-    if (m.method === "Runtime.consoleAPICalled" && m.params.type === "error") errors.push(m.params.args.map(a=>a.value).join(" "));
+    if (m.method === "Runtime.exceptionThrown") errors.push(JSON.stringify(m.params.exceptionDetails.exception || m.params.exceptionDetails));
+    if (m.method === "Runtime.consoleAPICalled" && m.params.type === "error") errors.push(m.params.args.map(a => a.value).join(" "));
   };
   await new Promise(r => ws.onopen = r);
-  const send = (method, params={}) => new Promise(res => { const i = ++id; pending.set(i, res); ws.send(JSON.stringify({id:i, method, params})); });
+  const send = (method, params = {}) => new Promise(res => { const i = ++id; pending.set(i, res); ws.send(JSON.stringify({ id: i, method, params })); });
   const evaljs = async (expr) => {
     const r = await send("Runtime.evaluate", { expression: expr, returnByValue: true, awaitPromise: true });
     if (r.result.exceptionDetails) throw new Error("page eval failed: " + JSON.stringify(r.result.exceptionDetails));
@@ -39,85 +66,124 @@ async function cdp() {
   const shot = async (name) => {
     const r = await send("Page.captureScreenshot", { format: "png" });
     fs.writeFileSync(path.join(SCRATCH, name), Buffer.from(r.result.data, "base64"));
-    console.log("screenshot:", name);
   };
+  // go through the real input + autocomplete path, never straight at internals
+  const guess = async (name) => {
+    await evaljs(`(function(){
+      var i=document.getElementById('guess-input');
+      i.focus(); i.value=${JSON.stringify(name)};
+      i.dispatchEvent(new Event('input',{bubbles:true}));
+      i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+    })()`);
+    await sleep(450);
+  };
+  const goto = async (hash) => { await evaljs(`location.hash=${JSON.stringify(hash)};'ok'`); await sleep(700); };
+  const closeModals = () => evaljs("document.querySelectorAll('.modal-backdrop').forEach(function(m){m.classList.add('hidden')});'ok'");
 
   await send("Runtime.enable"); await send("Page.enable");
-  await send("Emulation.setDeviceMetricsOverride", { width: 430, height: 900, deviceScaleFactor: 2, mobile: true });
+  await send("Emulation.setDeviceMetricsOverride", { width: 430, height: 930, deviceScaleFactor: 2, mobile: true });
   await send("Page.navigate", { url: "http://localhost:8471/" });
-  await sleep(1200);
-  await evaljs("localStorage.clear(); location.reload(); 'ok'");
-  await sleep(1200);
+  await sleep(1300);
+  await evaljs("localStorage.clear(); location.hash=''; location.reload(); 'ok'");
+  await sleep(1600);
 
-  // 1. help modal should be open on first visit
-  const helpOpen = await evaljs("!document.getElementById('modal-help').classList.contains('hidden')");
-  console.log("TEST first-visit help modal:", helpOpen ? "PASS" : "FAIL");
-  await evaljs("document.querySelector('#modal-help .modal-close').click(); 'ok'");
+  console.log("\nhome + chrome");
+  check("first-visit help modal opens", await evaljs("!document.getElementById('modal-help').classList.contains('hidden')"));
+  await closeModals();
+  check("four mode cards on home", await evaljs("document.querySelectorAll('.mode-card').length") === 4);
+  check("brand logo rendered", await evaljs("!!document.querySelector('.brand svg')"));
+  check("coin roster populated", await evaljs("document.querySelectorAll('.roster img').length") > 10);
+  check("no horizontal overflow", await evaljs("document.documentElement.scrollWidth <= document.documentElement.clientWidth"));
 
-  // helper to guess a coin by exact name via the real input path
-  const guessJS = (name) => `
-    (function(){
-      var inp = document.getElementById('guess-input');
-      inp.focus(); inp.value = ${JSON.stringify(name)};
-      inp.dispatchEvent(new Event('input', {bubbles:true}));
-      inp.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter', bubbles:true}));
-      return document.querySelectorAll('.guess-row').length;
-    })()`;
+  console.log("\nrouting");
+  for (const m of MODES) {
+    await goto("#/" + m);
+    const title = await evaljs("document.getElementById('game-title').textContent.toLowerCase()");
+    check("#/" + m + " routes to its board", title === m);
+  }
+  await goto("#/");
+  check("#/ returns home", await evaljs("!document.getElementById('view-home').classList.contains('hidden')"));
 
-  // 2. autocomplete renders
+  console.log("\nclassic");
+  const ans = answerFor("classic");
+  await goto("#/classic");
   await evaljs("var i=document.getElementById('guess-input'); i.value='dog'; i.dispatchEvent(new Event('input',{bubbles:true})); 'ok'");
-  const acCount = await evaljs("document.querySelectorAll('.ac-item').length");
-  console.log("TEST autocomplete for 'dog':", acCount > 0 ? "PASS ("+acCount+" items)" : "FAIL");
+  check("autocomplete matches 'dog'", await evaljs("document.querySelectorAll('.ac-item').length") > 0);
   await evaljs("var i=document.getElementById('guess-input'); i.value=''; i.dispatchEvent(new Event('input',{bubbles:true})); 'ok'");
 
-  // 3. two wrong guesses then the right one
-  const wrong = COINS.filter(c => c.n !== answer.n).slice(0, 2);
-  let rows = await evaljs(guessJS(wrong[0].n));
-  console.log("TEST wrong guess 1 row added:", rows === 1 ? "PASS" : "FAIL rows=" + rows);
-  await sleep(1500);
-  rows = await evaljs(guessJS(wrong[1].n));
-  console.log("TEST wrong guess 2 row added:", rows === 2 ? "PASS" : "FAIL rows=" + rows);
-  await sleep(1500);
-  await shot("t_midgame.png");
-  rows = await evaljs(guessJS(answer.n));
-  console.log("TEST winning guess row added:", rows === 3 ? "PASS" : "FAIL rows=" + rows);
-  await sleep(2300);
+  const wrong = COINS.filter(c => c.n !== ans.n).slice(0, 2);
+  await guess(wrong[0].n);
+  check("wrong guess adds a graded row", await evaljs("document.querySelectorAll('.guess-row').length") === 1);
+  check("hint button appears after guess 1", await evaljs("!!document.querySelector('.hint-btn')"));
+  await sleep(1300);
+  await guess(wrong[1].n);
+  await sleep(1300);
+  await shot("t_classic_mid.png");
+  await guess(ans.n);
+  await sleep(2400);
+  check("winning row is all green", await evaljs("Array.from(document.querySelectorAll('.guess-row:last-child .tile')).every(function(t){return t.classList.contains('s-g')})"));
+  check("reveal modal opens on win", await evaljs("!document.getElementById('modal-reveal').classList.contains('hidden')"));
+  check("reveal names the coin", (await evaljs("(document.querySelector('.coin-card-name')||{}).textContent||''")) === ans.n);
+  await shot("t_classic_win.png");
 
-  // 4. reveal modal with win verdict
-  const revealOpen = await evaljs("!document.getElementById('modal-reveal').classList.contains('hidden')");
-  const verdict = await evaljs("(document.querySelector('.reveal-verdict')||{}).textContent || ''");
-  console.log("TEST reveal opens on win:", revealOpen ? "PASS" : "FAIL", "| verdict:", verdict);
-  const lastRowGreen = await evaljs("Array.from(document.querySelectorAll('.guess-row:last-child .tile')).every(t=>t.classList.contains('s-g'))");
-  console.log("TEST winning row all green:", lastRowGreen ? "PASS" : "FAIL");
-  await shot("t_win.png");
+  const stats = await evaljs("JSON.parse(localStorage.getItem('md_stats_v1_classic'))");
+  check("classic stats recorded", stats && stats.played === 1 && stats.wins === 1 && stats.streak === 1, JSON.stringify(stats));
 
-  // 5. state persists across reload
-  await evaljs("location.reload(); 'ok'");
-  await sleep(1500);
-  const rowsAfter = await evaljs("document.querySelectorAll('.guess-row').length");
-  const inputDisabled = await evaljs("document.getElementById('guess-input').disabled");
-  console.log("TEST daily state persists:", rowsAfter === 3 && inputDisabled ? "PASS" : "FAIL rows="+rowsAfter+" disabled="+inputDisabled);
-  await evaljs("document.querySelector('#modal-reveal .modal-close') && document.querySelector('#modal-reveal .modal-close').click(); 'ok'");
+  await evaljs("location.reload();'ok'"); await sleep(1600);
+  await goto("#/classic");
+  check("daily state survives reload", await evaljs("document.querySelectorAll('.guess-row').length") === 3
+    && await evaljs("document.getElementById('guess-input').disabled"));
+  await closeModals();
 
-  // 6. stats recorded
-  const stats = await evaljs("JSON.parse(localStorage.getItem('mcdl_stats_v1'))");
-  console.log("TEST stats recorded:", stats && stats.played === 1 && stats.wins === 1 && stats.streak === 1 ? "PASS" : "FAIL " + JSON.stringify(stats));
+  await goto("#/");
+  check("home flags the solved mode", /3\/6/.test(await evaljs("(document.querySelector('.mode-flag')||{}).textContent||''")));
 
-  // 7. unlimited mode
-  await evaljs("document.getElementById('mode-toggle').click(); 'ok'");
-  await sleep(400);
-  const freeMeta = await evaljs("document.getElementById('puzzle-meta').textContent");
-  const freeRows = await evaljs("document.querySelectorAll('.guess-row').length");
-  console.log("TEST unlimited mode:", /Unlimited/.test(freeMeta) && freeRows === 0 ? "PASS" : "FAIL meta=" + freeMeta);
-  // lose a free game in 6 wrong guesses (guess anything; if we accidentally hit the answer, fine too)
-  const six = COINS.slice(10, 16).map(c => c.n);
-  for (const n of six) { await evaljs(guessJS(n)); await sleep(200); }
-  await sleep(2600);
-  const freeDone = await evaljs("!document.getElementById('modal-reveal').classList.contains('hidden')");
-  console.log("TEST unlimited completes after 6:", freeDone ? "PASS" : "FAIL");
-  await shot("t_free_end.png");
+  console.log("\nstage modes");
+  for (const m of ["blur", "lore", "chart"]) {
+    const a = answerFor(m);
+    await goto("#/" + m);
+    check(m + ": stage is visible", await evaljs("!document.getElementById('stage').classList.contains('hidden')"));
+    if (m === "blur") check("blur: logo starts blurred", /blur\(/.test(await evaljs("(document.querySelector('.blur-img')||{style:{}}).style.filter||''")));
+    if (m === "lore") check("lore: a sentence is shown", (await evaljs("(document.querySelector('.lore-quote')||{}).textContent||''")).length > 10);
+    if (m === "lore") check("lore: coin name is redacted out", !new RegExp(a.n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
+      .test(await evaljs("(document.querySelector('.lore-quote')||{}).textContent||''")) || /redacted/.test(await evaljs("document.querySelectorAll('.redacted').length ? 'redacted' : ''")));
+    if (m === "chart") check("chart: an svg curve is drawn", await evaljs("!!document.querySelector('.chart-svg polyline')"));
 
-  console.log("page errors:", errors.length ? errors : "none");
+    check(m + ": no clues before a miss", await evaljs("document.querySelectorAll('.clue-chip').length") === 0);
+    const w = COINS.filter(c => c.n !== a.n)[0];
+    await guess(w.n);
+    check(m + ": miss is listed", await evaljs("document.querySelectorAll('.miss-row').length") === 1);
+    check(m + ": miss reveals one clue", await evaljs("document.querySelectorAll('.clue-chip').length") === 1);
+    await sleep(500);
+    await guess(a.n);
+    await sleep(1400);
+    check(m + ": reveal opens on win", await evaljs("!document.getElementById('modal-reveal').classList.contains('hidden')"));
+    check(m + ": stats recorded", (await evaljs(`JSON.parse(localStorage.getItem('md_stats_v1_${m}')||'null')`) || {}).wins === 1);
+    await shot("t_" + m + "_win.png");
+    await closeModals();
+  }
+
+  console.log("\nunlimited + settings");
+  await goto("#/classic/unlimited");
+  check("unlimited resets the board", await evaljs("document.querySelectorAll('.guess-row').length") === 0);
+  check("unlimited is labelled", /Unlimited/i.test(await evaljs("document.getElementById('game-meta').textContent")));
+  const six = COINS.slice(20, 26).map(c => c.n);
+  for (const n of six) { await guess(n); }
+  await sleep(2400);
+  check("unlimited ends after 6 guesses", await evaljs("!document.getElementById('modal-reveal').classList.contains('hidden')"));
+  await closeModals();
+
+  await goto("#/classic");
+  await evaljs("var c=document.getElementById('cb-toggle-2'); c.checked=true; c.dispatchEvent(new Event('change',{bubbles:true}));'ok'");
+  await sleep(300);
+  check("colourblind mode toggles", await evaljs("document.body.classList.contains('cb') && localStorage.getItem('md_cb')==='1'"));
+
+  console.log("\npage errors:", errors.length ? errors : "none");
+  if (errors.length) fail += errors.length;
+  console.log("\n" + pass + " passed, " + fail + " failed");
   ws.close();
+  return fail === 0;
 }
-cdp().then(() => process.exit(0)).catch(e => { console.error("TEST HARNESS ERROR:", e.message); process.exit(1); });
+
+cdp().then(ok => process.exit(ok ? 0 : 1))
+     .catch(e => { console.error("TEST HARNESS ERROR:", e.message); process.exit(1); });
