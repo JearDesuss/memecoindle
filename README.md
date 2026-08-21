@@ -46,6 +46,12 @@ No build, no dependencies.
 - **Logos**: `node tools/fetch-logos.js` (only fetches missing), then
   `node tools/resize-logos.js`
 - **Single-file build** (offline/artifact): `node tools/build-artifact.js out.html`
+- **Before every deploy**: `node tools/bump-assets.js` — restamps the `?v=` on
+  style.css/game.js/data.js/logos.js/lb.js. Pages caches assets for 10 minutes,
+  so without a fresh stamp a returning visitor can get the new `index.html`
+  paired with an old cached `game.js`, which throws on the first
+  `getElementById` and renders a dead page. `--check` fails if the stamp is
+  older than the assets.
 
 Each mode has its own shuffle seed in the `MODES` array in `game.js`. Classic's
 seed is load-bearing — changing it rewrites the historical daily sequence.

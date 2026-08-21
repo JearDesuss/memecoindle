@@ -131,6 +131,19 @@ reads. Bull green / bear red stay reserved for market semantics. Colourblind
 mode (`body.cb`) swaps green/red for blue/orange everywhere including the share
 squares; `body.rm` kills every non-essential animation.
 
+## Cache busting
+
+GitHub Pages serves every asset with `Cache-Control: max-age=600` and there is
+no bundler to fingerprint filenames, so `index.html` carries a manual `?v=`
+stamp on each local asset. This is not cosmetic: `index.html` and `game.js`
+change together, and a visitor holding a 10-minute-old `game.js` against fresh
+markup gets a `TypeError` on the first `getElementById` of a renamed element and
+a blank page — the script dies before it builds the menu, clouds or roster.
+
+`node tools/bump-assets.js` restamps them; run it before any deploy that touches
+style.css, game.js, data.js, logos.js or lb.js. `--check` exits non-zero when the
+stamp is older than the newest asset mtime.
+
 ## Testing
 
 `test/cdp-test.js` drives a real headless Chrome over CDP (no test deps;
