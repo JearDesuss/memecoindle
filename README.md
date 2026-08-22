@@ -44,12 +44,20 @@ No build, no dependencies.
 - **Test** (node 22+, Chrome): serve on :8471, run Chrome with
   `--remote-debugging-port=9223`, then `node test/cdp-test.js` — 51 checks
   across all three modes, endless and the archive
-- **Logos**: `node tools/fetch-logos.js` (only fetches missing), then
-  `node tools/resize-logos.js`
-- **Background crowd**: `node tools/cut-logos.js` (needs the :8471 server and
-  Chrome on :9223) background-removes the logos into `img/cut/` character
-  cut-outs and writes `cutouts.js`. `--dry` reports what would pass without
-  writing. Re-run it after adding coins.
+- **Logos**: `node tools/fetch-logos.js` (only fetches missing) for new coins,
+  `node tools/refetch-logos.js` to pull the highest resolution CoinGecko
+  actually holds into `img/_hires`, then `node tools/resize-logos.js --clean`
+  to fold that in at up to 320px and drop the staging dir. 320 is sized for
+  Blur mode, which renders a logo at ~170px CSS — ~340px on a 2x screen.
+- **Background crowd**: `node tools/build-art.js` (needs Chrome on :9223) pulls
+  the hand-picked high-resolution character art listed in
+  `tools/art-sources.json`, trims each to its subject, renders it at 340px tall
+  and writes `img/art/` + `art.js`. `--rebuild` re-renders from the download
+  cache without touching the network. Add a character by adding a source URL.
+  **Provenance**: every source URL is recorded in `tools/art-sources.json`.
+  Most are transparent-PNG aggregator sites (vecteezy, pngtree, pngimg); a few
+  of those ask for attribution or a licence for commercial use. Fine for a free
+  fan game, worth a second look before anything is monetised.
 - **Single-file build** (offline/artifact): `node tools/build-artifact.js out.html`
 - **Before every deploy**: `node tools/bump-assets.js` — restamps the `?v=` on
   every local asset, using a hash of their contents. Pages caches assets for 10

@@ -16,7 +16,7 @@ const crypto = require("crypto");
 
 const ROOT = path.join(__dirname, "..");
 const INDEX = path.join(ROOT, "index.html");
-const ASSETS = ["style.css", "data.js", "logos.js", "cutouts.js", "lb.js", "game.js"];
+const ASSETS = ["style.css", "data.js", "logos.js", "art.js", "lb.js", "game.js"];
 
 const args = process.argv.slice(2);
 const check = args.includes("--check");

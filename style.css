@@ -654,7 +654,9 @@ a { color: inherit; }
   pointer-events: none;
   margin-top: 18px;
 }
-.crowd { position: relative; height: 150px; margin-bottom: -22px; overflow: hidden; }
+/* the overlap has to clear the 13px grass blades and no more — any deeper and
+   the front row is buried to the waist instead of standing in the grass */
+.crowd { position: relative; height: 196px; margin-bottom: -8px; overflow: hidden; }
 .crowd-row {
   position: absolute; left: 0; right: 0;
   display: flex; align-items: flex-end; justify-content: center;
@@ -861,7 +863,7 @@ a { color: inherit; }
   .streak-pill { font-size: 10px; padding: 5px 9px; }
   .ico-btn { width: 38px; height: 38px; }
   .tagline { font-size: 17px; margin-bottom: 14px; }
-  .crowd { height: 118px; margin-bottom: -18px; }
+  .crowd { height: 142px; margin-bottom: -6px; }
   .crowd-row[data-band="0"] { bottom: 34px; }
   .crowd-row[data-band="1"] { bottom: 16px; }
   .ground { min-height: 92px; }

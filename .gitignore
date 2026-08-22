@@ -7,3 +7,8 @@ dist-artifact.html
 
 .vercel
 .env*
+
+# staging + caches for the asset tools (intermediates, never shipped)
+img/_hires/
+tools/.art-cache/
+tools/.logo-src.json

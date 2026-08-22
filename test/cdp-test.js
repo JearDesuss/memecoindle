@@ -100,8 +100,13 @@ async function cdp() {
   check("more-memedle pills rendered", await evaljs("document.querySelectorAll('#pill-row .pill').length") === 4);
   check("crowd populated across 3 depth bands", await evaljs(
     "Array.from(document.querySelectorAll('.crowd-row')).every(function(r){return r.children.length > 4})"));
-  check("crowd uses cut-outs, not coin discs", await evaljs(
-    "Array.from(document.querySelectorAll('.crowd-row img')).every(function(i){return /img\\/cut\\/|^data:/.test(i.getAttribute('src'))})"));
+  check("crowd uses the character art set", await evaljs(
+    "Array.from(document.querySelectorAll('.crowd-row img')).every(function(i){return /img\\/art\\/|^data:/.test(i.getAttribute('src'))})"));
+  // the whole point of the art set: never draw a character into a box bigger
+  // than the pixels behind it, which is what made the old crowd look like mud
+  check("crowd art out-resolves its rendered size at 2x", await evaljs(
+    "Array.from(document.querySelectorAll('.crowd-row img')).every(function(i){" +
+    "return !i.complete || i.naturalHeight === 0 || i.naturalHeight >= i.clientHeight * 2})"));
   check("clouds rendered", await evaljs("document.querySelectorAll('.cloud').length") > 0);
   check("no images failed to load", await evaljs(
     "Array.from(document.images).filter(function(i){return i.complete && i.naturalWidth===0}).length") === 0);
@@ -159,6 +164,13 @@ async function cdp() {
     await goto("#/" + m);
     check(m + ": stage rendered", await evaljs("document.getElementById('stage').children.length") > 0);
     if (m === "blur") check("blur: logo starts blurred", /blur\(/.test(await evaljs("(document.querySelector('.blur-img')||{style:{}}).style.filter||''")));
+    // Blur opens at scale 1.55 on a 150px frame, so the logo is drawn into
+    // ~233px CSS — ~465px on a 2x screen. We cannot always beat that (some
+    // sources only exist at 200px), but it must at least clear the frame at 2x,
+    // or the reveal lands soft exactly when the player is staring at it.
+    if (m === "blur") check("blur: logo out-resolves the frame at 2x", await evaljs(
+      "(function(i){return !i || !i.complete || i.naturalWidth === 0 || i.naturalWidth >= i.clientWidth * 2;})" +
+      "(document.querySelector('.blur-img'))"));
     if (m === "lore") check("lore: coin name is redacted out", await evaljs("document.querySelectorAll('.redacted').length") >= 0);
     check(m + ": no clues before a miss", await evaljs("document.querySelectorAll('.clue-chip').length") === 0);
     const w = COINS.filter(c => c.n !== a.n)[0];

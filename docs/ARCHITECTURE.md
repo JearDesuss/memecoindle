@@ -8,13 +8,13 @@ index.html      the whole dashboard + modals (help/settings/stats/archive/reveal
 style.css       the whole design system (tokens up top in :root)
 data.js         the item list — 151 coins + enums + tier functions
 logos.js        generated manifest: ticker -> img/<TICKER>.png
-cutouts.js      generated manifest: ticker -> [w,h] of img/cut/<TICKER>.png
+art.js          generated manifest: name -> [w,h] of img/art/<NAME>.webp
 lb.js           leaderboard/pot client (dormant until LB_API is set)
 game.js         the engine (IIFE, no globals except what data/lb expose)
-img/            64x64 WebP logos (misnamed .png — content sniffing wins)
-img/cut/        background-removed character art for the background crowd
+img/            coin logos, up to 320px WebP (misnamed .png — content sniffing wins)
+img/art/        hand-picked high-res character art for the background crowd
 server/         optional Cloudflare Worker for leaderboard + pot
-tools/          dev scripts (fetch/resize logos, schedule, artifact build)
+tools/          dev scripts (fetch/resize logos, build crowd art, schedule, artifact build)
 test/           CDP end-to-end test
 ```
 
@@ -151,45 +151,54 @@ mode (`body.cb`) swaps green/red for blue/orange everywhere including the share
 squares. Motion respects the OS `prefers-reduced-motion` setting; there is no
 in-app motion toggle.
 
-## Image pipeline (order matters)
+## Image pipeline
 
-`fetch-logos.js` pulls CoinGecko's 250px `large` variant, then
-`resize-logos.js` downsamples for the small UI uses. For a long time resize was
-hardcoded to **64px**, which threw the good resolution away — the crowd was
-upscaling 64px art to 82px and every logo looked soft. Now:
+Two independent asset sets, built by different tools, for different jobs.
 
-1. `node tools/fetch-logos.js --force --tickers A,B,C` — re-download at full
-   size. It skips existing files unless `--force`, so a low-res logo will
-   otherwise stay low-res forever.
-2. `node tools/cut-logos.js` — **before** resizing, so the cut-outs are built
-   from the 250px originals. Output is capped at 160px (what the front crowd
-   band needs at 2x DPR) and written as WebP with alpha.
-3. `SIZE=160 node tools/resize-logos.js` — shrink `img/` afterwards. The largest
-   on-screen use is a 52px coin card, so 160 covers 2x DPR with room.
+**Coin logos** (`img/<TICKER>.png`, WebP content) are the game's subject matter,
+so they must come from the coin itself:
 
-Running resize before cut is the one ordering that silently degrades the crowd.
+1. `node tools/fetch-logos.js` — new coins only; CoinGecko `large`, else
+   DexScreener.
+2. `node tools/refetch-logos.js` — swaps `/large/` for `/original/` on the
+   CoinGecko URL to recover the uploader's real file (200-6000px depending on
+   the coin) into the staging dir `img/_hires`. Resolved URLs are cached in
+   `tools/.logo-src.json`, so re-runs skip the rate-limited search.
+3. `node tools/resize-logos.js --clean` — folds the staging dir in at up to
+   **320px** and deletes it. 320 is sized for Blur mode, which draws a logo at
+   ~170px CSS once it settles — ~340px on a 2x screen. Nothing is upscaled: a
+   coin whose source is only 200px stays 200px.
+
+Resize was hardcoded to 64px, then 160px; both threw away resolution the UI
+was already asking for.
+
+**Crowd art** (`img/art/<NAME>.webp`) is decoration, and does *not* come from
+the token icons — see below.
 
 ## The background crowd
 
 pokedle.net ships one 3.3MB `Background.png` containing sky, the Pokemon lineup
-and grass. We can't: the cast has to come from the same 151 logos the game uses,
-and those are square avatars with a flat baked-in background — rendered as-is
-they read as a row of poker chips, not characters standing in a field.
+and grass. The first two attempts here tried to derive the cast from the same
+151 coin logos the game uses, by flood-filling their backgrounds away
+(`tools/cut-logos.js`, now deleted). That could never work:
 
-`tools/cut-logos.js` fixes that offline. In a headless Chrome canvas it:
+- a token icon is typically a character crammed inside a coloured disc, so
+  cutting the background off returns **a disc**, not a character;
+- the source is a 250px JPEG. Drawn into the front band's 106px slot on a 2x
+  screen (212px) it was being upscaled, so the whole strip read as mud.
 
-1. votes on the dominant border colour and bails if the border isn't uniform
-   (a photo or gradient background can't be cut cleanly),
-2. flood-fills that colour inward **from the edges only**, so a white belly
-   stays white while a white background disappears,
-3. feathers the boundary so there's no hard fringe,
-4. trims to the subject's bounding box,
-5. rejects the result if the silhouette is basically a square (`fill > 0.88`) or
-   scores `IoU > 0.86` against a perfect inscribed circle — a cut disc is still
-   the coin shape we're trying to escape.
+The crowd is now a separate, hand-picked set. `tools/art-sources.json` maps a
+character name to a source URL for artwork that already ships an alpha channel
+at 600-4000px; `tools/build-art.js` downloads it, trims to the subject's
+bounding box, renders at **288px** tall (the front band tops out at ~129px CSS,
+so 288 clears 2x) and writes `img/art/` plus the `art.js` manifest. 52
+characters, ~790kb, all lazy-loaded below the fold.
 
-A short hand-curated `NOT_A_CHARACTER` list drops wordmarks and bar charts that
-survive the geometry tests but read as debris. 46 of 151 make it through.
+Names are not tickers: the set carries several poses of the famous memes
+(`WOJAK`, `WOJAK2`, `PEPE`..`PEPE4`, `CHILLGUY`..`CHILLGUY3`) because a crowd
+wants variety more than it wants 1:1 coverage of the dataset. Obscure tickers
+were deliberately left out — generic image search returns stock animals for
+them, and a stock cobra labelled `SNEK` is worse than no `SNEK`.
 
 `buildCrowd()` deals them into three absolutely-positioned depth bands — back
 band smallest, highest, dimmed and desaturated; front band biggest and
@@ -197,13 +206,15 @@ full-strength — with seeded size jitter, random horizontal mirroring and
 negative margins for overlap. Counts are derived from `window.innerWidth`, not
 fixed, or the crowd sits as a clump in the middle of a wide screen; a debounced
 `resize` listener refills. `buildFloaters()` puts a few in the sky, positioned
-in the gutters beside the 620px column so they read as sky rather than as
-fragments peeking out from behind a card.
+in the gutters beside the column so they read as sky rather than as fragments
+peeking out from behind a card.
 
 Two ranks of grass blades are drawn as `.ground::before` / `::after` SVG tiles.
 `.ground` needs `z-index: 4` to sit above `.crowd-row`'s 1-3 — without it the
 blades paint behind the crowd and the horizon slices every character off in a
-dead-straight line.
+dead-straight line. `.crowd`'s negative `margin-bottom` has to clear those
+13px blades and no more, or the front row is buried to the waist instead of
+standing in the grass.
 
 ## Cache busting
 

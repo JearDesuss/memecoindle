@@ -1,13 +1,32 @@
-// Downscale img/*.png to SIZE x SIZE WebP via headless Chrome canvas (CDP, no deps).
-// SIZE defaults to 160: the largest on-screen use is a 52px coin card, so 160
-// covers 2x DPR with room. Run tools/cut-logos.js BEFORE this — the cut-outs
-// want the full-resolution originals.
+// Fold the hi-res originals staged in img/_hires into the shipped img/*.png
+// logos, at the resolution the UI actually renders.
+//
+// SIZE defaults to 320. The largest on-screen use is Blur mode: a 150px frame
+// that opens at scale 1.55 and settles at 1.13, i.e. ~170px CSS or ~340px on a
+// 2x screen. The previous 160px target was less than half that, so the reveal —
+// the moment the player is staring hardest at the logo — landed soft. Coin
+// cards (52px) and autocomplete rows (28px) are comfortably covered either way.
+//
+// Nothing is ever upscaled: a coin whose source is only 200px stays 200px
+// rather than being blown up into a blurry 320.
+//
+// Run tools/refetch-logos.js first to populate img/_hires.
 // Needs Chrome running with --remote-debugging-port=9223 (any page).
-// Usage: SIZE=160 node tools/resize-logos.js
+//   SIZE=320 node tools/resize-logos.js
+//   node tools/resize-logos.js --clean   # also delete img/_hires when done
 const fs = require("fs");
 const path = require("path");
 const ROOT = path.join(__dirname, "..");
 const IMG = path.join(ROOT, "img");
+const HIRES = path.join(IMG, "_hires");
+const SZ = Number(process.env.SIZE) || 320;
+const CLEAN = process.argv.includes("--clean");
+
+function mimeOf(buf) {
+  if (buf[0] === 0xff) return "image/jpeg";
+  if (buf.slice(0, 4).toString() === "RIFF") return "image/webp";
+  return "image/png";
+}
 
 async function main() {
   const list = await (await fetch("http://localhost:9223/json")).json();
@@ -20,37 +39,44 @@ async function main() {
   await send("Runtime.enable");
 
   const files = fs.readdirSync(IMG).filter((f) => f.endsWith(".png"));
-  let done = 0, saved = 0, before = 0, after = 0;
+  let done = 0, rewritten = 0, before = 0, after = 0;
   for (const f of files) {
-    const p = path.join(IMG, f);
-    const buf = fs.readFileSync(p);
-    before += buf.length;
-    if (buf.length < 6000) { after += buf.length; done++; continue; } // already tiny
-    const mime = buf[0] === 0xff ? "image/jpeg" : (buf.slice(0, 4).toString() === "RIFF" ? "image/webp" : "image/png");
-    const dataUri = "data:" + mime + ";base64," + buf.toString("base64");
-    const SZ = Number(process.env.SIZE) || 160;
+    const shipped = path.join(IMG, f);
+    const staged = path.join(HIRES, f);
+    // the staged original wins when we have one, otherwise re-encode in place
+    const srcPath = fs.existsSync(staged) ? staged : shipped;
+    const cur = fs.readFileSync(shipped);
+    const buf = fs.readFileSync(srcPath);
+    before += cur.length;
+    const dataUri = "data:" + mimeOf(buf) + ";base64," + buf.toString("base64");
     const expr = `(async () => {
-      const SZ = ${SZ};
+      const CAP = ${SZ};
       const img = new Image();
       await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error('load')); img.src = ${JSON.stringify(dataUri)}; });
+      // never upscale — a 200px source stays 200px
+      const SZ = Math.min(CAP, Math.max(img.width, img.height));
       const c = document.createElement('canvas'); c.width = SZ; c.height = SZ;
       const x = c.getContext('2d');
       x.imageSmoothingQuality = 'high';
       const s = Math.max(SZ / img.width, SZ / img.height);
       const w = img.width * s, h = img.height * s;
       x.drawImage(img, (SZ - w) / 2, (SZ - h) / 2, w, h);
-      return c.toDataURL('image/webp', 0.88).split(',')[1];
+      return { d: c.toDataURL('image/webp', 0.88).split(',')[1], px: SZ };
     })()`;
     const r = await send("Runtime.evaluate", { expression: expr, awaitPromise: true, returnByValue: true });
-    const b64 = r.result && r.result.result && r.result.result.value;
-    if (b64) {
-      const out = Buffer.from(b64, "base64");
-      if (out.length > 100 && out.length < buf.length) { fs.writeFileSync(p, out); saved++; after += out.length; }
-      else after += buf.length;
-    } else { after += buf.length; console.log("skip (no result):", f); }
+    const v = r.result && r.result.result && r.result.result.value;
+    if (v && v.d) {
+      const out = Buffer.from(v.d, "base64");
+      // keep whichever is better: a bigger render, or the smaller file at equal size
+      if (out.length > 100 && (srcPath === staged || out.length < cur.length)) {
+        fs.writeFileSync(shipped, out);
+        rewritten++; after += out.length;
+      } else after += cur.length;
+    } else { after += cur.length; console.log("skip (no result):", f); }
     done++;
   }
-  console.log(`resized ${saved}/${done}: ${(before / 1048576).toFixed(2)}MB -> ${(after / 1048576).toFixed(2)}MB`);
-  ws.close();
+  console.log(`rewrote ${rewritten}/${done} at up to ${SZ}px: ${(before / 1048576).toFixed(2)}MB -> ${(after / 1048576).toFixed(2)}MB`);
+  if (CLEAN && fs.existsSync(HIRES)) { fs.rmSync(HIRES, { recursive: true, force: true }); console.log("removed img/_hires"); }
+  ws.close(); process.exit(0);
 }
 main().catch((e) => { console.error(e.message); process.exit(1); });

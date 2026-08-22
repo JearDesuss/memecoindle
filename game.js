@@ -333,9 +333,9 @@
   }
 
   // ──────────────── the crowd standing in the grass ────────────────
-  function cutList() {
-    if (typeof CUTOUTS === "undefined") return [];
-    var keys = Object.keys(CUTOUTS);
+  function artList() {
+    if (typeof ART === "undefined") return [];
+    var keys = Object.keys(ART);
     var rnd = mulberry32(0x120573);
     for (var i = keys.length - 1; i > 0; i--) {
       var j = Math.floor(rnd() * (i + 1));
@@ -343,23 +343,29 @@
     }
     return keys;
   }
-  function cutImg(ticker, h) {
-    var dims = CUTOUTS[ticker];
+  function artImg(name, h) {
+    var dims = ART[name];
     var img = document.createElement("img");
-    img.src = (typeof CUT_SRC !== "undefined" && CUT_SRC[ticker]) || ("img/cut/" + ticker + ".png");
-    img.alt = ""; img.loading = "lazy"; img.decoding = "async"; img.title = ticker;
+    img.src = (typeof ART_SRC !== "undefined" && ART_SRC[name]) || ("img/art/" + name + ".webp");
+    img.alt = ""; img.loading = "lazy"; img.decoding = "async";
+    img.title = name.replace(/\d+$/, "");
+    var w = Math.max(8, Math.round(h * (dims[0] / dims[1])));
     img.style.height = h + "px";
-    img.style.width = Math.max(8, Math.round(h * (dims[0] / dims[1]))) + "px";
+    img.style.width = w + "px";
+    // real intrinsic size so the row reserves its space before the art decodes
+    img.width = w; img.height = h;
     return img;
   }
   function buildCrowd() {
     var wrap = $("crowd");
     if (!wrap) return;
     var rows = wrap.querySelectorAll(".crowd-row");
-    var keys = cutList();
+    var keys = artList();
     if (!rows.length || !keys.length) return;
     var vw = window.innerWidth;
-    var HEIGHTS = vw <= 760 ? [36, 48, 62] : [46, 62, 82];
+    // the art is real illustration now, not a 160px token icon, so it can be
+    // shown at a size where you can actually tell who is standing there
+    var HEIGHTS = vw <= 760 ? [42, 58, 76] : [58, 80, 106];
     var rnd = mulberry32(0x9F17E5);
     var at = 0;
     for (var b = 0; b < rows.length && b < HEIGHTS.length; b++) {
@@ -370,8 +376,10 @@
       var n = Math.ceil(vw / (bh * 0.78)) + 2;
       for (var i = 0; i < n; i++) {
         var h = Math.round(bh * (0.82 + rnd() * 0.4));
-        var img = cutImg(keys[at % keys.length], h); at++;
-        img.style.marginInline = "-" + Math.round(h * (0.04 + rnd() * 0.11)) + "px";
+        var img = artImg(keys[at % keys.length], h); at++;
+        // enough overlap to read as a crowd, little enough that you can still
+        // tell who each one is — the art is worth seeing now
+        img.style.marginInline = "-" + Math.round(h * (0.01 + rnd() * 0.06)) + "px";
         img.style.marginBottom = "-" + Math.round(rnd() * 7) + "px";
         if (rnd() < 0.5) img.style.transform = "scaleX(-1)";
         row.appendChild(img);
@@ -380,8 +388,8 @@
   }
   function buildFloaters() {
     var wrap = $("floaters");
-    if (!wrap || typeof CUTOUTS === "undefined") return;
-    var keys = cutList();
+    if (!wrap || typeof ART === "undefined") return;
+    var keys = artList();
     if (!keys.length) return;
     clear(wrap);
     var rnd = mulberry32(0x5C1E5);
@@ -391,7 +399,7 @@
       ? [[12, 13], [88, 9]]
       : [[6, 12], [94, 8], [4, 34], [96, 29]];
     for (var i = 0; i < spots.length; i++) {
-      var img = cutImg(keys[(keys.length - 1 - i + keys.length) % keys.length], 32 + Math.round(rnd() * 16));
+      var img = artImg(keys[(keys.length - 1 - i + keys.length) % keys.length], 32 + Math.round(rnd() * 16));
       img.className = "floater";
       img.style.left = spots[i][0] + "%";
       img.style.top = spots[i][1] + "%";
