@@ -1,0 +1,48 @@
+{
+  "_readme": [
+    "ticker -> CoinGecko coin id, for coins whose ticker is ambiguous or whose",
+    "symbol is non-latin. fetch-logos.js consults this before searching, so a",
+    "generic ticker (FOX, TOBY, PANDA, SKI, CAW, VLAD, JOHN) can never pick up",
+    "an unrelated project's logo. Verified against /coins/list?include_platform",
+    "— every id below sits on the chain the dataset claims for it."
+  ],
+
+  "PIPEDOG": "pipedog",
+  "CASHDOG": "cash-dog",
+  "JOHN": "little-john",
+  "HMM": "thinking-cat",
+  "MOW": "mowcat",
+  "YOLO": "yolo-2",
+  "WOOF": "shibinhood",
+  "BYCOCKET": "bycocket-2",
+  "VLAD": "vladhood",
+  "FOX": "robin-hood-2",
+  "STOCKIMPALER": "the-stock-impaler",
+  "NASDANQ": "nasdanq",
+
+  "BASECAT": "basecat",
+  "DRB": "debtreliefbot",
+  "TOSHI": "toshi",
+  "MIGGLES": "mister-miggles",
+  "KEYCAT": "keyboard-cat-base",
+  "DOGINME": "doginme",
+  "CAW": "crow-with-knife",
+  "TOBY": "toby-toadgod",
+  "SKI": "ski-mask-dog",
+  "BALD": "bald",
+  "TYBG": "base-god",
+
+  "BINANCELIFE": "bianrensheng",
+  "GIGGLE": "giggle-fund",
+  "TUT": "tutorial",
+  "HAJIMI": "hakimi",
+  "LOBSTER": "lobster-2",
+  "MAME": "mame-inu",
+  "PANDA": "panda-head",
+  "LAOZI": "laozi",
+
+  "ASTEROID": "asteroid-shiba",
+  "USDUC": "unstable-coin",
+  "LMEOW": "lmeow-2",
+  "ONLYMARMS": "onlymarms"
+}

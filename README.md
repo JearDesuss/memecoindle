@@ -2,9 +2,11 @@
 
 **Play: https://jeardesuss.github.io/memecoindle/**
 
-Guess the memecoin of the day — three ways, on one screen. 151 coins, from $DOGE
-in 2013 to whatever rotated on pump.fun this summer. Six tries each, a fresh
-coin per mode every day, and a spoiler-free share grid at the end.
+Guess the memecoin of the day — three ways, on one screen. 186 coins, from $DOGE
+in 2013 to whatever rotated on pump.fun, four.meme and Robinhood Chain this
+summer. Six tries each, a fresh coin per mode every day, and a spoiler-free
+share grid at the end. The daily rotation is weighted towards recent coins —
+2026 launches come up roughly three times as often as pre-2024 ones.
 
 | mode | the puzzle |
 |------|-----------|
@@ -42,13 +44,16 @@ No build, no dependencies.
   [docs/DATA.md](docs/DATA.md) · [docs/LEADERBOARD.md](docs/LEADERBOARD.md)
 - **Daily schedule (spoilers)**: `node tools/schedule.js 30`
 - **Test** (node 22+, Chrome): serve on :8471, run Chrome with
-  `--remote-debugging-port=9223`, then `node test/cdp-test.js` — 51 checks
+  `--remote-debugging-port=9223`, then `node test/cdp-test.js` — 53 checks
   across all three modes, endless and the archive
 - **Logos**: `node tools/fetch-logos.js` (only fetches missing) for new coins,
   `node tools/refetch-logos.js` to pull the highest resolution CoinGecko
-  actually holds into `img/_hires`, then `node tools/resize-logos.js --clean`
-  to fold that in at up to 320px and drop the staging dir. 320 is sized for
-  Blur mode, which renders a logo at ~170px CSS — ~340px on a 2x screen.
+  actually holds into `img/_hires`, `node tools/upsize-logos.js` to try
+  DexScreener for whatever CoinGecko only has at 250px, then
+  `node tools/resize-logos.js --clean` to fold it all in at up to 320px and
+  drop the staging dir. 320 is sized for Blur mode, which renders a logo at
+  ~170px CSS — ~340px on a 2x screen. A coin whose ticker is ambiguous or
+  non-latin gets pinned to a CoinGecko id in `tools/logo-overrides.json`.
 - **Background crowd**: `node tools/build-art.js` (needs Chrome on :9223) pulls
   the hand-picked high-resolution character art listed in
   `tools/art-sources.json`, trims each to its subject, renders it at 340px tall

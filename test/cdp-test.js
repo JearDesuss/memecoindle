@@ -13,12 +13,15 @@ const MODES = Object.keys(SEEDS);
 const EPOCH = new Date(2026, 7, 21);
 const now = new Date();
 const day = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - EPOCH) / 86400000);
+// must match recencyWeight() in game.js
+function recencyWeight(y){ if(y>=2026) return 4; if(y===2025) return 2.5; if(y===2024) return 1.5; return 1; }
 const ORDER = {};
 for (const m of MODES) {
-  const idx = COINS.map((_, i) => i);
   const rnd = mulberry32(SEEDS[m]);
-  for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
-  ORDER[m] = idx;
+  // must match orderFor() in game.js: Efraimidis–Spirakis, key = u^(1/w) desc
+  const keyed = COINS.map((c, i) => ({ i, k: Math.pow(rnd(), 1 / recencyWeight(c.y)) }));
+  keyed.sort((a, b) => b.k - a.k || a.i - b.i);
+  ORDER[m] = keyed.map((e) => e.i);
 }
 const STRIDE = 61; // must match game.js
 // mirrors dailyCoin(): fixed mode order, walk forward past collisions

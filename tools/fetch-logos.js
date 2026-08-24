@@ -28,7 +28,46 @@ async function download(url, dest) {
   return buf.length;
 }
 
+// Ticker -> CoinGecko id, for coins whose symbol is ambiguous (FOX, TOBY,
+// PANDA, JOHN...) or non-latin (币安人生, 哈基米). Search-by-ticker happily
+// returns an unrelated project with the same symbol, and a wrong logo is worse
+// than none — Blur mode is nothing but the logo. One /coins/markets call
+// resolves the whole table.
+const OVERRIDES = (() => {
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(__dirname, "logo-overrides.json"), "utf8"));
+    return Object.fromEntries(Object.entries(raw).filter(([k]) => k[0] !== "_"));
+  } catch (e) { return {}; }
+})();
+const PINNED = {}; // ticker -> image url, filled by resolvePinned()
+
+async function resolvePinned(tickers) {
+  const ids = tickers.filter((t) => OVERRIDES[t]).map((t) => OVERRIDES[t]);
+  if (!ids.length) return;
+  const byId = {};
+  for (let i = 0; i < ids.length; i += 200) {
+    const chunk = ids.slice(i, i + 200).join(",");
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      try {
+        const rows = await jget("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&per_page=250&ids=" + chunk);
+        rows.forEach((r) => { if (r.image) byId[r.id] = r.image; });
+        break;
+      } catch (e) {
+        console.log("    pinned lookup " + (/429/.test(e.message) ? "rate-limited" : e.message) + ", retry " + attempt);
+        await sleep(/429/.test(e.message) ? 40000 : 3000);
+      }
+    }
+    await sleep(2200);
+  }
+  for (const t of tickers) {
+    const url = byId[OVERRIDES[t]];
+    if (url) PINNED[t] = url;
+    else if (OVERRIDES[t]) console.log("--  " + t.padEnd(12) + "pinned id " + OVERRIDES[t] + " returned no image");
+  }
+}
+
 async function fromCoinGecko(coin) {
+  if (PINNED[coin.t]) return PINNED[coin.t];
   for (const q of [coin.n, coin.t]) {
     try {
       const j = await jget("https://api.coingecko.com/api/v3/search?query=" + encodeURIComponent(q));
@@ -71,6 +110,13 @@ async function fromDexScreener(coin) {
     : null;
   const manifest = {};
   let got = 0, missed = [];
+  // Resolve pinned ids up front, but only for coins this run will actually
+  // download — no point spending a request on logos already on disk.
+  await resolvePinned(COINS.filter((c) => {
+    if (onlyTickers && !onlyTickers.has(c.t.toUpperCase())) return false;
+    const d = path.join(IMG_DIR, c.t + ".png");
+    return force || !(fs.existsSync(d) && fs.statSync(d).size > 400);
+  }).map((c) => c.t));
   for (const coin of COINS) {
     const dest = path.join(IMG_DIR, coin.t + ".png");
     const rel = "img/" + coin.t + ".png";

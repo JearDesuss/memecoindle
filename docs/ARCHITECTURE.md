@@ -6,7 +6,7 @@ scripts loaded in order; everything else is optional.
 ```
 index.html      the whole dashboard + modals (help/settings/stats/archive/reveal/board)
 style.css       the whole design system (tokens up top in :root)
-data.js         the item list — 151 coins + enums + tier functions
+data.js         the item list — 186 coins + enums + tier functions
 logos.js        generated manifest: ticker -> img/<TICKER>.png
 art.js          generated manifest: name -> [w,h] of img/art/<NAME>.webp
 lb.js           leaderboard/pot client (dormant until LB_API is set)
@@ -62,12 +62,21 @@ peak → now). Only Classic has the per-day hint.
 Every client must agree on each mode's coin with no server. `game.js`:
 
 - `EPOCH = 2026-08-21` (local time). Day number = whole days since epoch.
-- Each mode has its **own fixed seed**; a mulberry32 Fisher–Yates shuffle of
-  the coin indices gives that mode one canonical permutation, identical
-  everywhere. Three seeds → three different coins per day.
+- Each mode has its **own fixed seed**; a mulberry32 weighted shuffle of the
+  coin indices gives that mode one canonical permutation, identical everywhere.
+  Three seeds → three different coins per day.
 - Daily coin = `ORDER[mode][day % length]`.
-- **Classic keeps the original `0x5EED1337`**, so its historical sequence is
-  unchanged from before the multi-mode split. Never change that seed.
+- **Classic keeps the original `0x5EED1337`**, so its seed is unchanged from
+  before the multi-mode split. Never change that seed.
+
+The shuffle is **weighted by launch year**, because the list spans 2013 to now
+but a player's recall doesn't — a coin that ran this year is a fair puzzle, one
+from 2021 is trivia. `recencyWeight()` scores 2026 at 4, 2025 at 2.5, 2024 at
+1.5 and everything older at 1, and `orderFor()` sorts by the Efraimidis–Spirakis
+key `u^(1/w)` descending. That is still a **permutation** — every coin comes up
+exactly once per cycle — but heavier coins land near the front of it. Measured
+over the first 60 days: ~48% of picks are 2026 coins and only ~3% predate 2023.
+Ties break on index so node and the browser can't disagree.
 
 Independent shuffles do occasionally hand the same coin to two modes on the same
 day, which turns solving one into a free hint for the other. `picksFor(day)`
@@ -75,12 +84,14 @@ assigns modes in a fixed order and, on a collision, walks that mode's
 permutation forward by `STRIDE = 61` until it finds a free coin. Classic is
 assigned first, so it never walks and its sequence is untouched. The stride is
 large on purpose: a `+1` walk lands on that mode's *next day*, producing a
-same-coin-twice-in-a-row repeat. 151 is prime, so any stride eventually visits
-every index. Verified over 400 days: zero same-day collisions, zero same-mode
-repeats inside any 7-day window.
+same-coin-twice-in-a-row repeat. The stride must be coprime with the list length
+to visit every index; 61 is prime, so that holds for any length that is not a
+multiple of it (186 % 61 = 3). Verified over 400 days: zero same-day collisions,
+zero same-mode repeats inside any 7-day window.
 
 `tools/schedule.js` and `test/cdp-test.js` each reimplement this — keep the
-three copies in sync if you ever touch the seeds, the stride, or the mode order.
+three copies in sync if you ever touch the seeds, the stride, the mode order or
+`recencyWeight()`.
 
 Consequences:
 - Changing the coin **order or count** in `data.js` reshuffles future dailies
@@ -179,7 +190,7 @@ the token icons — see below.
 
 pokedle.net ships one 3.3MB `Background.png` containing sky, the Pokemon lineup
 and grass. The first two attempts here tried to derive the cast from the same
-151 coin logos the game uses, by flood-filling their backgrounds away
+coin logos the game uses, by flood-filling their backgrounds away
 (`tools/cut-logos.js`, now deleted). That could never work:
 
 - a token icon is typically a character crammed inside a coloured disc, so

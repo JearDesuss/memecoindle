@@ -52,8 +52,25 @@ length** — both reshuffle future days.
 ## Adding a coin
 
 1. Append the object to `COINS` (append, don't insert — smaller blast radius).
-2. `node tools/fetch-logos.js` — fetches only missing logos, updates logos.js.
-3. Restart Chrome debug + `node tools/resize-logos.js` if the new file is big.
-4. Validate: `node -e "eval(require('fs').readFileSync('data.js','utf8'))"`
-   plus the checks in the repo's CI-less ritual: unique n/t, enum membership.
-5. `node tools/schedule.js 7` — accept that future dailies just moved.
+2. If the ticker is generic (`FOX`, `PANDA`, `TOBY`, `JOHN`…) or the symbol is
+   non-latin, add `TICKER: "<coingecko-id>"` to `tools/logo-overrides.json`
+   first. Searching CoinGecko by ticker returns *a* project with that symbol,
+   not necessarily yours, and Blur mode is nothing but the logo. Confirm the id
+   sits on the right chain:
+   `/api/v3/coins/list?include_platform=true` gives every id and its platforms
+   in a single request — cheaper and more reliable than `/search`.
+3. `node tools/fetch-logos.js` — fetches only missing logos, updates logos.js.
+4. `node tools/refetch-logos.js` then `node tools/upsize-logos.js` (Chrome on
+   :9223) to pull real resolution, then `node tools/resize-logos.js --clean`.
+   Blur asserts the logo beats its frame at 2x, so anything stuck at 250px will
+   fail the test on the day it comes up.
+5. Validate: `node -e "eval(require('fs').readFileSync('data.js','utf8'))"`
+   plus the checks in the repo's CI-less ritual: unique n/t, enum membership,
+   and `COINS.length % 61 !== 0` (the daily-pick stride, see ARCHITECTURE.md).
+6. `node tools/bump-assets.js` — data.js changed, so the cache stamp must move.
+7. `node tools/schedule.js 7` — accept that future dailies just moved.
+
+Market caps are cheap to verify in bulk: `/api/v3/coins/markets?ids=a,b,c`
+returns live caps for every pinned id in one call. Do that rather than trusting
+a figure quoted in an article — two of the coins added in August 2026 were being
+reported at 100x their actual current cap.

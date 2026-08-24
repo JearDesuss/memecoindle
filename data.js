@@ -1,7 +1,9 @@
 // memecoindle dataset
-// Sources: memecoin.wiki (155-coin catalogue + per-article figures), contemporaneous reporting, market data.
+// Sources: memecoin.wiki (158-coin catalogue + per-article figures), contemporaneous reporting, market data.
 // m  = PEAK market cap in $M (approx)
-// cm = CURRENT market cap in $M (approx, mid/late-2026 snapshot; refined against memecoin.wiki article data)
+// cm = CURRENT market cap in $M. Coins added Aug 2026 carry the live CoinGecko
+//      figure for their pinned id (tools/logo-overrides.json); older entries are
+//      a mid/late-2026 snapshot refined against memecoin.wiki article data.
 // The game grades both by order-of-magnitude range, not exact value.
 // c = chain, y = launch year, g = category/type, s = fate (metadata, not a game axis), l = lore, w = memecoin.wiki slug
 
@@ -133,7 +135,7 @@ var COINS = [
   { n: "Shark Cat", t: "SC", c: "Solana", y: 2024, m: 390, cm: 10, g: "Cat", s: "Faded", l: "Celebrity cat Nala in a shark costume, licensing dispute included.", w: "shark_cat" },
   { n: "Pajamas Cat", t: "PAJAMAS", c: "Solana", y: 2024, m: 8, cm: 1, g: "Cat", s: "Faded", l: "Honors the first cat video ever uploaded to YouTube. pump.fun folklore.", w: "pajamas_cat" },
   { n: "Hosico", t: "HOSICO", c: "Solana", y: 2025, m: 75, cm: 0.7, g: "Cat", s: "Faded", l: "The internet-famous Scottish Straight, flagship of the letsbonk era.", w: "hosico" },
-  { n: "Catecoin", t: "CATE", c: "Solana", y: 2026, m: 70, cm: 11, g: "Cat", s: "Alive", l: "Cat cult coin carried by a community takeover led by PoorGoat.", w: "catecoin" },
+  { n: "Catecoin", t: "CATE", c: "Solana", y: 2026, m: 91, cm: 35, g: "Cat", s: "Alive", l: "Kabosu's owner posted about a rescued kitten and the trenches called it the cat sister of Dogecoin. She denied any connection; it peaked anyway, then fell 60% in an hour.", w: "catecoin" },
   { n: "KET", t: "KET", c: "Solana", y: 2026, m: 15, cm: 10, g: "Cat", s: "Alive", l: "Community takeover under the slogan 'don't be a pussy'.", w: "ket" },
   { n: "wiwiwi", t: "WIWIWI", c: "Solana", y: 2026, m: 10, cm: 8, g: "Cat", s: "Alive", l: "Flagship of the cult coin rotation: 'cults over cabals'.", w: "wiwiwi" },
   { n: "BILLY", t: "BILLY", c: "Solana", y: 2024, m: 150, cm: 5, g: "Dog", s: "Faded", l: "Abandoned by its dev minutes after launch, rebuilt by the community.", w: "billy" },
@@ -177,5 +179,47 @@ var COINS = [
   { n: "POOH", t: "POOH", c: "Robinhood", y: 2026, m: 2, cm: 1.5, g: "Character", s: "Alive", l: "Riding Winnie's 2026 centenary with a small circle of dedicated posters.", w: "pooh" },
   { n: "Brodie", t: "BRODIE", c: "Robinhood", y: 2026, m: 8, cm: 6, g: "Dog", s: "Alive", l: "Robinhood's real office dog from 2016, tokenized a decade later.", w: "brodie" },
   { n: "TOAD", t: "TOAD", c: "Solana", y: 2026, m: 20, cm: 5.5, g: "Frog", s: "Alive", l: "El Sapo Pepe, the Argentine kids' TV toad from 1988 — 'the first Pepe'.", w: "toad" },
-  { n: "Neiro", t: "NEIRO", c: "Ethereum", y: 2024, m: 1180, cm: 80, g: "Dog", s: "Faded", l: "Kabosu's successor dog sparked a coin war and a controversial double Binance listing.", w: "neiro" }
+  { n: "Neiro", t: "NEIRO", c: "Ethereum", y: 2024, m: 1180, cm: 80, g: "Dog", s: "Faded", l: "Kabosu's successor dog sparked a coin war and a controversial double Binance listing.", w: "neiro" },
+  // ── Robinhood Chain, the July 2026 wave ─────────────────────────────────
+  { n: "pipedog", t: "PIPEDOG", c: "Robinhood", y: 2026, m: 60, cm: 28, g: "Dog", s: "Alive", l: "Up hundreds of times over in the chain's first weeks, then real exchange listings. The trenches' pick for Robinhood's flagship dog.", w: null },
+  { n: "Cash Dog", t: "CASHDOG", c: "Robinhood", y: 2026, m: 45, cm: 0.05, g: "Dog", s: "Collapsed", l: "CASHCAT's dog counterpart, briefly the chain's number two at $40M. It now trades for less than a used car.", w: null },
+  { n: "Little John", t: "JOHN", c: "Robinhood", y: 2026, m: 30, cm: 17, g: "Character", s: "Alive", l: "Robin Hood's right hand, tokenized on Robin Hood's blockchain.", w: null },
+  { n: "Thinking Cat", t: "HMM", c: "Robinhood", y: 2026, m: 25, cm: 16, g: "Cat", s: "Alive", l: "A cat with a paw on its chin. The entire thesis is 'hmm'.", w: null },
+  { n: "MowCat", t: "MOW", c: "Robinhood", y: 2026, m: 22, cm: 15, g: "Cat", s: "Alive", l: "One very loud cat, and a straight-faced claim to be running Ethereum on Robinhood Chain.", w: null },
+  { n: "YOLO", t: "YOLO", c: "Robinhood", y: 2026, m: 15, cm: 5.9, g: "Joke", s: "Alive", l: "The oldest word in retail trading, finally given a ticker on the retail-trading chain.", w: null },
+  { n: "Shibinhood", t: "WOOF", c: "Robinhood", y: 2026, m: 12, cm: 4.1, g: "Dog", s: "Alive", l: "A shiba in a feathered cap. The pun wrote itself, and then somebody deployed it.", w: null },
+  { n: "Bycocket", t: "BYCOCKET", c: "Robinhood", y: 2026, m: 2, cm: 0.025, g: "Joke", s: "Faded", l: "The feathered medieval hat from the Robin Hood legend, wrapped around a PFP generator.", w: null },
+  { n: "Vladhood", t: "VLAD", c: "Robinhood", y: 2026, m: 10, cm: 0.228, g: "Person", s: "Scandal", l: "Hackers took over Vlad Tenev's own X account and shilled a 46-minute-old coin as the official mascot. They left with 650 ETH.", w: null },
+  { n: "Robin Hood", t: "FOX", c: "Robinhood", y: 2026, m: 8, cm: 1.8, g: "Animal", s: "Alive", l: "Disney's 1973 fox — the Robin Hood most people actually picture.", w: null },
+  { n: "The Stock Impaler", t: "STOCKIMPALER", c: "Robinhood", y: 2026, m: 6, cm: 1.3, g: "Joke", s: "Alive", l: "Vlad Tenev as Vlad the Impaler. The chain's own users could not let that name go.", w: null },
+  { n: "NASDANQ", t: "NASDANQ", c: "Robinhood", y: 2026, m: 4, cm: 0.426, g: "Joke", s: "Alive", l: "r/MemeEconomy's fictional meme stock exchange from 2017, finally listed somewhere real.", w: null },
+
+  // ── Base ────────────────────────────────────────────────────────────────
+  { n: "BASECAT", t: "BASECAT", c: "Base", y: 2026, m: 32, cm: 31, g: "Cat", s: "Alive", l: "A cream cat in a blue hard hat that Coinbase's own Base app posted in 2025. The community minted it in August 2026 and it ran 12,000%.", w: "basecat" },
+  { n: "DebtReliefBot", t: "DRB", c: "Base", y: 2025, m: 50, cm: 18, g: "AI", s: "Alive", l: "Grok suggested it, Clanker minted it minutes later. The first token one AI proposed to another.", w: null },
+  { n: "Toshi", t: "TOSHI", c: "Base", y: 2023, m: 943, cm: 58, g: "Cat", s: "Faded", l: "Brian Armstrong's cat, itself named for Satoshi. Base's first mascot and still one of its two Legends.", w: "toshi" },
+  { n: "Mr. Miggles", t: "MIGGLES", c: "Base", y: 2024, m: 184, cm: 4.1, g: "Cat", s: "Faded", l: "A Himalayan cat from a Coinbase campaign about creator rights. Down 98%; its community lead quit for Robinhood Chain.", w: "mr_miggles" },
+  { n: "Keyboard Cat", t: "KEYCAT", c: "Base", y: 2024, m: 170, cm: 7.4, g: "Cat", s: "Faded", l: "The 2007 piano cat, licensed straight from Charlie Schmidt, who filmed the original.", w: null },
+  { n: "doginme", t: "DOGINME", c: "Base", y: 2024, m: 115, cm: 7.2, g: "Dog", s: "Faded", l: "Farcaster's founder said he had no dog, but 'I got that dog in me'. Someone tokenized the dog.", w: null },
+  { n: "crow with knife", t: "CAW", c: "Base", y: 2024, m: 100, cm: 5.5, g: "Animal", s: "Faded", l: "A crow. It has a knife. That is the whole premise and it worked.", w: null },
+  { n: "Toby ToadGod", t: "TOBY", c: "Base", y: 2024, m: 90, cm: 7.8, g: "Frog", s: "Alive", l: "The frog of Base, airdropped to 1.4 million wallets on day one. No VCs, no presale, just toadgod's prophecy.", w: null },
+  { n: "Ski Mask Dog", t: "SKI", c: "Base", y: 2024, m: 70, cm: 4.6, g: "Dog", s: "Faded", l: "A shiba in a balaclava — the Base trenches' answer to the dog-in-a-hat formula.", w: null },
+  { n: "Bald", t: "BALD", c: "Base", y: 2023, m: 68, cm: 14, g: "Person", s: "Scandal", l: "A joke about Brian Armstrong's head, launched days before Base opened. Its dev pulled the liquidity and left Base with its founding trauma.", w: "bald" },
+  { n: "Base God", t: "TYBG", c: "Base", y: 2024, m: 60, cm: 3.1, g: "Joke", s: "Faded", l: "'Thank you Based God' — Lil B's decade-old blessing, repurposed as Base's house chant.", w: null },
+
+  // ── BNB Chain, including the Chinese meme waves ─────────────────────────
+  { n: "Binance Life", t: "BINANCELIFE", c: "BNB Chain", y: 2025, m: 890, cm: 506, g: "Joke", s: "Alive", l: "He Yi answered a joke about 'Apple Life, Android Life' and the community CTO'd 币安人生 into the biggest meme on BNB Chain.", w: null },
+  { n: "Giggle Fund", t: "GIGGLE", c: "BNB Chain", y: 2025, m: 277, cm: 36, g: "Brand", s: "Faded", l: "Donates 5% of every trade to CZ's free-school project — which then publicly distanced itself from the coin.", w: null },
+  { n: "Tutorial", t: "TUT", c: "BNB Chain", y: 2025, m: 61, cm: 41, g: "Brand", s: "Alive", l: "Started as an OG token for the people who wrote BNB Chain's tutorials, then CZ noticed it.", w: null },
+  { n: "Hajimi", t: "HAJIMI", c: "BNB Chain", y: 2025, m: 40, cm: 16, g: "Cat", s: "Alive", l: "哈基米 — a Chinese-internet cat chant, and the breakout of BNB's October 2025 meme season.", w: null },
+  { n: "Lobster", t: "LOBSTER", c: "BNB Chain", y: 2026, m: 40, cm: 26, g: "Animal", s: "Alive", l: "龙虾. January 2026's Chinese meme wave, with no utility and no pretence of any.", w: null },
+  { n: "Mame Inu", t: "MAME", c: "BNB Chain", y: 2025, m: 20, cm: 6.5, g: "Dog", s: "Alive", l: "A bean-sized shiba for a chain that already had three of them.", w: null },
+  { n: "Panda Head", t: "PANDA", c: "BNB Chain", y: 2026, m: 6, cm: 0.617, g: "Character", s: "Alive", l: "熊猫头 — the grinning cut-out face behind a decade of Chinese reaction images.", w: null },
+  { n: "Laozi", t: "LAOZI", c: "BNB Chain", y: 2026, m: 5, cm: 0.594, g: "Person", s: "Alive", l: "老子 — the Tao Te Ching's author, drafted into the January 2026 rotation.", w: null },
+
+  // ── Elsewhere, but too recent or too good to leave out ──────────────────
+  { n: "Asteroid Shiba", t: "ASTEROID", c: "Ethereum", y: 2024, m: 200, cm: 24, g: "Dog", s: "Alive", l: "A plush shiba designed by a teenage cancer patient that actually flew on Polaris Dawn. It peaked two years after launch.", w: "asteroid_shiba" },
+  { n: "Unstable Coin", t: "USDUC", c: "Solana", y: 2025, m: 74, cm: 4.5, g: "Joke", s: "Alive", l: "A stablecoin with no peg, no reserves and no stability mechanism. Its roadmap is flipping USDC.", w: null },
+  { n: "lmeow", t: "LMEOW", c: "Ethereum", y: 2022, m: 10, cm: 2.8, g: "Cat", s: "Faded", l: "GCR wished aloud for a token that would shift meme investing from dogs to cats. This was the one.", w: "lmeow" },
+  { n: "OnlyMarms", t: "ONLYMARMS", c: "Solana", y: 2026, m: 2, cm: 0.645, g: "Animal", s: "Alive", l: "UCLA lost federal funding for a 64-year marmot study, so the lab opened an OnlyFans for 'uncensored marmot content'.", w: "onlymarms" }
 ];

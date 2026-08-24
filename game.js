@@ -41,24 +41,39 @@
   }
   function dayNumber() { return Math.round((todayLocal() - EPOCH) / 86400000); }
 
+  // The list spans 2013 to now, but a player's recall doesn't: a coin that ran
+  // this year is a fair puzzle, one from 2021 is trivia. Weight the rotation so
+  // recent coins land near the front of it. Keep this table in sync with
+  // tools/schedule.js and test/cdp-test.js.
+  function recencyWeight(y) {
+    if (y >= 2026) return 4;
+    if (y === 2025) return 2.5;
+    if (y === 2024) return 1.5;
+    return 1;
+  }
   var ORDERS = {};
   function orderFor(modeId) {
     if (ORDERS[modeId]) return ORDERS[modeId];
-    var idx = COINS.map(function (_, i) { return i; });
     var rnd = mulberry32(MODE_BY_ID[modeId].seed);
-    for (var i = idx.length - 1; i > 0; i--) {
-      var j = Math.floor(rnd() * (i + 1));
-      var t = idx[i]; idx[i] = idx[j]; idx[j] = t;
-    }
-    ORDERS[modeId] = idx;
-    return idx;
+    // Efraimidis–Spirakis weighted shuffle: key = u^(1/w), sorted descending.
+    // Still a permutation — every coin comes up exactly once per cycle — but a
+    // heavier coin is far likelier to draw a key near 1 and sort to the front.
+    // Ties break on index so node and the browser agree.
+    var keyed = COINS.map(function (c, i) {
+      return { i: i, k: Math.pow(rnd(), 1 / recencyWeight(c.y)) };
+    });
+    keyed.sort(function (a, b) { return b.k - a.k || a.i - b.i; });
+    ORDERS[modeId] = keyed.map(function (e) { return e.i; });
+    return ORDERS[modeId];
   }
   // Independent shuffles occasionally hand the same coin to two modes on the
   // same day, which turns solving one into a free hint for the other. Assign in
   // a fixed mode order and walk past collisions — classic is first, so its
-  // historical sequence is never touched. 151 is prime, so any stride walks the
-  // whole permutation; a big one keeps a displaced pick far from that mode's
-  // neighbouring days (a +1 walk would land on its own next day).
+  // historical sequence is never touched. The stride must be coprime with the
+  // list length so it walks the whole permutation; 61 is prime, so that holds
+  // for any length that isn't a multiple of it. A big stride also keeps a
+  // displaced pick far from that mode's neighbouring days (a +1 walk would land
+  // on its own next day).
   var STRIDE = 61;
   var dayPicks = {};
   function picksFor(day) {

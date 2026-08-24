@@ -51,6 +51,37 @@ function dims(b) {
   return null;
 }
 
+// Seed the cache from tools/logo-overrides.json before any searching, so the
+// coins with ambiguous or non-latin symbols resolve to the pinned CoinGecko id
+// instead of whatever the search endpoint feels like returning first.
+async function seedPinned() {
+  let over = {};
+  try {
+    over = Object.fromEntries(Object.entries(
+      JSON.parse(fs.readFileSync(path.join(__dirname, "logo-overrides.json"), "utf8"))
+    ).filter(([k]) => k[0] !== "_"));
+  } catch (e) { return; }
+  const need = Object.keys(over).filter((t) => !cache[t]);
+  if (!need.length || CACHED_ONLY) return;
+  const ids = need.map((t) => over[t]).join(",");
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      const r = await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&per_page=250&ids=" + ids, { headers: { "User-Agent": UA } });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const rows = await r.json();
+      const byId = {};
+      rows.forEach((x) => { if (x.image) byId[x.id] = x.image; });
+      for (const t of need) if (byId[over[t]]) cache[t] = byId[over[t]];
+      fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 1));
+      console.log("seeded " + need.filter((t) => cache[t]).length + "/" + need.length + " pinned logo URLs\n");
+      return;
+    } catch (e) {
+      console.log("  pinned seed " + e.message + ", retry " + attempt);
+      await sleep(/429/.test(e.message) ? 40000 : 3000);
+    }
+  }
+}
+
 async function resolve(coin) {
   if (cache[coin.t]) return cache[coin.t];
   if (CACHED_ONLY) return null;
@@ -80,6 +111,7 @@ async function get(url) {
 
 async function main() {
   fs.mkdirSync(HIRES, { recursive: true });
+  await seedPinned();
   let upgraded = 0, kept = 0, missing = 0;
   for (const coin of COINS) {
     if (!LOGOS[coin.t]) { missing++; continue; }

@@ -23,15 +23,20 @@ function mulberry32(a) {
 const SEEDS = { classic: 0x5EED1337, blur: 0x1D0FBE47, lore: 0x4B19AC03 };
 const EPOCH = new Date(2026, 7, 21); // must match game.js
 
+// must match recencyWeight() in game.js — newer coins sort to the front
+function recencyWeight(y) {
+  if (y >= 2026) return 4;
+  if (y === 2025) return 2.5;
+  if (y === 2024) return 1.5;
+  return 1;
+}
 const ORDER = {};
 for (const [mode, seed] of Object.entries(SEEDS)) {
-  const idx = COINS.map((_, i) => i);
   const rnd = mulberry32(seed);
-  for (let i = idx.length - 1; i > 0; i--) {
-    const j = Math.floor(rnd() * (i + 1));
-    [idx[i], idx[j]] = [idx[j], idx[i]];
-  }
-  ORDER[mode] = idx;
+  // must match orderFor() in game.js: Efraimidis–Spirakis, key = u^(1/w) desc
+  const keyed = COINS.map((c, i) => ({ i, k: Math.pow(rnd(), 1 / recencyWeight(c.y)) }));
+  keyed.sort((a, b) => b.k - a.k || a.i - b.i);
+  ORDER[mode] = keyed.map((e) => e.i);
 }
 const STRIDE = 61; // must match game.js
 // must match dailyCoin() in game.js: fixed mode order, walk past collisions
