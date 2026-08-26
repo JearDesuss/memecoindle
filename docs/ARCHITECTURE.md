@@ -137,14 +137,19 @@ their streak and today's in-progress board.
 
 ## Design system
 
-Tokens in `:root` of style.css. Identity: a bright pixel-arcade overworld —
-sky gradient with drifting outlined pixel clouds, cream panels with a 4px ink
-border, a coloured header bar and a hard `0 6px 0` shadow that collapses on
-`:active`, a grass-and-dirt band that flexes to fill whatever the content
-doesn't, and a crowd of real coin logos standing in it. Every surface shares one
-near-black outline (`--ink`) so the page reads as a single sprite sheet. Luckiest Guy for the logo (layered SVG strokes),
-Jersey 15 for letter-only labels, Baloo 2 for body copy and for anything
-containing a digit, all with system fallbacks so the offline build still reads.
+**[DESIGN.md](../DESIGN.md) at the repo root is the contract — read it before
+touching style.css.** It holds the north star, the full token vocabulary and the
+dos/donts with their reasons. What follows is only the mechanical summary.
+
+Tokens live in `:root` of style.css and nowhere else: a literal hex or px inside
+a component rule is a bug. Three radii (`--r-1` / `--r-2` / `--r-pill`), two die
+widths (`--cut` / `--cut-in`), two lifts (`--lift` / `--lift-card`), one accent
+(`--gold`), three status hues, and a named neutral ramp from `--ink` to
+`--snow`. Elevation is one hard offset shadow with zero blur; fills are flat.
+Gradients survive only in the scenery (sky, grass, dirt). Luckiest Guy for the
+logo (layered SVG strokes), Jersey 15 for letter-only labels, Baloo 2 for body
+copy and for anything containing a digit, all with system fallbacks so the
+offline build still reads.
 
 Two faces were tried and rejected on legibility, both caught by rendering the
 real strings rather than a pangram: **Pixelify Sans** closes its C, G and 2, so

@@ -4,17 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Memedle — daily memecoin guessing game</title>
-<meta name="description" content="Guess the memecoin of the day. Three modes: clues, a blurry logo, or one unhinged sentence. New puzzles every day.">
+<meta name="description" content="Guess the memecoin of the day. Three modes: a clue grid, a blurred logo, or one line of lore. A new coin in each, every day.">
 <meta property="og:title" content="Memedle">
-<meta property="og:description" content="Daily guess a memecoin. Three modes. Were you there?">
+<meta property="og:description" content="One memecoin a day, three ways to guess it. Were you there?">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪙</text></svg>">
 <meta name="theme-color" content="#5CC0F0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Jersey+15&family=Baloo+2:wght@500..800&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="img/memedle-mascot-horizon-v2.webp?v=92cdaac7" type="image/webp" fetchpriority="high">
-<link rel="stylesheet" href="style.css?v=92cdaac7">
+<link rel="preload" as="image" href="img/memedle-mascot-horizon-v2.webp?v=6f1a00b2" type="image/webp" fetchpriority="high">
+<link rel="stylesheet" href="style.css?v=6f1a00b2">
 </head>
 <body>
 
@@ -34,7 +34,7 @@
     </div>
   </header>
 
-  <p class="tagline">Daily guess a memecoin!</p>
+  <p class="tagline">One memecoin a day. Six guesses.</p>
 
   <div class="layout">
 
@@ -75,26 +75,24 @@
 
     <!-- ── right rail: yesterday + rules ── -->
     <aside class="col col-right">
-      <section class="panel panel-pink">
+      <section class="panel">
         <div class="panel-bar">
-          <span class="bar-ico">🏆</span>
           <h2 class="panel-title">Yesterday</h2>
         </div>
         <div class="panel-body" id="yesterday-body"></div>
       </section>
 
       <section class="panel">
-        <div class="panel-bar dark">
-          <span class="bar-ico">🎮</span>
+        <div class="panel-bar">
           <h2 class="panel-title">How to play</h2>
         </div>
         <div class="panel-body">
           <ul class="rule-list">
-            <li><span class="tick">✓</span> 6 guesses</li>
-            <li><span class="tick">✓</span> Use meme knowledge</li>
-            <li><span class="tick">✓</span> Guess the memecoin</li>
+            <li><span class="tick">✓</span> Six guesses a day</li>
+            <li><span class="tick">✓</span> Three modes, three coins</li>
+            <li><span class="tick">✓</span> Miss a day, lose the streak</li>
           </ul>
-          <button class="degen-chip" id="btn-help-2">🏆 Think like a degen.</button>
+          <button class="degen-chip" id="btn-help-2">The long version</button>
         </div>
       </section>
     </aside>
@@ -102,7 +100,7 @@
 
   <!-- ── more memedle ── -->
   <section class="more">
-    <h2 class="more-title"><span class="spark">✦</span> More Memedle <span class="spark">✦</span></h2>
+    <h2 class="more-title">Keep playing</h2>
     <div class="pill-row" id="pill-row"></div>
     <p class="text-links">
       <button data-go="stats">Stats</button><span>·</span>
@@ -120,7 +118,7 @@
   <div class="modal">
     <button class="modal-close" data-close aria-label="Close">✕</button>
     <h2 id="help-h">How to play</h2>
-    <p>A new memecoin every day, in <strong>three flavours</strong>. Six tries each. Miss a day and the streak dies.</p>
+    <p>A new coin every day in <strong>all three modes</strong>. Six guesses each. Miss a day and the streak dies.</p>
     <div id="help-modes" class="help-modes"></div>
     <h3>Classic feedback</h3>
     <ul class="help-list">
@@ -191,9 +189,9 @@
   </div>
 </div>
 
-<script src="data.js?v=92cdaac7"></script>
-<script src="logos.js?v=92cdaac7"></script>
-<script src="lb.js?v=92cdaac7"></script>
-<script src="game.js?v=92cdaac7"></script>
+<script src="data.js?v=6f1a00b2"></script>
+<script src="logos.js?v=6f1a00b2"></script>
+<script src="lb.js?v=6f1a00b2"></script>
+<script src="game.js?v=6f1a00b2"></script>
 </body>
 </html>

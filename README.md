@@ -30,6 +30,8 @@ crime scenes.
 - Per-mode streaks, stats and guess distribution
 - Unlimited mode for every puzzle type
 - Colourblind mode (blue/orange), record wipe, OS reduced-motion respected
+- Outbound X and DexScreener buttons — drop a URL into `SOCIAL` in `game.js` and
+  they go live; empty means a muted `soon` sticker
 - Reveal card with lore, drawdown bar, and a memecoin.wiki link
 - Optional global leaderboard + daily winner pot — see [docs/LEADERBOARD.md](docs/LEADERBOARD.md)
 
@@ -40,11 +42,12 @@ No build, no dependencies.
 
 ## Develop
 
-- **Docs**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ·
+- **Docs**: [DESIGN.md](DESIGN.md) — the design contract; read it before
+  touching `style.css` · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ·
   [docs/DATA.md](docs/DATA.md) · [docs/LEADERBOARD.md](docs/LEADERBOARD.md)
 - **Daily schedule (spoilers)**: `node tools/schedule.js 30`
 - **Test** (node 22+, Chrome): serve on :8471, run Chrome with
-  `--remote-debugging-port=9223`, then `node test/cdp-test.js` — 51 checks
+  `--remote-debugging-port=9223`, then `node test/cdp-test.js` — 52 checks
   across all three modes, endless and the archive
 - **Logos**: `node tools/fetch-logos.js` (only fetches missing) for new coins,
   `node tools/refetch-logos.js` to pull the highest resolution CoinGecko

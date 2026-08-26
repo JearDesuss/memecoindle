@@ -107,7 +107,8 @@ async function cdp() {
     "!!document.querySelector('link[rel=preload][href*=memedle-mascot-horizon-v2]')"));
   check("no images failed to load", await evaljs(
     "Array.from(document.images).filter(function(i){return i.complete && i.naturalWidth===0}).length") === 0);
-  check("X social button rendered", await evaljs("!!document.querySelector('.social-btn')"));
+  check("X and DexScreener social buttons rendered", await evaljs("document.querySelectorAll('.social-btn').length") === 2);
+  check("both social icons drew a glyph", await evaljs("Array.from(document.querySelectorAll('.social-btn svg')).length") === 2);
   check("no horizontal overflow", await evaljs("document.documentElement.scrollWidth <= document.documentElement.clientWidth"));
 
   console.log("\nrouting");

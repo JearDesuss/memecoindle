@@ -9,13 +9,18 @@
 
   // Leave a URL empty and the button renders as a dead "soon" chip instead of a
   // link, so nothing ever points at a 404.
-  var SOCIAL = [{ id: "x", label: "Follow on X", url: "" }];
+  // Drop a URL in and the button goes live; leave it empty and it renders
+  // as a printed-but-not-stuck sticker with a "soon" tag.
+  var SOCIAL = [
+    { id: "x",   label: "",            title: "Memedle on X",           url: "" },
+    { id: "dex", label: "DexScreener", title: "Memedle on DexScreener", url: "" }
+  ];
 
   // Classic keeps the original seed so its daily sequence never shifts.
   var MODES = [
-    { id: "classic", name: "Classic", icon: "DOGE", blurb: "Guess from attributes.",        seed: 0x5EED1337, kind: "grid" },
-    { id: "blur",    name: "Blur",    icon: "PEPE", blurb: "Logo starts cursed. It clears.", seed: 0x1D0FBE47, kind: "stage" },
-    { id: "lore",    name: "Lore",    icon: "SHIB", blurb: "One unhinged sentence.",         seed: 0x4B19AC03, kind: "stage" }
+    { id: "classic", name: "Classic", icon: "DOGE", blurb: "Five clues on every guess.",   seed: 0x5EED1337, kind: "grid" },
+    { id: "blur",    name: "Blur",    icon: "PEPE", blurb: "The logo, out of focus.",      seed: 0x1D0FBE47, kind: "stage" },
+    { id: "lore",    name: "Lore",    icon: "SHIB", blurb: "One line, name blacked out.",  seed: 0x4B19AC03, kind: "stage" }
   ];
   var MODE_BY_ID = {};
   MODES.forEach(function (m) { MODE_BY_ID[m.id] = m; });
@@ -506,20 +511,18 @@
     var row = $("pill-row");
     if (!row) return;
     clear(row);
-    var tones = ["pill-green", "pill-cream"];
-    var t = 0;
     MODES.forEach(function (m) {
       if (m.id === modeId) return;
       var a = document.createElement("a");
-      a.className = "pill " + tones[t++ % tones.length];
+      a.className = "pill";
       a.href = "#/" + m.id;
       a.textContent = m.name;
       row.appendChild(a);
     });
-    var endless = el("a", "pill pill-purple", "∞ Endless");
+    var endless = el("a", "pill", "∞ Endless");
     endless.href = "#/" + modeId + "/unlimited";
     row.appendChild(endless);
-    var arch = el("button", "pill pill-yellow", "🏆 Archive");
+    var arch = el("button", "pill", "Archive");
     arch.addEventListener("click", openArchive);
     row.appendChild(arch);
   }
@@ -577,7 +580,7 @@
         var coin = el("div", "mystery");
         coin.appendChild(el("span", null, "?"));
         stage.appendChild(coin);
-        stage.appendChild(el("div", "stage-cap", "Who is today's coin?"));
+        stage.appendChild(el("div", "stage-cap", "Today's coin"));
       }
       return;
     }
@@ -656,8 +659,8 @@
 
     if (guesses.length === 0 && !done) {
       board.appendChild(el("div", "empty-note", isGrid
-        ? COINS.length + " coins are in play. The majors make good openers."
-        : "Every miss hands you one more clue. Spend them wisely."));
+        ? COINS.length + " coins in the deck."
+        : "Every miss buys you a clue."));
     } else if (isGrid) {
       guesses.forEach(function (coin, gi) {
         var row = el("div", "guess-row");
@@ -709,13 +712,12 @@
     if (hintAxis >= 0) {
       var v = [target.c, target.g, String(target.y), fmtCap(target.m), fmtCap(target.cm)][hintAxis];
       var chip = el("div", "hint-chip");
-      chip.appendChild(el("span", null, "💡"));
       chip.appendChild(el("span", null, COL_NAMES[hintAxis] + ": " + v));
       area.appendChild(chip);
       return;
     }
     if (done || guesses.length < 1) return;
-    var btn = el("button", "hint-btn", "💡 hint (1)");
+    var btn = el("button", "hint-btn", "Spend a hint");
     btn.addEventListener("click", function () {
       var solved = {};
       guesses.forEach(function (c) {
@@ -1039,7 +1041,10 @@
 
   // ──────────────── socials ────────────────
   var SOCIAL_ICON = {
-    x: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>'
+    x: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>',
+    // two candles with wicks — drawn here rather than lifted, so it inherits
+    // currentColor and sits on the same 24px grid as the X mark
+    dex: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 2h3v4h2v9H9v4H6v-4H4V6h2V2zm9 3h3v5h2v7h-2v5h-3v-5h-2v-7h2V5z"/></svg>'
   };
   function renderSocial() {
     var row = $("social-row");
@@ -1050,13 +1055,14 @@
       var node = document.createElement(live ? "a" : "button");
       node.className = "social-btn" + (live ? "" : " soon");
       node.innerHTML = SOCIAL_ICON[s.id] || "";
+      if (s.label) node.appendChild(el("span", "social-label", s.label));
       if (live) {
         node.href = s.url; node.target = "_blank"; node.rel = "noopener";
-        node.title = s.label; node.setAttribute("aria-label", s.label);
+        node.title = s.title; node.setAttribute("aria-label", s.title);
       } else {
         node.type = "button";
-        node.title = s.label + " — coming soon";
-        node.setAttribute("aria-label", s.label + ", coming soon");
+        node.title = s.title + " — not up yet";
+        node.setAttribute("aria-label", s.title + ", not up yet");
         node.appendChild(el("span", "soon-tag", "soon"));
         node.addEventListener("click", function () {
           node.classList.add("nudge");
