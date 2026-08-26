@@ -6,8 +6,7 @@
 // longer has, it throws on the first getElementById and the page renders dead.
 // Bumping the stamp gives the assets new URLs, so that pairing is impossible.
 //
-// Run this before any deploy that changes style.css, game.js, data.js, logos.js
-// or lb.js:
+// Run this before any deploy that changes the page's CSS, scripts, or hero art:
 //   node tools/bump-assets.js          # stamp with a hash of the asset contents
 //   node tools/bump-assets.js --check  # exit 1 if the stamp is stale (CI-friendly)
 const fs = require("fs");
@@ -16,7 +15,14 @@ const crypto = require("crypto");
 
 const ROOT = path.join(__dirname, "..");
 const INDEX = path.join(ROOT, "index.html");
-const ASSETS = ["style.css", "data.js", "logos.js", "art.js", "lb.js", "game.js"];
+const ASSETS = [
+  "style.css",
+  "data.js",
+  "logos.js",
+  "lb.js",
+  "game.js",
+  "img/memedle-mascot-horizon-v2.webp",
+];
 
 const args = process.argv.slice(2);
 const check = args.includes("--check");

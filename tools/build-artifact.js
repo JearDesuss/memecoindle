@@ -13,7 +13,7 @@ function mimeOf(buf) {
   return "image/png";
 }
 
-const css = fs.readFileSync(path.join(ROOT, "style.css"), "utf8");
+let css = fs.readFileSync(path.join(ROOT, "style.css"), "utf8");
 const data = fs.readFileSync(path.join(ROOT, "data.js"), "utf8");
 let game = fs.readFileSync(path.join(ROOT, "game.js"), "utf8");
 const lb = fs.readFileSync(path.join(ROOT, "lb.js"), "utf8");
@@ -51,6 +51,12 @@ try {
 } catch (e) { /* no art yet — the crowd just stays empty */ }
 const cutDims = Object.fromEntries(Object.entries(cutsInline).map(([k, v]) => [k, v.d]));
 const cutSrc = Object.fromEntries(Object.entries(cutsInline).map(([k, v]) => [k, v.u]));
+
+// Inline the production background so the offline build keeps the full scene.
+const backgroundFile = path.join(ROOT, "img", "memedle-mascot-horizon-v2.webp");
+const backgroundBuf = fs.readFileSync(backgroundFile);
+const backgroundUri = "data:" + mimeOf(backgroundBuf) + ";base64," + backgroundBuf.toString("base64");
+css = css.replace('url("img/memedle-mascot-horizon-v2.webp")', 'url("' + backgroundUri + '")');
 
 const bodyInner = html.split("<body>")[1].split("<script src=")[0];
 // webfont links: load fine in a browser/preview; a CSP-sandboxed artifact

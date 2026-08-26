@@ -44,7 +44,7 @@ No build, no dependencies.
   [docs/DATA.md](docs/DATA.md) · [docs/LEADERBOARD.md](docs/LEADERBOARD.md)
 - **Daily schedule (spoilers)**: `node tools/schedule.js 30`
 - **Test** (node 22+, Chrome): serve on :8471, run Chrome with
-  `--remote-debugging-port=9223`, then `node test/cdp-test.js` — 53 checks
+  `--remote-debugging-port=9223`, then `node test/cdp-test.js` — 51 checks
   across all three modes, endless and the archive
 - **Logos**: `node tools/fetch-logos.js` (only fetches missing) for new coins,
   `node tools/refetch-logos.js` to pull the highest resolution CoinGecko
@@ -54,15 +54,11 @@ No build, no dependencies.
   drop the staging dir. 320 is sized for Blur mode, which renders a logo at
   ~170px CSS — ~340px on a 2x screen. A coin whose ticker is ambiguous or
   non-latin gets pinned to a CoinGecko id in `tools/logo-overrides.json`.
-- **Background crowd**: `node tools/build-art.js` (needs Chrome on :9223) pulls
-  the hand-picked high-resolution character art listed in
-  `tools/art-sources.json`, trims each to its subject, renders it at 340px tall
-  and writes `img/art/` + `art.js`. `--rebuild` re-renders from the download
-  cache without touching the network. Add a character by adding a source URL.
-  **Provenance**: every source URL is recorded in `tools/art-sources.json`.
-  Most are transparent-PNG aggregator sites (vecteezy, pngtree, pngimg); a few
-  of those ask for attribution or a licence for commercial use. Fine for a free
-  fan game, worth a second look before anything is monetised.
+- **Background scene**: `img/memedle-mascot-horizon-v2.webp` is the production
+  responsive backdrop: an original, generated meme-overworld crowd with a
+  deliberately quiet centre for the game UI. The older per-character crowd
+  source set and `tools/build-art.js` remain in the repo as experiments, but are
+  no longer loaded by the page.
 - **Single-file build** (offline/artifact): `node tools/build-artifact.js out.html`
 - **Before every deploy**: `node tools/bump-assets.js` — restamps the `?v=` on
   every local asset, using a hash of their contents. Pages caches assets for 10

@@ -13,15 +13,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Jersey+15&family=Baloo+2:wght@500..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=6035f5b3">
+<link rel="preload" as="image" href="img/memedle-mascot-horizon-v2.webp?v=92cdaac7" type="image/webp" fetchpriority="high">
+<link rel="stylesheet" href="style.css?v=92cdaac7">
 </head>
 <body>
 
-<div class="sky" aria-hidden="true">
-  <div class="sun"></div>
-  <div class="clouds" id="clouds"></div>
-  <div class="floaters" id="floaters"></div>
-</div>
+<div class="sky" aria-hidden="true"></div>
 <canvas id="confetti" aria-hidden="true"></canvas>
 
 <div class="app">
@@ -118,15 +115,6 @@
 
 </div><!-- /.app -->
 
-<div class="ground-layer" aria-hidden="true">
-  <div class="crowd" id="crowd">
-    <div class="crowd-row" data-band="0"></div>
-    <div class="crowd-row" data-band="1"></div>
-    <div class="crowd-row" data-band="2"></div>
-  </div>
-  <div class="ground"><div class="dirt"></div></div>
-</div>
-
 <!-- ===================== MODALS ===================== -->
 <div id="modal-help" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="help-h">
   <div class="modal">
@@ -203,10 +191,9 @@
   </div>
 </div>
 
-<script src="data.js?v=6035f5b3"></script>
-<script src="logos.js?v=6035f5b3"></script>
-<script src="art.js?v=6035f5b3"></script>
-<script src="lb.js?v=6035f5b3"></script>
-<script src="game.js?v=6035f5b3"></script>
+<script src="data.js?v=92cdaac7"></script>
+<script src="logos.js?v=92cdaac7"></script>
+<script src="lb.js?v=92cdaac7"></script>
+<script src="game.js?v=92cdaac7"></script>
 </body>
 </html>

@@ -101,16 +101,10 @@ async function cdp() {
   check("game panel, yesterday panel and rules panel all present", await evaljs("document.querySelectorAll('.panel').length") >= 3);
   check("yesterday panel filled", await evaljs("document.getElementById('yesterday-body').children.length") > 0);
   check("more-memedle pills rendered", await evaljs("document.querySelectorAll('#pill-row .pill').length") === 4);
-  check("crowd populated across 3 depth bands", await evaljs(
-    "Array.from(document.querySelectorAll('.crowd-row')).every(function(r){return r.children.length > 4})"));
-  check("crowd uses the character art set", await evaljs(
-    "Array.from(document.querySelectorAll('.crowd-row img')).every(function(i){return /img\\/art\\/|^data:/.test(i.getAttribute('src'))})"));
-  // the whole point of the art set: never draw a character into a box bigger
-  // than the pixels behind it, which is what made the old crowd look like mud
-  check("crowd art out-resolves its rendered size at 2x", await evaljs(
-    "Array.from(document.querySelectorAll('.crowd-row img')).every(function(i){" +
-    "return !i.complete || i.naturalHeight === 0 || i.naturalHeight >= i.clientHeight * 2})"));
-  check("clouds rendered", await evaljs("document.querySelectorAll('.cloud').length") > 0);
+  check("mascot horizon is the live page background", /memedle-mascot-horizon-v2/.test(await evaljs(
+    "getComputedStyle(document.querySelector('.sky')).backgroundImage")));
+  check("mascot horizon is preloaded", await evaljs(
+    "!!document.querySelector('link[rel=preload][href*=memedle-mascot-horizon-v2]')"));
   check("no images failed to load", await evaljs(
     "Array.from(document.images).filter(function(i){return i.complete && i.naturalWidth===0}).length") === 0);
   check("X social button rendered", await evaljs("!!document.querySelector('.social-btn')"));

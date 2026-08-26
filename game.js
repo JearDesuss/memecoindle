@@ -1129,7 +1129,6 @@
   function init() {
     migrate();
     $("brand-slot").innerHTML = brandSVG("a");
-    buildClouds(); buildCrowd(); buildFloaters();
     renderHelpModes(); renderSocial();
 
     var input = $("guess-input");
@@ -1189,7 +1188,6 @@
     });
 
     window.addEventListener("hashchange", route);
-    window.addEventListener("resize", refreshDecor);
 
     route();
 
