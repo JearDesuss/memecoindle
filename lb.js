@@ -18,6 +18,7 @@
  *   md_cid    this browser's id — the proof of ownership for a claimed name
  *   md_name   the claimed handle, lowercase
  *   md_x      the linked X handle, without the @
+ *   md_w      the payout address the daily pot is sent to
  *   md_queue  runs finished before a handle existed, posted once one does
  */
 var LB = (function () {
@@ -37,6 +38,19 @@ var LB = (function () {
   var NAME_RE = /^[a-z0-9_]{3,16}$/;
   var X_RE = /^[A-Za-z0-9_]{1,15}$/;
 
+  // The two address families a memecoin can plausibly trade on. Both are
+  // pathname-safe as typed, which is what lets a wallet live in a pathname the
+  // way a handle does — see api/_store.js.
+  var ADDR_EVM = /^0x[0-9a-fA-F]{40}$/;
+  var ADDR_SOL = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
+  // The payout rule, in one place, because it is stated in four.
+  var POT_TOP = 10;
+  var POT_LINE = "100% of the day's trading fees become the pot. It pays out at "
+    + "00:00 UTC, split by rank across the top " + POT_TOP + " of each mode.";
+  var POT_ORPHAN = "A ranked player with no wallet on file at 00:00 UTC drops out "
+    + "of the split — their parts go pro-rata to the ranked players who have one.";
+
   // ── storage ─────────────────────────────────────────────────────────────
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -54,7 +68,15 @@ var LB = (function () {
   }
   function name() { return lsGet("md_name") || ""; }
   function xHandle() { return lsGet("md_x") || ""; }
+  function wallet() { return lsGet("md_w") || ""; }
   function hasName() { return !!name(); }
+
+  function addrOK(a) { return ADDR_EVM.test(a) || ADDR_SOL.test(a); }
+  function addrChain(a) { return ADDR_EVM.test(a) ? "EVM" : ADDR_SOL.test(a) ? "Solana" : ""; }
+  // Enough of both ends to check a paste against a wallet, short enough to sit
+  // in a row. The full address is never drawn: it is a payment detail, not a
+  // display name.
+  function shortAddr(a) { return a.length > 13 ? a.slice(0, 5) + "…" + a.slice(-4) : a; }
 
   // ── api ─────────────────────────────────────────────────────────────────
   function api(path, opts) {
@@ -80,6 +102,9 @@ var LB = (function () {
   }
   function linkX(handle) {
     return api("/x", { method: "POST", body: JSON.stringify({ name: name(), cid: cid(), handle: handle }) });
+  }
+  function saveWallet(addr) {
+    return api("/wallet", { method: "POST", body: JSON.stringify({ name: name(), cid: cid(), addr: addr }) });
   }
 
   // ── reporting a finished run ────────────────────────────────────────────
@@ -153,6 +178,14 @@ var LB = (function () {
   function normalise(v) {
     return String(v || "").trim().toLowerCase().replace(/^@+/, "").replace(/[^a-z0-9_]/g, "").slice(0, 16);
   }
+  // Addresses arrive pasted, which means stray whitespace, a wrapped newline
+  // out of a wallet app, or a chain prefix from a QR payload.
+  function normaliseAddr(v) {
+    return String(v || "").replace(/\s+/g, "")
+      .replace(/^(solana|ethereum|eth):/i, "")
+      .replace(/[^1-9A-HJ-NP-Za-km-zxX0]/g, "")
+      .slice(0, 64);
+  }
   function normaliseX(v) {
     var h = String(v || "").trim();
     h = h.replace(/^(https?:\/\/)?(www\.)?(x|twitter)\.com\//i, "").replace(/[/?#].*$/, "");
@@ -218,6 +251,7 @@ var LB = (function () {
           if (r.available) {
             say("ok", r.mine ? "Already yours." : "Free.");
             if (r.mine && r.x) lsSet("md_x", r.x);
+            if (r.mine && r.w) lsSet("md_w", r.w);
           } else {
             say("bad", r.reason === "reserved" ? "That one is spoken for." : "Taken. Try another.");
           }
@@ -235,6 +269,7 @@ var LB = (function () {
         if (r.ok) {
           lsSet("md_name", r.name);
           if (r.x) lsSet("md_x", r.x);
+          if (r.w) lsSet("md_w", r.w);
           flushQueue();
           renderProfile();
           say("ok", "Yours.");
@@ -334,6 +369,112 @@ var LB = (function () {
     setTimeout(function () { if (!("ontouchstart" in window)) input.focus(); }, 60);
   }
 
+
+  // ── the payout wallet ───────────────────────────────────────────────────
+  // Reuses the gate modal, like the X step: one dialog, three jobs, and no
+  // third backdrop to keep in sync.
+  function openWalletPrompt(done) {
+    if (done) onGateDone = done;
+    if (!hasName()) { openGate(function () { openWalletPrompt(onGateDone); }, false); return; }
+    $("modal-gate").removeAttribute("data-lock");
+    $("gate-h").textContent = "Your wallet";
+    var body = $("gate-body");
+    clear(body);
+    body.appendChild(el("p", "gate-sub", POT_LINE));
+    body.appendChild(el("p", "gate-sub",
+      "Paste the address it should land in — Solana or EVM. Nothing here can check an address, so paste it, never type it."));
+
+    var form = el("div", "gate-form stack");
+    var wrap = el("div", "field");
+    var input = document.createElement("input");
+    input.className = "field-input addr";
+    input.id = "wallet-input";
+    input.maxLength = 64;
+    input.autocomplete = "off";
+    input.autocapitalize = "off";
+    input.spellcheck = false;
+    input.placeholder = "paste your address";
+    input.value = wallet();
+    wrap.appendChild(input);
+    form.appendChild(wrap);
+    var go = el("button", "btn btn-primary", "Save");
+    form.appendChild(go);
+    body.appendChild(form);
+
+    var note = el("p", "gate-note", "");
+    body.appendChild(note);
+
+    var later = el("button", "gate-skip", wallet() ? "Close" : "Later");
+    later.addEventListener("click", finish);
+    body.appendChild(later);
+
+    function say(cls, msg) {
+      note.className = "gate-note" + (cls ? " " + cls : "");
+      note.textContent = msg;
+    }
+    function finish() {
+      hide("modal-gate");
+      var fn = onGateDone; onGateDone = null;
+      if (fn) fn();
+    }
+
+    input.addEventListener("input", function () {
+      var v = normaliseAddr(input.value);
+      if (input.value !== v) input.value = v;
+      if (!v) { say("", wallet() ? "Saving it empty clears the address." : ""); return; }
+      say(addrOK(v) ? "ok" : "", addrOK(v) ? addrChain(v) + " address." : "");
+    });
+    input.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter") { ev.preventDefault(); go.click(); }
+    });
+
+    go.addEventListener("click", function () {
+      var v = normaliseAddr(input.value);
+      if (v && !addrOK(v)) { say("bad", "That is not a Solana or EVM address."); input.focus(); return; }
+      go.disabled = true;
+      say("", "saving…");
+      saveWallet(v).then(function (r) {
+        go.disabled = false;
+        if (r.ok) {
+          lsSet("md_w", r.addr || "");
+          renderProfile();
+          flash(r.addr ? "Paying to " + shortAddr(r.addr) + "." : "Wallet cleared.");
+          finish();
+          return;
+        }
+        say("bad", r._status === 403
+          ? "That handle was claimed on another browser."
+          : "Can't reach the board right now.");
+      });
+    });
+
+    show("modal-gate");
+    setTimeout(function () { if (!("ontouchstart" in window)) input.focus(); }, 60);
+  }
+
+  // ── the wallet row in settings ──────────────────────────────────────────
+  function renderWallet() {
+    var box = $("wallet-body");
+    if (!box) return;
+    clear(box);
+    if (!hasName()) {
+      box.appendChild(el("p", "profile-x none", "A slice is paid to a name on the board, so pick a handle first."));
+      return;
+    }
+    var row = el("div", "profile-row"), w = wallet();
+    if (w) {
+      row.appendChild(el("span", "profile-name addr", shortAddr(w)));
+      row.appendChild(el("span", "profile-x", addrChain(w) + " address · paid at 00:00 UTC"));
+    } else {
+      row.appendChild(el("span", "profile-name none", "No wallet"));
+      row.appendChild(el("span", "profile-x none", "nothing to pay a slice into"));
+    }
+    box.appendChild(row);
+    var b = el("button", "btn", w ? "Change" : "Add wallet");
+    b.addEventListener("click", function () { onGateDone = null; openWalletPrompt(); });
+    box.appendChild(b);
+  }
+
   // ── the profile row in settings ─────────────────────────────────────────
   function renderProfile() {
     var box = $("profile-body");
@@ -343,6 +484,7 @@ var LB = (function () {
       var pick = el("button", "btn", "Pick a handle");
       pick.addEventListener("click", function () { openGate(null, false); });
       box.appendChild(pick);
+      renderWallet();
       return;
     }
     var row = el("div", "profile-row");
@@ -361,6 +503,7 @@ var LB = (function () {
     var edit = el("button", "btn", xHandle() ? "Change X" : "Link X");
     edit.addEventListener("click", function () { onGateDone = null; openXPrompt(); });
     box.appendChild(edit);
+    renderWallet();
   }
 
   // ── the board ───────────────────────────────────────────────────────────
@@ -387,6 +530,23 @@ var LB = (function () {
       tabs.appendChild(b);
     });
     body.appendChild(tabs);
+
+    // The stakes come before the standings: the rule that decides who gets
+    // paid is the reason anyone reads this list twice.
+    var pot = el("div", "lb-callout");
+    var potCopy = el("div", "lb-pot");
+    potCopy.appendChild(el("p", "lb-note strong", POT_LINE));
+    potCopy.appendChild(el("p", "lb-note", hasName() && wallet()
+      ? "Your slice pays to " + shortAddr(wallet()) + "."
+      : POT_ORPHAN));
+    pot.appendChild(potCopy);
+    var setW = el("button", "btn", hasName() && wallet() ? "Change" : "Add wallet");
+    setW.addEventListener("click", function () {
+      hide("modal-lb");
+      openWalletPrompt(function () { openBoard(day, boardMode); });
+    });
+    pot.appendChild(setW);
+    body.appendChild(pot);
 
     if (!hasName()) {
       var call = el("div", "lb-callout");
@@ -440,6 +600,14 @@ var LB = (function () {
         }
         r.appendChild(who);
 
+        // Inside the paying ranks, a row with no wallet on file is not being
+        // paid — and saying so is the whole reason the flag is on the row.
+        if (i < POT_TOP && s.w === 0) {
+          var tag = el("span", "lb-tag", "no wallet");
+          tag.title = "no wallet on file — this slice goes to the players who have one";
+          r.appendChild(tag);
+        }
+
         var cell = el("span", "lb-res " + (s.won ? "w" : "l"), s.won ? s.guesses + "/6" : "X/6");
         if (s.hint) cell.title = "spent a hint";
         r.appendChild(cell);
@@ -465,9 +633,11 @@ var LB = (function () {
     open: openBoard,
     openHandle: function () { openGate(null, false); },
     openX: openXPrompt,
+    openWallet: openWalletPrompt,
     renderProfile: renderProfile,
     name: name,
     xHandle: xHandle,
+    wallet: wallet,
     hasName: hasName,
     flash: flash
   };

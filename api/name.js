@@ -1,4 +1,4 @@
-/* GET  /api/name?name=foo   -> {ok, name, available, reason?}
+/* GET  /api/name?name=foo   -> {ok, name, available, mine, x, w}
  * POST /api/name  {name,cid} -> {ok, name} | 409 {taken:true}
  *
  * The claim is a put() with allowOverwrite:false. Vercel Blob rejects that
@@ -23,10 +23,11 @@ module.exports = async function handler(req, res) {
     try {
       const claim = await S.readClaim(name);
       const mine = !!(claim && claim.cid && claim.cid === S.cleanCid(req.query && req.query.cid));
-      // Hand a returning player their X link back so a cleared cache or a new
-      // tab does not silently unlink them.
+      // Hand a returning player their X link and payout address back so a
+      // cleared cache or a new tab does not silently unlink them.
       const x = mine ? await S.latestX(name) : "";
-      return S.send(res, 200, { ok: true, name, available: !claim || mine, mine, x });
+      const w = mine ? await S.latestWallet(name) : "";
+      return S.send(res, 200, { ok: true, name, available: !claim || mine, mine, x, w });
     } catch (err) {
       // Fail closed: never report a name free because the store hiccuped.
       return S.send(res, 502, { ok: false, available: false, error: "lookup failed" });
@@ -50,7 +51,10 @@ module.exports = async function handler(req, res) {
     // telling a returning player their own handle is taken.
     try {
       if (await S.ownsName(name, cid)) {
-        return S.send(res, 200, { ok: true, name, fresh: false, x: await S.latestX(name) });
+        return S.send(res, 200, {
+          ok: true, name, fresh: false,
+          x: await S.latestX(name), w: await S.latestWallet(name),
+        });
       }
     } catch (e) { /* fall through to taken */ }
     return S.send(res, 409, { ok: false, taken: true, name });

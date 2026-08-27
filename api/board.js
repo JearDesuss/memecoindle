@@ -1,7 +1,11 @@
 /* GET /api/board?day=N&mode=classic -> {ok, day, mode, rows:[...]}
  *
- * One list() call, zero body fetches: a score carries its result and the
- * player's X handle in its pathname, and its clock in uploadedAt.
+ * Two list() calls, zero body fetches: a score carries its result and the
+ * player's X handle in its pathname, and its clock in uploadedAt. The second
+ * listing is the wallet prefix, which answers one question per row — can this
+ * player be paid at 00:00 UTC — without ever publishing an address. It is read
+ * live rather than stamped into the score, because a player who files a wallet
+ * after finishing is in the split, and one who clears it is out.
  *
  * Ranking is wins first, then fewest guesses, then no-hint over hint, then who
  * finished earliest — where "earliest" is measured from the first run posted
@@ -55,6 +59,14 @@ module.exports = async function handler(req, res) {
   let first = null;
   for (const r of rows) if (first === null || r.at < first) first = r.at;
   for (const r of rows) { r.t = first === null ? 0 : r.at - first; delete r.at; }
+
+  // A missing wallet listing costs the payout flag, not the board: the rows
+  // still rank, and the client simply cannot say who is in the split.
+  let holders = null;
+  try {
+    holders = await S.walletHolders();
+  } catch (err) { holders = null; }
+  if (holders) for (const r of rows) r.w = holders[r.name] ? 1 : 0;
 
   rows.sort(function (a, b) {
     if (a.won !== b.won) return a.won ? -1 : 1;

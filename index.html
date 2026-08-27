@@ -17,8 +17,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Jersey+15&family=Baloo+2:wght@500..800&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="img/memedle-mascot-horizon-v2.webp?v=c1edb881" type="image/webp" fetchpriority="high">
-<link rel="stylesheet" href="style.css?v=c1edb881">
+<link rel="preload" as="image" href="img/memedle-mascot-horizon-v2.webp?v=14350b95" type="image/webp" fetchpriority="high">
+<link rel="stylesheet" href="style.css?v=14350b95">
 </head>
 <body>
 
@@ -92,11 +92,12 @@
         </div>
         <div class="panel-body">
           <ul class="rule-list">
-            <li><span class="tick" aria-hidden="true"></span> Six guesses a day</li>
-            <li><span class="tick" aria-hidden="true"></span> Three modes, three coins</li>
-            <li><span class="tick" aria-hidden="true"></span> Miss a day, lose the streak</li>
+            <li><b>6</b><span>guesses a day</span></li>
+            <li><b>3</b><span>modes, a coin each</span></li>
+            <li><b>1</b><span>missed day ends the streak</span></li>
+            <li><b>100%</b><span>of trading fees, paid out daily</span></li>
           </ul>
-          <button class="degen-chip" id="btn-help-2">The long version</button>
+          <button class="btn btn-block" id="btn-help-2">Full rules</button>
         </div>
       </section>
     </aside>
@@ -138,6 +139,15 @@
       <div class="tile s-x demo"><span class="tile-val">2021</span><span class="tile-dir">▲</span></div>
     </div>
     <p class="demo-caption">exact · close · wrong</p>
+    <h3>The daily pot</h3>
+    <p>Every day, <strong>100% of the token's trading fees</strong> become that day's pot. It pays out at <strong>00:00 UTC</strong> — the board as it stands at that moment is the board that gets paid.</p>
+    <ul class="help-list">
+      <li><strong>Three boards, three pots</strong> — the day's fees split evenly across Classic, Blur and Lore, so a Lore win pays what a Classic win pays.</li>
+      <li><strong>The top ten are in</strong> — and the slices are ranked: ten parts at #1, nine at #2, down to one part at #10.</li>
+      <li><strong>A slice needs a wallet</strong> — paste an address into Settings. Whatever is on file at 00:00 UTC is where your slice goes.</li>
+      <li><strong>Nothing is held back</strong> — a ranked player with no wallet drops out of the split, and their parts go pro-rata to the ranked players who have one. An unclaimed slice is not carried over to tomorrow; it is paid out today, to someone else.</li>
+    </ul>
+    <p class="fine">Solana or EVM address, whichever chain the token trades on. Nothing here verifies an address — an address typed wrong is a payment sent wrong, so paste it.</p>
     <label class="cb-row"><input type="checkbox" id="cb-toggle"> High-contrast tiles (blue / orange)</label>
   </div>
 </div>
@@ -148,6 +158,9 @@
     <h2 id="set-h">Settings</h2>
     <h3>Your handle</h3>
     <div id="profile-body" class="profile-body"></div>
+    <h3>Reward wallet</h3>
+    <p class="fine">Where your slice of the daily pot is sent at 00:00 UTC. Solana or EVM, paste it rather than type it — nothing here can check an address.</p>
+    <div id="wallet-body" class="profile-body"></div>
     <label class="cb-row"><input type="checkbox" id="cb-toggle-2"> High-contrast tiles (blue / orange)</label>
     <h3>Danger zone</h3>
     <p class="fine">Wipes today's progress, your streak and every stat on this device. Your handle stays yours.</p>
@@ -204,10 +217,10 @@
 
 <div class="flash-layer" id="flash-layer" aria-live="polite"></div>
 
-<script src="data.js?v=c1edb881"></script>
-<script src="logos.js?v=c1edb881"></script>
-<script src="lb.js?v=c1edb881"></script>
-<script src="share.js?v=c1edb881"></script>
-<script src="game.js?v=c1edb881"></script>
+<script src="data.js?v=14350b95"></script>
+<script src="logos.js?v=14350b95"></script>
+<script src="lb.js?v=14350b95"></script>
+<script src="share.js?v=14350b95"></script>
+<script src="game.js?v=14350b95"></script>
 </body>
 </html>

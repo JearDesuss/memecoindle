@@ -1100,6 +1100,16 @@
       }
       box.appendChild(row);
       if (!isArchive()) {
+        // A finished run is the one moment the pot is a live question, so it
+        // is the one place outside the board that gets a line about it.
+        var pot = el("p", "reveal-pot", "The top ten on today's board is paid at 00:00 UTC. ");
+        var see = el("button", null, "see the board");
+        see.addEventListener("click", function () {
+          closeModals();
+          if (typeof LB !== "undefined") LB.open(dayNumber(), modeId);
+        });
+        pot.appendChild(see);
+        box.appendChild(pot);
         box.appendChild(el("div", "countdown-label", "next daily in"));
         var cd = el("div", "countdown", countdownStr());
         box.appendChild(cd);

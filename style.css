@@ -601,27 +601,30 @@ a { color: inherit; }
 .miss-x { color: var(--bear); font-weight: 700; }
 
 /* ─────────────── right rail ─────────────── */
-.rule-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 11px; }
-.rule-list li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
-/* A die-cut chip, not a checkmark. The tick is the WIN glyph on the mode
-   flags, the archive rows and the yesterday panel — spending it as a bullet
-   here costs a status signal for decoration. */
-.tick {
-  width: 16px; height: 16px; flex: none;
-  border-radius: var(--r-1);
-  background: var(--ink);
+/* Three rules, three figures. The bullet used to be a die-cut Ink chip that
+   said nothing; the numeral it was standing next to says it instead, so the
+   column itself is now the thing you scan. Baloo 800 + tnum per the digit
+   rule — Jersey 15's 6 would read as an 8. */
+.rule-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.rule-list li {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
 }
-.degen-chip {
-  display: block; width: 100%;
-  padding: 7px 10px;
-  font-size: 13.5px;
-  border-radius: var(--r-1);
-  background: var(--cream-2);
-  border: var(--cut) solid var(--ink);
-  box-shadow: var(--shadow);
-  transition: var(--press);
+/* the column is as wide as its widest figure and every figure sits against its
+   right edge, so the four of them read as one number column rather than four
+   indents */
+.rule-list b {
+  text-align: right;
+  font-weight: 800;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
-.degen-chip:active { transform: translateY(var(--lift)); box-shadow: 0 0 0 var(--ink); }
 
 .yday { display: flex; align-items: center; gap: 10px; }
 .yday img { width: 44px; height: 44px; border-radius: var(--r-1); flex: none; border: var(--cut-in) solid var(--ink); object-fit: cover; }
@@ -932,9 +935,14 @@ a { color: inherit; }
 }
 .btn:active { transform: translateY(var(--lift)); box-shadow: 0 0 0 var(--ink); }
 /* the one live action in a view. Never two at once. */
+/* the one button at full panel width — a width, not a second component */
+.btn-block { display: block; width: 100%; flex: none; }
 .btn-primary { background: var(--gold); }
 /* the only place a status colour may fill a button */
 .btn-danger { background: var(--bear); color: #fff; flex: 0 1 auto; }
+/* the payout, said once, where a run ends */
+.reveal-pot { text-align: center; margin-top: 15px; font-size: 13px; line-height: 1.55; color: var(--ink-2); }
+.reveal-pot button { text-decoration: underline; text-underline-offset: 3px; }
 .countdown-label { text-align: center; font-family: var(--font-ui); font-weight: 800; font-size: 11px; text-transform: uppercase; color: var(--ink-2); margin-top: 14px; }
 .countdown { text-align: center; font-family: var(--font-ui); font-weight: 800; font-size: 26px; font-variant-numeric: tabular-nums; }
 
@@ -958,7 +966,6 @@ a { color: inherit; }
 .pill:active,
 .social-btn:active,
 .mode-card:active,
-.degen-chip:active,
 .hint-btn:active,
 .modal-close:active,
 .stat-tab:active,
@@ -971,11 +978,11 @@ a { color: inherit; }
 
 @media (hover: hover) and (pointer: fine) {
   /* the icon buttons are the same sticker as the mode card, so they rise too */
-  .ico-btn:hover, .btn:hover, .degen-chip:hover, .hint-btn:hover, .modal-close:hover {
+  .ico-btn:hover, .btn:hover, .hint-btn:hover, .modal-close:hover {
     transform: translateY(calc(var(--rise) * -1));
     box-shadow: 0 calc(var(--lift) + var(--rise)) 0 var(--ink);
   }
-  .btn:hover, .degen-chip:hover, .hint-btn:hover { background: var(--snow); }
+  .btn:hover, .hint-btn:hover { background: var(--snow); }
   /* Gold and Miss are already spent; a Snow hover would take the fill away */
   .btn-primary:hover, .btn-danger:hover { background: inherit; }
 }
@@ -988,11 +995,11 @@ a { color: inherit; }
    rather than a fade. Transition-driven, so it re-fires on every consecutive
    press with no JS and no animation-restart hack. */
 /* .modal-close is already absolute, which is containing block enough */
-.btn, .ico-btn, .go-btn, .pill, .social-btn, .degen-chip, .hint-btn,
+.btn, .ico-btn, .go-btn, .pill, .social-btn, .hint-btn,
 .streak-pill, .stat-tab, .arch-row, .ac-item { position: relative; }
 
 .btn::after, .ico-btn::after, .go-btn::after, .pill::after, .social-btn::after,
-.degen-chip::after, .hint-btn::after, .modal-close::after, .streak-pill::after {
+.hint-btn::after, .modal-close::after, .streak-pill::after {
   content: "";
   position: absolute;
   inset: calc(var(--cut) * -1);
@@ -1005,7 +1012,7 @@ a { color: inherit; }
               opacity var(--dur-burst) steps(3, end);
 }
 .btn:active::after, .ico-btn:active::after, .go-btn:active::after, .pill:active::after,
-.social-btn:active::after, .degen-chip:active::after, .hint-btn:active::after,
+.social-btn:active::after, .hint-btn:active::after,
 .modal-close:active::after {
   outline-offset: 0px; opacity: 1; transition-duration: 0ms;
 }
@@ -1112,6 +1119,10 @@ a { color: inherit; }
 /* ─────────────── handle + board ─────────────── */
 .gate-sub { font-size: 14px; color: var(--ink-2); margin-bottom: 14px; }
 .gate-form { display: flex; gap: 8px; align-items: stretch; }
+/* 44 characters do not share a row with a button */
+.gate-form.stack { flex-direction: column; }
+.gate-form.stack .btn { width: 100%; }
+.field-input.addr { font-size: 14px; font-weight: 700; }
 .field {
   flex: 1; min-width: 0;
   display: flex; align-items: center; gap: 2px;
@@ -1147,6 +1158,10 @@ a { color: inherit; }
 .profile-name { font-family: var(--font-ui); font-weight: 800; font-size: 16px; }
 .profile-x { font-size: 12.5px; color: var(--ink-2); text-underline-offset: 3px; }
 .profile-x.none { text-decoration: none; color: var(--ink-3); }
+/* an address is read character by character, so it never shrinks below body
+   size and never picks up the display weight of a name */
+.profile-name.addr { font-size: 15px; font-variant-numeric: tabular-nums; }
+.profile-name.none { color: var(--ink-3); }
 .profile-body .btn { flex: 0 0 auto; }
 
 .lb-list { display: flex; flex-direction: column; }
@@ -1160,6 +1175,18 @@ a { color: inherit; }
 }
 .lb-callout .lb-note { flex: 1 1 180px; padding: 0; }
 .lb-callout .btn { flex: 0 0 auto; }
+/* the pot rule, then where the player stands in it */
+.lb-pot { flex: 1 1 200px; display: flex; flex-direction: column; gap: 3px; }
+.lb-pot .lb-note { flex: none; padding: 0; }
+.lb-note.strong { color: var(--ink); font-weight: 700; }
+/* a rank that cannot be paid, said in the row rather than a footnote */
+.lb-tag {
+  flex: none;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
 .lb-row.me { background: var(--cream-2); }
 .lb-player {
   flex: 1; min-width: 0;
@@ -1237,7 +1264,7 @@ a.lb-player.linked { text-decoration: underline; text-underline-offset: 3px; }
   .go-btn.sent, .streak-pill.bump, .pip.fresh, .social-btn.nudge,
   .input-wrap.reject #guess-input { animation: none !important; }
   .btn::after, .ico-btn::after, .go-btn::after, .pill::after, .social-btn::after,
-  .degen-chip::after, .hint-btn::after, .modal-close::after, .streak-pill::after,
+  .hint-btn::after, .modal-close::after, .streak-pill::after,
   .stat-tab::after, .arch-row::after, .ac-item::after { display: none !important; }
   /* the flash is removed by a timer in JS, so it must not animate itself out */
   .flash { animation: none !important; }

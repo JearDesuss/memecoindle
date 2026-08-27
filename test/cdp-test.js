@@ -269,6 +269,56 @@ async function cdp() {
   })()`));
   check("the flash layer is mounted", await evaljs("!!document.getElementById('flash-layer')"));
 
+  console.log("\nrules card and the payout wallet");
+  check("the rules card is a four-line figure column", await evaljs(
+    "document.querySelectorAll('.rule-list li b').length") === 4);
+  check("the pot line is in the rules card", /100%/.test(await evaljs(
+    "document.querySelector('.rule-list').textContent")));
+  check("the rules CTA is the system button", (await evaljs(
+    "document.getElementById('btn-help-2').className")).split(" ")[0] === "btn");
+  check("the full rules explain the pot", await evaljs(`(function(){
+    var t=document.getElementById('modal-help').textContent;
+    return /00:00 UTC/.test(t) && /pro-rata/.test(t) && /wallet/i.test(t);
+  })()`));
+  check("settings has a wallet section", await evaljs("!!document.getElementById('wallet-body')"));
+  check("no handle means no wallet row, and it says why", await evaljs(`(function(){
+    LB.renderProfile();
+    var b=document.getElementById('wallet-body');
+    return b.querySelectorAll('button').length === 0 && /handle/i.test(b.textContent);
+  })()`));
+  check("a claimed handle draws the add-wallet button", await evaljs(`(function(){
+    localStorage.setItem('md_name','tester'); LB.renderProfile();
+    var b=document.getElementById('wallet-body').querySelector('button');
+    return !!b && /wallet/i.test(b.textContent);
+  })()`));
+  check("the wallet prompt takes a pasted Solana address", await evaljs(`(function(){
+    LB.openWallet();
+    var i=document.getElementById('wallet-input');
+    i.value=' 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU\\n';
+    i.dispatchEvent(new Event('input',{bubbles:true}));
+    var n=document.querySelector('#gate-body .gate-note');
+    return i.value.length===44 && n.className.indexOf('ok')>=0 && /Solana/.test(n.textContent);
+  })()`));
+  check("an EVM address reads as EVM", await evaljs(`(function(){
+    var i=document.getElementById('wallet-input');
+    i.value='0x'+'aB'.repeat(20);
+    i.dispatchEvent(new Event('input',{bubbles:true}));
+    var n=document.querySelector('#gate-body .gate-note');
+    return n.className.indexOf('ok')>=0 && /EVM/.test(n.textContent);
+  })()`));
+  check("a wrong address is refused before any request", await evaljs(`(function(){
+    var i=document.getElementById('wallet-input');
+    i.value='7xKXtg2CW87d97TX';
+    i.dispatchEvent(new Event('input',{bubbles:true}));
+    document.querySelector('#gate-body .btn-primary').click();
+    var n=document.querySelector('#gate-body .gate-note');
+    return n.className.indexOf('bad')>=0;
+  })()`));
+  await evaljs("localStorage.removeItem('md_name'); localStorage.removeItem('md_w'); LB.renderProfile(); 'ok'");
+  await closeModals();
+
+
+
   console.log("\npage errors:", errors.length ? errors : "none");
   if (errors.length) fail += errors.length;
   console.log("\n" + pass + " passed, " + fail + " failed");
