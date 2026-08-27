@@ -20,6 +20,7 @@ const ASSETS = [
   "data.js",
   "logos.js",
   "lb.js",
+  "share.js",
   "game.js",
   "img/memedle-mascot-horizon-v2.webp",
 ];
@@ -51,9 +52,12 @@ if (missing.length) {
 }
 
 if (check) {
-  const current = (fs.readFileSync(INDEX, "utf8").match(/\?v=([0-9a-z]+)/) || [])[1];
-  if (current !== stamp) {
-    console.error("STALE: index.html is stamped ?v=" + (current || "none") +
+  // Every occurrence, not the first: the first match is the preload <link>,
+  // so a non-global regex passes clean while game.js sits on a stale stamp.
+  const seen = [...fs.readFileSync(INDEX, "utf8").matchAll(/\?v=([0-9a-z]+)/g)].map((m) => m[1]);
+  const stale = seen.filter((v) => v !== stamp);
+  if (!seen.length || stale.length) {
+    console.error("STALE: index.html carries ?v=" + [...new Set(seen)].join(", ") +
       " but the assets hash to " + stamp + " — run: node tools/bump-assets.js");
     process.exit(1);
   }

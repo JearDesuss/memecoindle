@@ -1,0 +1,14 @@
+{
+  "name": "memedle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Memedle — a daily memecoin guessing game. A static page plus four serverless functions for handles and the board.",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@vercel/blob": "^2.8.0"
+  },
+  "scripts": {
+    "test": "node test/cdp-test.js",
+    "stamp": "node tools/bump-assets.js"
+  }
+}

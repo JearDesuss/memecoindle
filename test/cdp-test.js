@@ -92,7 +92,20 @@ async function cdp() {
   await sleep(1600);
 
   console.log("\nshell");
-  check("first-visit help modal opens", await evaljs("!document.getElementById('modal-help').classList.contains('hidden')"));
+  // The API does not exist on the static test server, so this exercises the
+  // exact path a player hits when the board is unreachable.
+  check("first visit opens the handle gate", await evaljs("!document.getElementById('modal-gate').classList.contains('hidden')"));
+  check("the gate refuses a backdrop click", await evaljs(`(function(){
+    var g=document.getElementById('modal-gate');
+    g.dispatchEvent(new MouseEvent('click',{bubbles:true}));
+    document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+    return !g.classList.contains('hidden');
+  })()`));
+  await evaljs("document.querySelector('#gate-body .gate-skip').click(); 'ok'");
+  await sleep(420);
+  check("declining the gate hands over to the rules", await evaljs(
+    "document.getElementById('modal-gate').classList.contains('hidden') && " +
+    "!document.getElementById('modal-help').classList.contains('hidden')"));
   await closeModals();
   check("three mode cards in the rail", await evaljs("document.querySelectorAll('.mode-card').length") === 3);
   check("classic is the default and is marked active", await evaljs("!!document.querySelector('.mode-card.on')")
@@ -209,6 +222,52 @@ async function cdp() {
   await evaljs("var c=document.getElementById('cb-toggle-2'); c.checked=true; c.dispatchEvent(new Event('change',{bubbles:true}));'ok'");
   await sleep(280);
   check("colourblind mode toggles", await evaljs("document.body.classList.contains('cb') && localStorage.getItem('md_cb')==='1'"));
+
+  console.log("\nshare + board");
+  check("share.js loaded", await evaljs("typeof SHARE === 'object' && typeof SHARE.postToX === 'function'"));
+  check("lb.js exposes the handle flow", await evaljs(
+    "typeof LB === 'object' && typeof LB.boot === 'function' && typeof LB.open === 'function'"));
+
+  // Render a real result card and check the PNG comes back with pixels in it.
+  const card = await evaljs(`(function(){
+    return SHARE.render({
+      mode:"classic", modeName:"Classic", day:12, unlimited:false, won:true,
+      guesses:4, max:6, slots:6, hint:false, streak:3, url:"memedle-weld.vercel.app", cb:false,
+      rows:[["x","y","g","x","x"],["y","g","g","x","y"],["g","g","y","g","x"],["g","g","g","g","g"]]
+    }).then(function(b){ return b ? b.size : 0; });
+  })()`);
+  check("result card renders a PNG", typeof card === "number" && card > 8000, "bytes=" + card);
+
+  const caption = await evaljs("SHARE.intentURL('Memedle Classic #12 — 4/6. https://memedle-weld.vercel.app')");
+  check("X intent points at the post composer", /^https:\/\/x\.com\/intent\/post\?text=/.test(caption), caption);
+  check("the card gives nothing away", !/BONK|\$[A-Z]{2,}/.test(caption), caption);
+
+  await evaljs("document.querySelector('[data-go=\"board\"]').click(); 'ok'");
+  await sleep(900);
+  check("board modal opens", await evaljs("!document.getElementById('modal-lb').classList.contains('hidden')"));
+  check("board offers all three modes", await evaljs("document.querySelectorAll('#lb-body .stat-tab').length") === 3);
+  check("board says so when it cannot be reached", await evaljs(
+    "/couldn't reach|no .* scores yet/i.test(document.getElementById('lb-body').textContent)"),
+    await evaljs("document.getElementById('lb-body').textContent.slice(0,120)"));
+  check("no handle means the board says how to get one", await evaljs(
+    "!!document.querySelector('#lb-body .lb-callout')"));
+  await closeModals();
+
+  console.log("\nmotion");
+  check("press tokens are asymmetric (down fast, up springs)", await evaljs(
+    "getComputedStyle(document.documentElement).getPropertyValue('--press-in').indexOf('70ms') >= 0"));
+  check("the die-cut ring exists on the primary button", await evaljs(`(function(){
+    var b=document.querySelector('.btn')||document.querySelector('.pill');
+    return getComputedStyle(b,'::after').content === '""';
+  })()`));
+  check("a submitted guess stamps the go button", await evaljs(`(function(){
+    var b=document.getElementById('btn-go');
+    b.classList.add('sent');
+    var an=getComputedStyle(b).animationName;
+    b.classList.remove('sent');
+    return an === 'stamp';
+  })()`));
+  check("the flash layer is mounted", await evaljs("!!document.getElementById('flash-layer')"));
 
   console.log("\npage errors:", errors.length ? errors : "none");
   if (errors.length) fail += errors.length;

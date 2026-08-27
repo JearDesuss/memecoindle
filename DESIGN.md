@@ -196,7 +196,41 @@ is the only element that steps in, and that step is what signals the game is ove
 | `.tile` | graded answer | `cut-in` Ink, `control` radius, flat status fill. The only place status colour is large. |
 | `.chip` | inline fact | `pill` radius, `cut-in`, Card or Amber fill. Never pressable. |
 | `.social-btn` | outbound link | The `.btn` at 42px tall with a 17px glyph. The X mark carries no word beside it — it *is* the wordmark; DexScreener's candlestick is not self-identifying, so it keeps one. A missing URL renders it Card-filled with a quiet `soon` tag. |
+| `.flash` | acknowledgement | The `.btn` sticker as a message, parked bottom-centre: Paper, `cut`, `r-1`, `lift-card`, body weight. It introduces no new *look*, only a new position — which is the only reason it is allowed to exist. **No status variant**: a toast is not a tile, a flag, a bar or a verdict, so a failure gets the same Paper flash with different words. |
+| `.field` | text entry | `#guess-input` in a wrapper, so a prefix (`@`) can sit inside the die. Snow face, `cut` Ink, `r-1`, and the same Gold focus ring the guess box uses. |
 | `.more` | backing card | The one Night surface. Same cut, radius and lift as everything else — it is a sticker that happens to be dark, not a foreign object. Ink and Night are three shades apart, so this card re-points `--shadow` at a deeper value or every lift inside it vanishes. |
+
+## motion
+
+**Down flat and fast, up with energy.** `--press` used to be symmetric — 110ms
+both ways — which is a state toggle, not a material. `:active` now carries
+`--press-in` (70ms, `--ease-out`) and the base rule carries `--press` (190ms,
+`--ease-pop`), so a sticker springs back rather than sliding. `box-shadow` stays
+pinned to `--ease-out` inside both, so **the printed shadow never renders deeper
+than `--lift`** while the body overshoots.
+
+**A press throws the die line.** The one press effect in the system is
+`::after`, an `outline` at `--cut-in` that flies from the die line out to
+`--burst-reach` and dims in `steps(3, end)`. `outline-offset` is used rather
+than `scale()` because scaling a die changes its width, and a 4px cut at 1.06 is
+a fifth die width. It is a three-frame sprite, not a ripple: vinyl does not glow.
+
+**No `scale()` on anything carrying a die.** A 4px cut at `scale(.94)` is 3.76px
+and `--r-2` becomes 11.3px — a fourth radius by the back door. Every keyframe
+here translates instead, including the modal entrance, which used to scale.
+
+**Leaving is faster than arriving.** `--dur-close` (150ms) against the 240ms
+entrance, and always on `--ease-out` — an overshoot on the way out reads as the
+panel lunging at the viewer.
+
+**Reduced motion collapses the tokens, not the states.** The media block sets
+every `--dur-*` to 1ms and re-points `--ease-pop` at `--ease-out`, which kills
+every overshoot in the system in one line. A pressed sticker must still visibly
+*be* down; that is state, not animation.
+
+**One line makes any of this exist on a phone.** iOS Safari does not apply
+`:active` unless the document has a touch listener, so `game.js` registers an
+empty passive `touchstart`. Without it the whole press system is dead on iPhone.
 
 ## dos
 

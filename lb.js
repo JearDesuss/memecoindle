@@ -1,167 +1,474 @@
-/* memecoindle — leaderboard + daily-winner-pot client.
-   Fully optional: with LB_API empty, the game is untouched and the trophy
-   button explains how to go online. Deploy server/worker.js (Cloudflare
-   Workers free tier), then set LB_API to its URL. See docs/LEADERBOARD.md. */
+/* Memedle — handles, X links, and the board.
+ *
+ * The page is static, so a handle that is unique to one browser is not unique
+ * at all. Uniqueness lives in /api/name, which claims the name with a write the
+ * store rejects if the pathname already exists — two people racing for the same
+ * handle cannot both be told yes. See api/_store.js.
+ *
+ * The X handle is typed, not verified. Nothing here pretends otherwise: the
+ * board links a name to x.com/<handle> because the player said that is theirs,
+ * and the copy says so once, plainly, and then drops it.
+ *
+ * Every request ends in a catch. The game is served from a plain static server
+ * in the test harness, where /api does not exist at all, and a rejected fetch
+ * that nobody catches is a console error — which is a failing test and, more to
+ * the point, a leaderboard outage that takes the puzzle down with it.
+ *
+ * localStorage
+ *   md_cid    this browser's id — the proof of ownership for a claimed name
+ *   md_name   the claimed handle, lowercase
+ *   md_x      the linked X handle, without the @
+ *   md_queue  runs finished before a handle existed, posted once one does
+ */
 var LB = (function () {
   "use strict";
 
-  // ====== set this to your deployed worker URL to go live ======
-  var LB_API = ""; // e.g. "https://memecoindle-api.yourname.workers.dev"
-  // =============================================================
+  // Same-origin on Vercel, absolute from anywhere else: the GitHub Pages copy
+  // has to reach the functions cross-origin, which is why they send CORS. A
+  // relative "/api" there would resolve to jeardesuss.github.io/api — a
+  // different site entirely.
+  var API = (function () {
+    var h = location.hostname;
+    if (h === "localhost" || h === "127.0.0.1") return "/api";
+    if (h.indexOf("vercel.app") >= 0 || h === "memedle.app") return "/api";
+    return "https://memedle-weld.vercel.app/api";
+  })();
 
-  function $(id) { return document.getElementById(id); }
-  function el(tag, cls, text) {
-    var e = document.createElement(tag);
-    if (cls) e.className = cls;
-    if (text != null) e.textContent = text;
-    return e;
-  }
-  function enabled() { return !!LB_API; }
+  var NAME_RE = /^[a-z0-9_]{3,16}$/;
+  var X_RE = /^[A-Za-z0-9_]{1,15}$/;
 
-  function clientId() {
-    try {
-      var id = localStorage.getItem("mcdl_cid");
-      if (!id) {
-        id = (crypto.randomUUID && crypto.randomUUID()) ||
-          ("cid-" + Date.now() + "-" + Math.random().toString(36).slice(2));
-        localStorage.setItem("mcdl_cid", id);
-      }
-      return id;
-    } catch (e) { return "cid-mem"; }
-  }
-  function getName() { try { return localStorage.getItem("mcdl_name") || ""; } catch (e) { return ""; } }
-  function setName(n) { try { localStorage.setItem("mcdl_name", n); } catch (e) {} }
+  // ── storage ─────────────────────────────────────────────────────────────
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
 
-  function api(path, opts) {
-    return fetch(LB_API + path, Object.assign({
-      headers: { "content-type": "application/json" }
-    }, opts || {})).then(function (r) {
-      if (!r.ok) throw new Error("api " + r.status);
-      return r.json();
-    });
-  }
-
-  var pendingKey = "mcdl_lb_pending";
-
-  // Called by the game when a run completes. Daily results only.
-  function report(mode, won, guesses, day, hintUsed) {
-    if (mode !== "daily" || !enabled()) return;
-    var payload = { day: day, name: getName(), guesses: guesses, won: won, hint: !!hintUsed, cid: clientId() };
-    if (!payload.name) {
-      try { localStorage.setItem(pendingKey, JSON.stringify(payload)); } catch (e) {}
-      return; // submitted once the player picks a handle in the board modal
+  function cid() {
+    var id = lsGet("md_cid") || lsGet("mcdl_cid");
+    if (!id || !/^[A-Za-z0-9_-]{8,64}$/.test(id)) {
+      id = (window.crypto && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
     }
-    submit(payload);
+    lsSet("md_cid", id);
+    return id;
   }
-  function submit(payload) {
-    api("/score", { method: "POST", body: JSON.stringify(payload) })
-      .then(function () { try { localStorage.removeItem(pendingKey); } catch (e) {} })
-      .catch(function () {}); // scores are a bonus, never break the game
-  }
-  function flushPending() {
-    try {
-      var raw = localStorage.getItem(pendingKey);
-      if (!raw) return;
-      var p = JSON.parse(raw);
-      p.name = getName();
-      if (p.name) submit(p);
-    } catch (e) {}
+  function name() { return lsGet("md_name") || ""; }
+  function xHandle() { return lsGet("md_x") || ""; }
+  function hasName() { return !!name(); }
+
+  // ── api ─────────────────────────────────────────────────────────────────
+  function api(path, opts) {
+    return fetch(API + path, Object.assign({ headers: { "content-type": "application/json" } }, opts || {}))
+      .then(function (r) {
+        return r.json().then(function (j) {
+          j._status = r.status;
+          if (!r.ok && !j.taken) j._failed = true;
+          return j;
+        }, function () {
+          return { _status: r.status, _failed: true };
+        });
+      }, function () {
+        return { _status: 0, _failed: true };
+      });
   }
 
-  // ---------- board modal ----------
-  function fmtT(ms) {
-    if (typeof ms !== "number") return "";
-    var m = Math.floor(ms / 60000), h = Math.floor(m / 60);
-    if (h > 0) return h + "h" + (m % 60) + "m";
-    return m + "m";
+  function checkName(n) {
+    return api("/name?name=" + encodeURIComponent(n) + "&cid=" + encodeURIComponent(cid()));
+  }
+  function claimName(n) {
+    return api("/name", { method: "POST", body: JSON.stringify({ name: n, cid: cid() }) });
+  }
+  function linkX(handle) {
+    return api("/x", { method: "POST", body: JSON.stringify({ name: name(), cid: cid(), handle: handle }) });
   }
 
-  function open(day) {
-    var body = $("lb-body");
-    body.innerHTML = "";
-    if (!enabled()) {
-      body.appendChild(el("p", "lb-note",
-        "The global leaderboard isn't connected on this deployment yet. " +
-        "It takes one free Cloudflare Worker — see docs/LEADERBOARD.md in the repo."));
-      openModal();
+  // ── reporting a finished run ────────────────────────────────────────────
+  function queue() {
+    try { return JSON.parse(lsGet("md_queue") || "[]") || []; } catch (e) { return []; }
+  }
+  function setQueue(q) { lsSet("md_queue", JSON.stringify(q.slice(-12))); }
+
+  function report(mode, won, guesses, day, hintUsed) {
+    var run = { day: day, mode: mode, won: !!won, guesses: guesses, hint: !!hintUsed };
+    if (!hasName()) {
+      var q = queue();
+      for (var i = 0; i < q.length; i++) if (q[i].day === day && q[i].mode === mode) return;
+      q.push(run); setQueue(q);
       return;
     }
-
-    // handle row
-    var row = el("div", "lb-name-row", "");
-    var input = document.createElement("input");
-    input.className = "lb-name-input";
-    input.maxLength = 20;
-    input.placeholder = "your handle for the board…";
-    input.value = getName();
-    var saveBtn = el("button", "btn lb-name-btn", getName() ? "update" : "join");
-    saveBtn.addEventListener("click", function () {
-      var v = input.value.trim().replace(/[^\w .$-]/g, "").slice(0, 20);
-      if (!v) return;
-      setName(v);
-      saveBtn.textContent = "saved ✓";
-      setTimeout(function () { saveBtn.textContent = "update"; }, 1500);
-      flushPending();
-      setTimeout(function () { open(day); }, 700);
+    post(run);
+  }
+  function post(run) {
+    // The handle travels with the run rather than being joined at read time —
+    // that is what lets the board render from one listing with no body fetches.
+    return api("/score", {
+      method: "POST",
+      body: JSON.stringify(Object.assign({ name: name(), cid: cid(), x: xHandle() }, run))
+    }).then(function (r) {
+      // This name belongs to a different browser. Clearing local storage on a
+      // deployment where the name was claimed does exactly this, and without
+      // this branch the player is stuck posting 403s forever.
+      if (r._status === 403) { lsDel("md_name"); }
+      return r;
     });
-    row.appendChild(input); row.appendChild(saveBtn);
-    body.appendChild(row);
+  }
+  function flushQueue() {
+    if (!hasName()) return Promise.resolve();
+    var q = queue();
+    if (!q.length) return Promise.resolve();
+    setQueue([]);
+    return Promise.all(q.map(post));
+  }
 
-    var list = el("div", "lb-list", "");
-    list.appendChild(el("p", "lb-note", "loading the tape…"));
-    body.appendChild(list);
-    openModal();
+  // ── dom helpers ─────────────────────────────────────────────────────────
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, txt) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
+    return e;
+  }
+  function clear(n) { while (n && n.firstChild) n.removeChild(n.firstChild); }
 
-    api("/board?day=" + day).then(function (b) {
-      list.innerHTML = "";
+  // The same path the footer's social button uses, so there is one X mark in
+  // the product. The double-struck 𝕏 character has no glyph in Baloo, Jersey
+  // or Luckiest Guy and fell back to a bare lowercase x.
+  var X_MARK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" ' +
+    'd="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>';
+  function show(id) { $(id).classList.remove("hidden"); }
+  function hide(id) { $(id).classList.remove("closing"); $(id).classList.add("hidden"); }
 
-      // pot banner + claim flow (only when the server says a pot is live)
-      if (b.pot && b.pot.active) {
-        var pot = el("div", "lb-pot", "");
-        pot.appendChild(el("div", "lb-pot-title", "today's pot: " + (b.pot.amount || "") + " " + (b.pot.note || "")));
-        pot.appendChild(el("div", "lb-pot-sub", "first correct solve of the day takes it"));
-        if (b.winner && b.winner.cid === clientId() && !b.winner.claimed) {
-          var claim = el("div", "lb-claim", "");
-          var addr = document.createElement("input");
-          addr.className = "lb-name-input";
-          addr.placeholder = "your SOL address to claim…";
-          var cbtn = el("button", "btn btn-primary lb-name-btn", "claim");
-          cbtn.addEventListener("click", function () {
-            var a = addr.value.trim();
-            if (a.length < 32 || a.length > 44) { addr.value = ""; addr.placeholder = "that's not a SOL address"; return; }
-            api("/claim", { method: "POST", body: JSON.stringify({ day: day, cid: clientId(), address: a }) })
-              .then(function () { cbtn.textContent = "claimed ✓"; cbtn.disabled = true; })
-              .catch(function () { cbtn.textContent = "failed — retry"; });
-          });
-          claim.appendChild(addr); claim.appendChild(cbtn);
-          pot.appendChild(claim);
-        } else if (b.winner && b.winner.claimed) {
-          pot.appendChild(el("div", "lb-pot-sub", "claimed by " + (b.winner.name || "anon")));
+  function flash(msg) {
+    var layer = $("flash-layer");
+    if (!layer) return;
+    while (layer.children.length > 2) layer.removeChild(layer.firstChild);
+    var node = el("div", "flash", msg);
+    layer.appendChild(node);
+    setTimeout(function () { if (node.parentNode) node.parentNode.removeChild(node); }, 1780);
+  }
+
+  // ── the handle gate ─────────────────────────────────────────────────────
+  var onGateDone = null;
+
+  function normalise(v) {
+    return String(v || "").trim().toLowerCase().replace(/^@+/, "").replace(/[^a-z0-9_]/g, "").slice(0, 16);
+  }
+  function normaliseX(v) {
+    var h = String(v || "").trim();
+    h = h.replace(/^(https?:\/\/)?(www\.)?(x|twitter)\.com\//i, "").replace(/[/?#].*$/, "");
+    return h.replace(/^@+/, "").replace(/[^A-Za-z0-9_]/g, "").slice(0, 15);
+  }
+
+  function openGate(done, locked) {
+    onGateDone = done || null;
+    var modal = $("modal-gate");
+    if (locked) modal.setAttribute("data-lock", "1");
+    else modal.removeAttribute("data-lock");
+    $("gate-h").textContent = hasName() ? "Your handle" : "Pick a handle";
+
+    var body = $("gate-body");
+    clear(body);
+    body.appendChild(el("p", "gate-sub",
+      "It sits next to your score on the daily board. Lowercase letters, numbers and underscores, 3 to 16 of them."));
+
+    var form = el("div", "gate-form");
+    var wrap = el("div", "field");
+    wrap.appendChild(el("span", "field-at", "@"));
+    var input = document.createElement("input");
+    input.className = "field-input";
+    input.id = "gate-name";
+    input.maxLength = 16;
+    input.autocomplete = "off";
+    input.autocapitalize = "off";
+    input.spellcheck = false;
+    input.placeholder = "your handle";
+    input.value = name();
+    wrap.appendChild(input);
+    form.appendChild(wrap);
+
+    var go = el("button", "btn btn-primary", "Take it");
+    form.appendChild(go);
+    body.appendChild(form);
+
+    var note = el("p", "gate-note", "");
+    body.appendChild(note);
+
+    var skip = el("button", "gate-skip", locked ? "Play without one" : "Close");
+    skip.addEventListener("click", function () { finishGate(false); });
+    body.appendChild(skip);
+
+    function say(cls, msg) {
+      note.className = "gate-note" + (cls ? " " + cls : "");
+      note.textContent = msg;
+    }
+
+    var checkT = null, checking = "";
+    input.addEventListener("input", function () {
+      var v = normalise(input.value);
+      if (input.value !== v) input.value = v;
+      clearTimeout(checkT);
+      if (!v) { say("", ""); return; }
+      if (!NAME_RE.test(v)) { say("bad", "Three characters minimum."); return; }
+      say("", "checking…");
+      checkT = setTimeout(function () {
+        checking = v;
+        checkName(v).then(function (r) {
+          if (normalise(input.value) !== checking) return;
+          if (r._failed) { say("bad", "Can't reach the board right now."); return; }
+          if (r.available) {
+            say("ok", r.mine ? "Already yours." : "Free.");
+            if (r.mine && r.x) lsSet("md_x", r.x);
+          } else {
+            say("bad", r.reason === "reserved" ? "That one is spoken for." : "Taken. Try another.");
+          }
+        });
+      }, 320);
+    });
+
+    go.addEventListener("click", function () {
+      var v = normalise(input.value);
+      if (!NAME_RE.test(v)) { say("bad", "Three to sixteen characters."); input.focus(); return; }
+      go.disabled = true;
+      say("", "claiming…");
+      claimName(v).then(function (r) {
+        go.disabled = false;
+        if (r.ok) {
+          lsSet("md_name", r.name);
+          if (r.x) lsSet("md_x", r.x);
+          flushQueue();
+          renderProfile();
+          say("ok", "Yours.");
+          setTimeout(function () { finishGate(true); }, 380);
+          return;
         }
-        list.appendChild(pot);
-      }
+        if (r.taken) { say("bad", "Taken. Try another."); input.focus(); return; }
+        say("bad", "Can't reach the board right now.");
+      });
+    });
 
-      var scores = b.scores || [];
-      if (!scores.length) {
-        list.appendChild(el("p", "lb-note", "nobody on the board yet — finish today's daily and take the top."));
+    input.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter") { ev.preventDefault(); go.click(); }
+    });
+
+    show("modal-gate");
+    setTimeout(function () { if (!("ontouchstart" in window)) input.focus(); }, 60);
+  }
+
+  function finishGate(claimed) {
+    $("modal-gate").removeAttribute("data-lock");
+    if (claimed && !xHandle()) { openXPrompt(); return; }   // keeps onGateDone for the X step
+    hide("modal-gate");
+    var fn = onGateDone; onGateDone = null;
+    if (fn) fn();
+  }
+
+  // ── linking X ───────────────────────────────────────────────────────────
+  function openXPrompt() {
+    $("modal-gate").removeAttribute("data-lock");
+    $("gate-h").textContent = "Link your X";
+    var body = $("gate-body");
+    clear(body);
+    body.appendChild(el("p", "gate-sub",
+      "Your name on the board becomes a link to your profile. It goes up as typed — nothing is checked."));
+
+    var form = el("div", "gate-form");
+    var wrap = el("div", "field");
+    wrap.appendChild(el("span", "field-at", "@"));
+    var input = document.createElement("input");
+    input.className = "field-input";
+    input.maxLength = 15;
+    input.autocomplete = "off";
+    input.autocapitalize = "off";
+    input.spellcheck = false;
+    input.placeholder = "yourhandle";
+    input.value = xHandle();
+    wrap.appendChild(input);
+    form.appendChild(wrap);
+    var go = el("button", "btn btn-primary", "Link");
+    form.appendChild(go);
+    body.appendChild(form);
+
+    var note = el("p", "gate-note", "");
+    body.appendChild(note);
+
+    var later = el("button", "gate-skip", xHandle() ? "Close" : "Later");
+    later.addEventListener("click", done);
+    body.appendChild(later);
+
+    function done() {
+      hide("modal-gate");
+      var fn = onGateDone; onGateDone = null;
+      if (fn) fn();
+    }
+
+    input.addEventListener("input", function () {
+      var v = normaliseX(input.value);
+      if (input.value !== v) input.value = v;
+    });
+    input.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter") { ev.preventDefault(); go.click(); }
+    });
+
+    go.addEventListener("click", function () {
+      var v = normaliseX(input.value);
+      if (v && !X_RE.test(v)) { note.className = "gate-note bad"; note.textContent = "That isn't an X handle."; return; }
+      go.disabled = true;
+      note.className = "gate-note"; note.textContent = "linking…";
+      linkX(v).then(function (r) {
+        go.disabled = false;
+        if (r.ok) {
+          lsSet("md_x", r.handle || "");
+          renderProfile();
+          flash(r.handle ? "Linked to @" + r.handle + "." : "Unlinked.");
+          done();
+          return;
+        }
+        note.className = "gate-note bad";
+        note.textContent = r._status === 403
+          ? "That handle was claimed on another browser."
+          : "Can't reach the board right now.";
+      });
+    });
+
+    show("modal-gate");
+    setTimeout(function () { if (!("ontouchstart" in window)) input.focus(); }, 60);
+  }
+
+  // ── the profile row in settings ─────────────────────────────────────────
+  function renderProfile() {
+    var box = $("profile-body");
+    if (!box) return;
+    clear(box);
+    if (!hasName()) {
+      var pick = el("button", "btn", "Pick a handle");
+      pick.addEventListener("click", function () { openGate(null, false); });
+      box.appendChild(pick);
+      return;
+    }
+    var row = el("div", "profile-row");
+    row.appendChild(el("span", "profile-name", "@" + name()));
+    if (xHandle()) {
+      var a = document.createElement("a");
+      a.className = "profile-x";
+      a.href = "https://x.com/" + xHandle();
+      a.target = "_blank"; a.rel = "noopener";
+      a.textContent = "x.com/" + xHandle();
+      row.appendChild(a);
+    } else {
+      row.appendChild(el("span", "profile-x none", "no X linked"));
+    }
+    box.appendChild(row);
+    var edit = el("button", "btn", xHandle() ? "Change X" : "Link X");
+    edit.addEventListener("click", function () { onGateDone = null; openXPrompt(); });
+    box.appendChild(edit);
+  }
+
+  // ── the board ───────────────────────────────────────────────────────────
+  var boardMode = "classic";
+  var MODE_NAMES = { classic: "Classic", blur: "Blur", lore: "Lore" };
+
+  function fmtT(ms) {
+    if (typeof ms !== "number" || ms < 0) return "";
+    var m = Math.floor(ms / 60000), h = Math.floor(m / 60);
+    if (h > 0) return "+" + h + "h" + (m % 60) + "m";
+    if (m > 0) return "+" + m + "m";
+    return "first";
+  }
+
+  function openBoard(day, mode) {
+    if (mode && MODE_NAMES[mode]) boardMode = mode;
+    var body = $("lb-body");
+    clear(body);
+
+    var tabs = el("div", "stat-tabs");
+    ["classic", "blur", "lore"].forEach(function (m) {
+      var b = el("button", "stat-tab" + (m === boardMode ? " on" : ""), MODE_NAMES[m]);
+      b.addEventListener("click", function () { openBoard(day, m); });
+      tabs.appendChild(b);
+    });
+    body.appendChild(tabs);
+
+    if (!hasName()) {
+      var call = el("div", "lb-callout");
+      call.appendChild(el("p", "lb-note", "You need a handle to show up here."));
+      var pick = el("button", "btn", "Pick one");
+      pick.addEventListener("click", function () {
+        hide("modal-lb");
+        openGate(function () { openBoard(day, boardMode); }, false);
+      });
+      call.appendChild(pick);
+      body.appendChild(call);
+    }
+
+    var list = el("div", "lb-list");
+    list.appendChild(el("p", "lb-note", "loading…"));
+    body.appendChild(list);
+    show("modal-lb");
+
+    api("/board?day=" + day + "&mode=" + boardMode).then(function (b) {
+      clear(list);
+      if (b._failed || !b.ok) {
+        list.appendChild(el("p", "lb-note", "Couldn't reach the board."));
         return;
       }
-      scores.forEach(function (s, i) {
-        var r = el("div", "lb-row" + (s.cid === clientId() ? " me" : ""), "");
+      var rows = b.rows || [];
+      if (!rows.length) {
+        list.appendChild(el("p", "lb-note", "No " + MODE_NAMES[boardMode] + " scores yet today."));
+        return;
+      }
+      var me = name();
+      rows.forEach(function (s, i) {
+        var r = el("div", "lb-row" + (s.name === me ? " me" : ""));
         r.appendChild(el("span", "lb-rank", "#" + (i + 1)));
-        r.appendChild(el("span", "lb-player", s.name || "anon"));
-        var res = s.won ? s.guesses + "/6" + (s.hint ? " 💡" : "") : "X/6";
-        r.appendChild(el("span", "lb-res " + (s.won ? "w" : "l"), res));
+
+        // A linked handle turns the name into the player's profile. This is
+        // the only reason the X field exists.
+        var handle = s.x || (s.name === me ? xHandle() : "");
+        var who;
+        if (handle) {
+          who = document.createElement("a");
+          who.className = "lb-player linked";
+          who.href = "https://x.com/" + handle;
+          who.target = "_blank"; who.rel = "noopener";
+          who.title = "@" + handle + " on X";
+          who.textContent = s.name;
+          var mark = el("span", "lb-x");
+          mark.innerHTML = X_MARK;
+          who.appendChild(mark);
+        } else {
+          who = el("span", "lb-player", s.name);
+        }
+        r.appendChild(who);
+
+        var cell = el("span", "lb-res " + (s.won ? "w" : "l"), s.won ? s.guesses + "/6" : "X/6");
+        if (s.hint) cell.title = "spent a hint";
+        r.appendChild(cell);
         r.appendChild(el("span", "lb-time", fmtT(s.t)));
         list.appendChild(r);
       });
-    }).catch(function () {
-      list.innerHTML = "";
-      list.appendChild(el("p", "lb-note", "couldn't reach the leaderboard — try again in a minute."));
     });
   }
 
-  function openModal() { $("modal-lb").classList.remove("hidden"); }
+  // ── boot ────────────────────────────────────────────────────────────────
+  // Runs after the game has drawn itself, so the page behind the gate is the
+  // real board rather than an empty panel.
+  function boot(afterGate) {
+    cid();
+    renderProfile();
+    if (hasName()) { flushQueue(); if (afterGate) afterGate(); return; }
+    openGate(afterGate, true);
+  }
 
-  return { report: report, open: open, enabled: enabled };
+  return {
+    boot: boot,
+    report: report,
+    open: openBoard,
+    openHandle: function () { openGate(null, false); },
+    openX: openXPrompt,
+    renderProfile: renderProfile,
+    name: name,
+    xHandle: xHandle,
+    hasName: hasName,
+    flash: flash
+  };
 })();

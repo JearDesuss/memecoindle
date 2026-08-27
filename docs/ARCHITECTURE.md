@@ -9,11 +9,12 @@ style.css       the whole design system (tokens up top in :root)
 data.js         the item list — 186 coins + enums + tier functions
 logos.js        generated manifest: ticker -> img/<TICKER>.png
 art.js          generated manifest: name -> [w,h] of img/art/<NAME>.webp
-lb.js           leaderboard/pot client (dormant until LB_API is set)
-game.js         the engine (IIFE, no globals except what data/lb expose)
+lb.js           handles, X links and the board (talks to api/)
+share.js        draws the result-card PNG and routes it to X
+game.js         the engine (IIFE, no globals except what data/lb/share expose)
 img/            coin logos, up to 320px WebP (misnamed .png — content sniffing wins)
 img/art/        hand-picked high-res character art for the background crowd
-server/         optional Cloudflare Worker for leaderboard + pot
+api/            four Vercel functions on a Blob store — see docs/LEADERBOARD.md
 tools/          dev scripts (fetch/resize logos, build crowd art, schedule, artifact build)
 test/           CDP end-to-end test
 ```

@@ -25,7 +25,7 @@ crime scenes.
 - Three daily puzzles, one per mode, deterministic with no server
 - Archive: replay any past puzzle without risking your streak
 - Six tries each; misses hand you clues (chain → year → type → peak → now)
-- One hint per Classic daily, flagged 💡 in your share
+- One hint per Classic daily, flagged in your share
 - Real coin logos (64px WebP, 0.3MB total) with a procedural badge fallback
 - Per-mode streaks, stats and guess distribution
 - Unlimited mode for every puzzle type
@@ -33,7 +33,13 @@ crime scenes.
 - Outbound X and DexScreener buttons — drop a URL into `SOCIAL` in `game.js` and
   they go live; empty means a muted `soon` sticker
 - Reveal card with lore, drawdown bar, and a memecoin.wiki link
-- Optional global leaderboard + daily winner pot — see [docs/LEADERBOARD.md](docs/LEADERBOARD.md)
+- **Post on X**: the result is drawn to a 1200x675 PNG and routed to the
+  composer the best way the browser allows — the share sheet on a phone, the
+  clipboard plus a prefilled post on a desktop. The card never shows the coin
+- **Handles**: a globally unique lowercase handle, claimed on the first visit,
+  with an optional self-declared X link that turns your name on the board into
+  a link to your profile — see [docs/LEADERBOARD.md](docs/LEADERBOARD.md)
+- **A daily board per mode**, ranked wins → fewest guesses → no hint → earliest
 
 ## Run it
 

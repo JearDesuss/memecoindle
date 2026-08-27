@@ -66,7 +66,41 @@
 
   --ease-out: cubic-bezier(.23, 1, .32, 1);
   --ease-pop: cubic-bezier(.2, .9, .3, 1.35);
-  --press: transform 110ms var(--ease-out), box-shadow 110ms var(--ease-out);
+
+  /* ── durations. Down is faster than up; leaving is faster than arriving. ── */
+  --dur-press: 70ms;     /* down before the finger knows it moved */
+  --dur-tint: 110ms;     /* the hover fill fade */
+  --dur-close: 150ms;    /* dismissal, always shorter than the 240ms entrance */
+  --dur-pop: 190ms;      /* long enough for the overshoot to read as spring */
+  --dur-stamp: 260ms;    /* a mark landing: the pip, the submit kick */
+  --dur-burst: 380ms;    /* the die line's whole flight off the sheet */
+  --dur-bump: 420ms;     /* peel-and-slap; the slowest thing in the system */
+  --hold-flash: 1600ms;  /* how long a flash sits before it leaves */
+
+  /* the die line thrown by a press. Ink on Paper; the Night card re-points it. */
+  --die: var(--ink);
+  --burst-reach: 8px;
+  --burst-reach-in: 4px;
+
+  /* small offsets that used to be literals inside component rules */
+  --rise: 2px;    /* the extra hover lift */
+  --spine: 7px;   /* the mode rail's Gold spine */
+  --nudge: 4px;   /* the refusal shake */
+
+  /* The press contract. A sticker goes down flat and fast and comes back with
+     energy — the old token was symmetric 110ms both ways, which is a state
+     toggle, not a material. box-shadow stays on --ease-out so the printed
+     shadow never renders deeper than --lift while the body springs past it. */
+  --press:
+    transform var(--dur-pop) var(--ease-pop),
+    box-shadow var(--dur-pop) var(--ease-out),
+    background-color var(--dur-tint) ease,
+    opacity var(--dur-tint) ease;
+  --press-in:
+    transform var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) var(--ease-out),
+    background-color var(--dur-tint) ease,
+    opacity var(--dur-tint) ease;
 }
 
 /* colourblind play swaps only the two status hues; Gold is untouched */
@@ -96,10 +130,11 @@ body {
 button, input { font: inherit; color: inherit; }
 button { background: none; border: none; cursor: pointer; }
 a { color: inherit; }
+/* The old rule put a 7px Ink halo in box-shadow, which REPLACED the lift and
+   left a keyboard-focused sticker flat. Outline only; the lift survives. */
 :focus-visible {
-  outline: var(--cut) solid #fff;
+  outline: var(--cut) solid var(--snow);
   outline-offset: 3px;
-  box-shadow: 0 0 0 7px var(--ink);
 }
 
 /* ─────────────── sky ─────────────── */
@@ -194,7 +229,7 @@ a { color: inherit; }
   border: var(--cut) solid var(--ink);
   box-shadow: var(--shadow);
   text-decoration: none;
-  transition: var(--press), background-color 110ms ease;
+  transition: var(--press);
 }
 .ico-btn .ico { font-size: 18px; line-height: 1; transform: translateY(-1px); }
 @media (hover: hover) and (pointer: fine) { .ico-btn:hover { background: var(--snow); } }
@@ -276,10 +311,10 @@ a { color: inherit; }
   border: var(--cut) solid var(--ink);
   box-shadow: var(--shadow-card);
   text-decoration: none;
-  transition: var(--press), background-color 110ms ease;
+  transition: var(--press);
 }
 @media (hover: hover) and (pointer: fine) {
-  .mode-card:hover { background: var(--snow); transform: translateY(-2px); box-shadow: 0 calc(var(--lift-card) + 2px) 0 var(--ink); }
+  .mode-card:hover { background: var(--snow); transform: translateY(calc(var(--rise) * -1)); box-shadow: 0 calc(var(--lift-card) + var(--rise)) 0 var(--ink); }
 }
 .mode-card:active { transform: translateY(var(--lift-card)); box-shadow: 0 0 0 var(--ink); }
 /* The mode you are on is pressed flat into the sheet while its siblings
@@ -290,14 +325,20 @@ a { color: inherit; }
   transform: translateY(var(--lift-card));
   box-shadow: 0 0 0 var(--ink);
 }
-.mode-card.on::before {
+/* The spine is on every card, rolled up. Selecting one unrolls it downward —
+   a strip of tape pressed down the edge, hard-edged, no fade. */
+.mode-card::before {
   content: "";
   position: absolute;
   left: 0; top: 0; bottom: 0;
-  width: 7px;
+  width: var(--spine);
   background: var(--gold);
   border-right: var(--cut-in) solid var(--ink);
+  transform: scaleY(0);
+  transform-origin: 50% 0;
+  transition: transform var(--dur-pop) var(--ease-pop);
 }
+.mode-card.on::before { transform: scaleY(1); }
 
 .mode-ico {
   width: 44px; height: 44px;
@@ -469,7 +510,6 @@ a { color: inherit; }
   border-radius: 50%;
   background: var(--ash);
   border: var(--cut-in) solid var(--ink);
-  transition: background 200ms ease;
 }
 /* a spent guess is consumed, not live - Ink, not the accent */
 .pip.used { background: var(--ink); }
@@ -563,13 +603,13 @@ a { color: inherit; }
 /* ─────────────── right rail ─────────────── */
 .rule-list { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 11px; }
 .rule-list li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+/* A die-cut chip, not a checkmark. The tick is the WIN glyph on the mode
+   flags, the archive rows and the yesterday panel — spending it as a bullet
+   here costs a status signal for decoration. */
 .tick {
-  display: grid; place-items: center;
-  width: 20px; height: 20px; flex: none;
+  width: 16px; height: 16px; flex: none;
   border-radius: var(--r-1);
   background: var(--ink);
-  border: var(--cut-in) solid var(--ink);
-  color: var(--cream); font-size: 10px; font-weight: 700;
 }
 .degen-chip {
   display: block; width: 100%;
@@ -612,6 +652,7 @@ a { color: inherit; }
   /* Ink and Night are three shades apart, so the standard lift vanishes
      here. Everything inside this card lifts off a deeper shadow instead. */
   --shadow: 0 var(--lift) 0 #16172B;
+  --die: #16172B;
 }
 .more-title {
   font-family: var(--font-pixel);
@@ -636,7 +677,7 @@ a { color: inherit; }
   color: var(--ink);
   border: var(--cut) solid var(--ink);
   box-shadow: var(--shadow);
-  transition: var(--press), background-color 110ms ease;
+  transition: var(--press);
 }
 .pill:active { transform: translateY(var(--lift)); box-shadow: 0 0 0 var(--ink); }
 @media (hover: hover) and (pointer: fine) { .pill:hover { background: var(--snow); } }
@@ -669,7 +710,7 @@ a { color: inherit; }
   border: var(--cut) solid var(--ink);
   box-shadow: var(--shadow);
   text-decoration: none;
-  transition: var(--press), background-color 110ms ease;
+  transition: var(--press);
 }
 .social-btn svg { width: 17px; height: 17px; display: block; flex: none; }
 @media (hover: hover) and (pointer: fine) { .social-btn:hover { background: var(--snow); } }
@@ -687,11 +728,11 @@ a { color: inherit; }
   background: var(--cream-3);
   color: var(--ink-2);
 }
-.social-btn.nudge { animation: nudge 380ms var(--ease-out); }
+.social-btn.nudge { animation: nudge var(--dur-burst) var(--ease-out); }
 @keyframes nudge {
   0%, 100% { transform: none; }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+  25% { transform: translateX(calc(var(--nudge) * -1)); }
+  75% { transform: translateX(var(--nudge)); }
 }
 
 .fineprint {
@@ -778,7 +819,7 @@ a { color: inherit; }
   box-shadow: var(--shadow-card);
   animation: modal-in 240ms var(--ease-pop) both;
 }
-@keyframes modal-in { from { opacity: 0; transform: scale(.94) translateY(10px); } }
+@keyframes modal-in { from { opacity: 0; transform: translateY(calc(var(--lift-card) * 2)); } }
 .modal h2 {
   font-family: var(--font-pixel);
   font-size: 20px; text-transform: uppercase;
@@ -801,6 +842,7 @@ a { color: inherit; }
   border: var(--cut) solid var(--ink);
   box-shadow: var(--shadow);
 }
+.modal-close { transition: var(--press); }
 .modal-close:active { transform: translateY(var(--lift)); box-shadow: 0 0 0 var(--ink); }
 
 .help-modes { display: flex; flex-direction: column; gap: 7px; }
@@ -904,6 +946,234 @@ a { color: inherit; }
 
 .empty-note { text-align: center; padding: 14px 8px 4px; color: var(--ink-2); font-size: 13px; line-height: 1.6; }
 
+
+/* ─────────────── press ─────────────── */
+/* Every sticker on the page already went down correctly. None of them came
+   back up with any energy, because --press was symmetric 110ms both ways.
+   These rules give the down-stroke its own faster curve and hand the return
+   to --ease-pop. */
+.btn:active,
+.ico-btn:active,
+.go-btn:active,
+.pill:active,
+.social-btn:active,
+.mode-card:active,
+.degen-chip:active,
+.hint-btn:active,
+.modal-close:active,
+.stat-tab:active,
+.arch-row:active,
+.ac-item:active { transition: var(--press-in); }
+
+/* the three flat controls cannot translate, so a press prints them in */
+.stat-tab, .arch-row, .ac-item { transition: var(--press); }
+.stat-tab:active, .arch-row:active { background: var(--cream-2); border-color: var(--ink); }
+
+@media (hover: hover) and (pointer: fine) {
+  /* the icon buttons are the same sticker as the mode card, so they rise too */
+  .ico-btn:hover, .btn:hover, .degen-chip:hover, .hint-btn:hover, .modal-close:hover {
+    transform: translateY(calc(var(--rise) * -1));
+    box-shadow: 0 calc(var(--lift) + var(--rise)) 0 var(--ink);
+  }
+  .btn:hover, .degen-chip:hover, .hint-btn:hover { background: var(--snow); }
+  /* Gold and Miss are already spent; a Snow hover would take the fill away */
+  .btn-primary:hover, .btn-danger:hover { background: inherit; }
+}
+
+/* ── the die-cut burst ──
+   Vinyl does not glow. What it can do is throw a copy of its own die line
+   outward for three frames, like a registration mark flicking off the sheet.
+   outline-offset animates without distorting the line, so the width stays
+   exactly --cut-in for the whole flight, and steps(3) makes it a sprite
+   rather than a fade. Transition-driven, so it re-fires on every consecutive
+   press with no JS and no animation-restart hack. */
+/* .modal-close is already absolute, which is containing block enough */
+.btn, .ico-btn, .go-btn, .pill, .social-btn, .degen-chip, .hint-btn,
+.streak-pill, .stat-tab, .arch-row, .ac-item { position: relative; }
+
+.btn::after, .ico-btn::after, .go-btn::after, .pill::after, .social-btn::after,
+.degen-chip::after, .hint-btn::after, .modal-close::after, .streak-pill::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--cut) * -1);
+  border-radius: inherit;
+  outline: var(--cut-in) solid var(--die);
+  outline-offset: var(--burst-reach);
+  opacity: 0;
+  pointer-events: none;
+  transition: outline-offset var(--dur-burst) var(--ease-out),
+              opacity var(--dur-burst) steps(3, end);
+}
+.btn:active::after, .ico-btn:active::after, .go-btn:active::after, .pill:active::after,
+.social-btn:active::after, .degen-chip:active::after, .hint-btn:active::after,
+.modal-close:active::after {
+  outline-offset: 0px; opacity: 1; transition-duration: 0ms;
+}
+
+/* tight clusters get the short throw so no ring crosses its neighbour */
+.stat-tab::after, .arch-row::after, .ac-item::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--cut-in) * -1);
+  border-radius: inherit;
+  outline: var(--cut-in) solid var(--die);
+  outline-offset: var(--burst-reach-in);
+  opacity: 0;
+  pointer-events: none;
+  transition: outline-offset var(--dur-burst) var(--ease-out),
+              opacity var(--dur-burst) steps(3, end);
+}
+.stat-tab:active::after, .arch-row:active::after, .ac-item:active::after {
+  outline-offset: 0px; opacity: 1; transition-duration: 0ms;
+}
+
+/* the same ring as a keyframe, for the presses a mouse never makes — Enter
+   and the autocomplete row both commit without ever entering :active */
+@keyframes cut-burst {
+  0%   { outline-offset: 0px;                opacity: 1; }
+  100% { outline-offset: var(--burst-reach); opacity: 0; }
+}
+
+/* ── the submit stamp ──
+   260ms, because the classic reveal cascade starts at 5 x 180ms and the button
+   has to have finished before the first tile flips, or the eye has two jobs. */
+.go-btn.sent { animation: stamp var(--dur-stamp) var(--ease-out) both; }
+.go-btn.sent::after { animation: cut-burst var(--dur-burst) var(--ease-out) both; }
+@keyframes stamp {
+  0%   { transform: translateY(0);                      box-shadow: var(--shadow); }
+  22%  { transform: translateY(var(--lift));            box-shadow: 0 0 0 var(--ink); }
+  62%  { transform: translateY(calc(var(--rise) * -1)); box-shadow: 0 calc(var(--lift) + var(--rise)) 0 var(--ink); }
+  100% { transform: translateY(0);                      box-shadow: var(--shadow); }
+}
+
+/* a guess with nothing to match was silent; this refuses it out loud */
+.input-wrap.reject #guess-input { animation: nudge var(--dur-burst) var(--ease-out); }
+
+/* ── the pip landing ──
+   Translate, never scale: a scaled pip stretches its --cut-in border to 3.4px,
+   which is a fourth die width the contract does not have. */
+.pip.fresh { animation: pip-stamp var(--dur-stamp) var(--ease-out) both; }
+@keyframes pip-stamp {
+  0%   { transform: translateY(calc(var(--lift) * -2)); }
+  55%  { transform: translateY(0); }
+  72%  { transform: translateY(calc(var(--lift) * -.34)); }
+  100% { transform: translateY(0); }
+}
+
+/* ── the streak bump ── peel off the sheet, then slap back down. The longest
+   value in the system, and it earns it: it fires once a day at most. */
+.streak-pill.bump { animation: peel var(--dur-bump) var(--ease-out) both; }
+.streak-pill.bump::after { animation: cut-burst var(--dur-burst) var(--ease-out) both; }
+@keyframes peel {
+  0%   { transform: translateY(0);                      box-shadow: var(--shadow); }
+  38%  { transform: translateY(calc(var(--lift) * -1)); box-shadow: 0 calc(var(--lift) * 2) 0 var(--ink); }
+  64%  { transform: translateY(var(--lift));            box-shadow: 0 0 0 var(--ink); }
+  100% { transform: translateY(0);                      box-shadow: var(--shadow); }
+}
+
+/* ── leaving a modal ── down, into the sheet, and faster than arriving.
+   --ease-out, never --ease-pop: an overshoot on the way out reads as a lunge. */
+.modal-backdrop.closing { animation: fade-out var(--dur-close) var(--ease-out) both; pointer-events: none; }
+.modal-backdrop.closing .modal { animation: modal-out var(--dur-close) var(--ease-out) both; }
+@keyframes fade-out { to { opacity: 0; } }
+@keyframes modal-out { to { opacity: 0; transform: translateY(var(--lift-card)); } }
+
+/* ─────────────── flash ─────────────── */
+/* Not a new look — the standard sticker at body weight, parked at the bottom
+   of the screen. No Gold: the Gold in view is on the button that fired it. */
+.flash-layer {
+  position: fixed;
+  left: 0; right: 0; bottom: 24px;
+  z-index: 120;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  pointer-events: none;
+}
+.flash {
+  padding: 9px 16px;
+  max-width: min(420px, calc(100vw - 32px));
+  text-align: center;
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: 14px;
+  border-radius: var(--r-1);
+  background: var(--cream);
+  color: var(--ink);
+  border: var(--cut) solid var(--ink);
+  box-shadow: var(--shadow-card);
+  animation:
+    flash-in var(--dur-pop) var(--ease-pop) both,
+    flash-out var(--dur-close) var(--ease-out) var(--hold-flash) forwards;
+}
+/* the fill modes are load-bearing: flash-out must be `forwards`, never `both`,
+   or its backwards fill applies at time zero and eats the entrance */
+@keyframes flash-in  { from { opacity: 0; transform: translateY(calc(var(--lift-card) * 3)); } }
+@keyframes flash-out { to   { opacity: 0; transform: translateY(var(--lift-card)); } }
+
+/* ─────────────── handle + board ─────────────── */
+.gate-sub { font-size: 14px; color: var(--ink-2); margin-bottom: 14px; }
+.gate-form { display: flex; gap: 8px; align-items: stretch; }
+.field {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 2px;
+  padding: 0 11px;
+  border-radius: var(--r-1);
+  background: var(--snow);
+  border: var(--cut) solid var(--ink);
+  transition: box-shadow var(--dur-tint) var(--ease-out);
+}
+.field:focus-within { box-shadow: 0 0 0 var(--cut) var(--gold); }
+.field-at { font-family: var(--font-ui); font-weight: 800; font-size: 16px; color: var(--ink-3); }
+.field-input {
+  flex: 1; min-width: 0;
+  padding: 11px 0;
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: 16px;
+  background: none; border: none; outline: none;
+}
+.field-input::placeholder { color: var(--ink-3); font-weight: 600; }
+.gate-form .btn { flex: 0 0 auto; }
+.gate-note { min-height: 20px; margin-top: 9px; font-size: 13px; color: var(--ink-2); }
+.gate-note.ok { color: var(--bull); }
+.gate-note.bad { color: var(--bear); }
+.gate-skip {
+  display: block; margin: 4px auto 0;
+  font-size: 13px; color: var(--ink-2);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+
+.profile-body { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-top: 4px; }
+.profile-row { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.profile-name { font-family: var(--font-ui); font-weight: 800; font-size: 16px; }
+.profile-x { font-size: 12.5px; color: var(--ink-2); text-underline-offset: 3px; }
+.profile-x.none { text-decoration: none; color: var(--ink-3); }
+.profile-body .btn { flex: 0 0 auto; }
+
+.lb-list { display: flex; flex-direction: column; }
+.lb-note { font-size: 13.5px; line-height: 1.7; color: var(--ink-2); padding: 6px 0; }
+.lb-callout {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 12px; margin-bottom: 12px;
+  border-radius: var(--r-1);
+  background: var(--cream-2);
+  border: var(--cut-in) solid var(--cream-3);
+}
+.lb-callout .lb-note { flex: 1 1 180px; padding: 0; }
+.lb-callout .btn { flex: 0 0 auto; }
+.lb-row.me { background: var(--cream-2); }
+.lb-player {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--font-ui); font-weight: 800;
+}
+a.lb-player.linked { text-decoration: underline; text-underline-offset: 3px; }
+.lb-x { display: inline-flex; margin-left: 6px; vertical-align: -1px; color: var(--ink-2); }
+.lb-x svg { width: 11px; height: 11px; display: block; }
+.lb-res { flex: none; font-family: var(--font-ui); font-weight: 800; font-size: 13.5px; }
+.lb-res.w { color: var(--bull); }
+.lb-res.l { color: var(--bear); }
+.lb-time { flex: none; width: 54px; text-align: right; font-size: 12px; color: var(--ink-3); }
+
 /* ─────────────── responsive ─────────────── */
 @media (max-width: 1040px) {
   .layout { grid-template-columns: 1fr 1.5fr; }
@@ -954,7 +1224,24 @@ a { color: inherit; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Collapse the motion tokens, not the states. A pressed sticker must still
+     visibly BE down — that is state, not animation — it just arrives in 1ms. */
+  :root {
+    --dur-press: 1ms; --dur-tint: 1ms; --dur-pop: 1ms; --dur-stamp: 1ms;
+    --dur-burst: 1ms; --dur-bump: 1ms; --dur-close: 1ms;
+    --ease-pop: var(--ease-out);   /* kills every overshoot in one line */
+  }
   .cloud, .floater, .stage.burst::before { animation: none !important; }
   .flip, .clue-chip, .miss-row { animation: none !important; }
   .modal, .modal-backdrop { animation-duration: 1ms !important; }
+  .go-btn.sent, .streak-pill.bump, .pip.fresh, .social-btn.nudge,
+  .input-wrap.reject #guess-input { animation: none !important; }
+  .btn::after, .ico-btn::after, .go-btn::after, .pill::after, .social-btn::after,
+  .degen-chip::after, .hint-btn::after, .modal-close::after, .streak-pill::after,
+  .stat-tab::after, .arch-row::after, .ac-item::after { display: none !important; }
+  /* the flash is removed by a timer in JS, so it must not animate itself out */
+  .flash { animation: none !important; }
+  .mode-card::before { transition: none !important; }
+  .mode-prog i, .dist-bar, .dd-fill { transition: none !important; }
+  .blur-img { transition: filter var(--dur-close) linear !important; }
 }

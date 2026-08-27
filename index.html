@@ -4,17 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Memedle — daily memecoin guessing game</title>
-<meta name="description" content="Guess the memecoin of the day. Three modes: a clue grid, a blurred logo, or one line of lore. A new coin in each, every day.">
+<meta name="description" content="Guess the memecoin of the day. Three modes: a clue grid, a blurred logo, one line of lore. Six guesses each.">
 <meta property="og:title" content="Memedle">
-<meta property="og:description" content="One memecoin a day, three ways to guess it. Were you there?">
+<meta property="og:description" content="One memecoin a day, three ways to guess it. Six guesses each.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://memedle-weld.vercel.app/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Memedle">
+<meta name="twitter:description" content="One memecoin a day, three ways to guess it. Six guesses each.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪙</text></svg>">
 <meta name="theme-color" content="#5CC0F0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Jersey+15&family=Baloo+2:wght@500..800&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="img/memedle-mascot-horizon-v2.webp?v=6f1a00b2" type="image/webp" fetchpriority="high">
-<link rel="stylesheet" href="style.css?v=6f1a00b2">
+<link rel="preload" as="image" href="img/memedle-mascot-horizon-v2.webp?v=c1edb881" type="image/webp" fetchpriority="high">
+<link rel="stylesheet" href="style.css?v=c1edb881">
 </head>
 <body>
 
@@ -88,9 +92,9 @@
         </div>
         <div class="panel-body">
           <ul class="rule-list">
-            <li><span class="tick">✓</span> Six guesses a day</li>
-            <li><span class="tick">✓</span> Three modes, three coins</li>
-            <li><span class="tick">✓</span> Miss a day, lose the streak</li>
+            <li><span class="tick" aria-hidden="true"></span> Six guesses a day</li>
+            <li><span class="tick" aria-hidden="true"></span> Three modes, three coins</li>
+            <li><span class="tick" aria-hidden="true"></span> Miss a day, lose the streak</li>
           </ul>
           <button class="degen-chip" id="btn-help-2">The long version</button>
         </div>
@@ -105,10 +109,10 @@
     <p class="text-links">
       <button data-go="stats">Stats</button><span>·</span>
       <button data-go="board">Leaderboard</button><span>·</span>
-      <a href="https://memecoin.wiki" target="_blank" rel="noopener">Meme Wiki</a>
+      <a href="https://memecoin.wiki" target="_blank" rel="noopener">memecoin.wiki</a>
     </p>
     <div class="social-row" id="social-row"></div>
-    <p class="fineprint">An unofficial fan game · lore via memecoin.wiki · not financial advice</p>
+    <p class="fineprint">An unofficial fan game · lore via memecoin.wiki · market caps are approximate</p>
   </section>
 
 </div><!-- /.app -->
@@ -133,7 +137,7 @@
       <div class="tile s-y demo"><span class="tile-val">Cat</span></div>
       <div class="tile s-x demo"><span class="tile-val">2021</span><span class="tile-dir">▲</span></div>
     </div>
-    <p class="demo-caption">green = exact · yellow = close · red = cold</p>
+    <p class="demo-caption">exact · close · wrong</p>
     <label class="cb-row"><input type="checkbox" id="cb-toggle"> High-contrast tiles (blue / orange)</label>
   </div>
 </div>
@@ -142,9 +146,11 @@
   <div class="modal">
     <button class="modal-close" data-close aria-label="Close">✕</button>
     <h2 id="set-h">Settings</h2>
+    <h3>Your handle</h3>
+    <div id="profile-body" class="profile-body"></div>
     <label class="cb-row"><input type="checkbox" id="cb-toggle-2"> High-contrast tiles (blue / orange)</label>
     <h3>Danger zone</h3>
-    <p class="fine">Wipes today's progress, your streak and every stat on this device.</p>
+    <p class="fine">Wipes today's progress, your streak and every stat on this device. Your handle stays yours.</p>
     <button class="btn btn-danger" id="btn-wipe">Erase my record</button>
   </div>
 </div>
@@ -181,17 +187,27 @@
   </div>
 </div>
 
+<div id="modal-gate" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="gate-h">
+  <div class="modal">
+    <h2 id="gate-h">Pick a handle</h2>
+    <div id="gate-body"></div>
+  </div>
+</div>
+
 <div id="modal-lb" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="lb-h">
   <div class="modal">
     <button class="modal-close" data-close aria-label="Close">✕</button>
-    <h2 id="lb-h">The board</h2>
+    <h2 id="lb-h">Leaderboard</h2>
     <div id="lb-body"></div>
   </div>
 </div>
 
-<script src="data.js?v=6f1a00b2"></script>
-<script src="logos.js?v=6f1a00b2"></script>
-<script src="lb.js?v=6f1a00b2"></script>
-<script src="game.js?v=6f1a00b2"></script>
+<div class="flash-layer" id="flash-layer" aria-live="polite"></div>
+
+<script src="data.js?v=c1edb881"></script>
+<script src="logos.js?v=c1edb881"></script>
+<script src="lb.js?v=c1edb881"></script>
+<script src="share.js?v=c1edb881"></script>
+<script src="game.js?v=c1edb881"></script>
 </body>
 </html>

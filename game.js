@@ -138,7 +138,7 @@
 
   var CLUES = [
     function (c) { return ["Chain", c.c]; },
-    function (c) { return ["Born", String(c.y)]; },
+    function (c) { return ["Year", String(c.y)]; },
     function (c) { return ["Type", c.g]; },
     function (c) { return ["Peak", TIER_LABELS[capTier(c.m)]]; },
     function (c) { return ["Now", NOW_LABELS[nowTier(c.cm)]]; }
@@ -443,14 +443,14 @@
     return { done: !!s.done, won: !!s.won, n: s.g.length };
   }
 
-  function renderModeRail() {
+  var railCards = null;
+  function buildModeRail() {
     var list = $("mode-list");
     clear(list);
-    MODES.forEach(function (m) {
+    railCards = MODES.map(function (m) {
       var a = document.createElement("a");
-      a.className = "mode-card" + (m.id === modeId ? " on" : "");
+      a.className = "mode-card";
       a.href = "#/" + m.id;
-
       a.appendChild(logoByTicker(m.icon, "mode-ico"));
 
       var txt = el("div", "mode-text");
@@ -458,24 +458,33 @@
       txt.appendChild(el("span", "mode-blurb", m.blurb));
       a.appendChild(txt);
 
-      var st = dayStatusFor(m.id);
       var flag = el("span", "mode-flag");
-      if (st && st.done) {
-        flag.classList.add(st.won ? "win" : "lost");
-        flag.textContent = st.won ? st.n + "/" + MAX_GUESSES : "✕";
-      } else {
-        flag.textContent = ((st && st.n) || 0) + "/" + MAX_GUESSES;
-      }
       a.appendChild(flag);
 
       var prog = el("div", "mode-prog");
       var fill = el("i");
-      var pct = st ? Math.round(100 * Math.min(st.n, MAX_GUESSES) / MAX_GUESSES) : 0;
-      fill.style.width = (st && st.done && st.won ? 100 : pct) + "%";
       prog.appendChild(fill);
       a.appendChild(prog);
 
       list.appendChild(a);
+      return { id: m.id, node: a, flag: flag, fill: fill };
+    });
+  }
+  function renderModeRail() {
+    var list = $("mode-list");
+    if (!railCards || !list.firstChild) buildModeRail();
+    railCards.forEach(function (c) {
+      c.node.classList.toggle("on", c.id === modeId);
+      var st = dayStatusFor(c.id);
+      c.flag.className = "mode-flag";
+      if (st && st.done) {
+        c.flag.classList.add(st.won ? "win" : "lost");
+        c.flag.textContent = st.won ? st.n + "/" + MAX_GUESSES : "✕";
+      } else {
+        c.flag.textContent = ((st && st.n) || 0) + "/" + MAX_GUESSES;
+      }
+      var pct = st ? Math.round(100 * Math.min(st.n, MAX_GUESSES) / MAX_GUESSES) : 0;
+      c.fill.style.width = (st && st.done && st.won ? 100 : pct) + "%";
     });
   }
 
@@ -519,7 +528,7 @@
       a.textContent = m.name;
       row.appendChild(a);
     });
-    var endless = el("a", "pill", "∞ Endless");
+    var endless = el("a", "pill", "Endless");
     endless.href = "#/" + modeId + "/unlimited";
     row.appendChild(endless);
     var arch = el("button", "pill", "Archive");
@@ -535,11 +544,12 @@
     $("panel-badge").textContent = (MAX_GUESSES - guesses.length) + "/" + MAX_GUESSES;
 
     var meta = $("game-meta");
-    if (unlimited) meta.textContent = "Endless mode · random coin, replay forever.";
-    else if (isArchive()) meta.textContent = "Archive run — your streak is safe.";
-    else meta.textContent = "Guess the memecoin in " + MAX_GUESSES + " tries.";
+    if (unlimited) meta.textContent = "Random coin. Nothing is recorded.";
+    else if (isArchive()) meta.textContent = "Archive run. Nothing is recorded.";
+    else meta.textContent = "";
   }
 
+  var lastStreak = null;
   function renderStreak() {
     var pill = $("streak-pill");
     var st = loadStats(modeId);
@@ -547,8 +557,16 @@
     if (st && st.streak > 0 && (st.lastWinDay === d || st.lastWinDay === d - 1)) {
       pill.textContent = "🔥 " + st.streak + " day streak";
       pill.classList.remove("hidden");
+      if (lastStreak !== null && st.streak > lastStreak && !reducedMotion()) {
+        pill.classList.remove("bump");
+        void pill.offsetWidth;
+        pill.classList.add("bump");
+        setTimeout(function () { pill.classList.remove("bump"); }, 460);
+      }
+      lastStreak = st.streak;
     } else {
       pill.classList.add("hidden");
+      lastStreak = st ? st.streak : 0;
     }
   }
 
@@ -580,7 +598,7 @@
         var coin = el("div", "mystery");
         coin.appendChild(el("span", null, "?"));
         stage.appendChild(coin);
-        stage.appendChild(el("div", "stage-cap", "Today's coin"));
+        stage.appendChild(el("div", "stage-cap", "The coin"));
       }
       return;
     }
@@ -660,7 +678,7 @@
     if (guesses.length === 0 && !done) {
       board.appendChild(el("div", "empty-note", isGrid
         ? COINS.length + " coins in the deck."
-        : "Every miss buys you a clue."));
+        : "Each miss reveals a clue."));
     } else if (isGrid) {
       guesses.forEach(function (coin, gi) {
         var row = el("div", "guess-row");
@@ -699,7 +717,8 @@
     var pips = $("pips");
     clear(pips);
     for (var i = 0; i < MAX_GUESSES; i++) {
-      pips.appendChild(el("span", "pip" + (i < guesses.length ? " used" : "")));
+      var fresh = animateLast && i === guesses.length - 1;
+      pips.appendChild(el("span", "pip" + (i < guesses.length ? " used" : "") + (fresh ? " fresh" : "")));
     }
     pips.setAttribute("aria-label", (MAX_GUESSES - guesses.length) + " guesses left");
   }
@@ -816,12 +835,30 @@
   }
   function submitTyped() {
     var m = acMatches($("guess-input").value);
-    if (m.length) submitGuess(m[acIndex >= 0 ? acIndex : 0]);
+    if (m.length) { submitGuess(m[acIndex >= 0 ? acIndex : 0]); return; }
+    // a guess with nothing to match used to be completely silent
+    var wrap = document.querySelector(".input-wrap");
+    if (!wrap || !$("guess-input").value.trim()) return;
+    wrap.classList.remove("reject");
+    void wrap.offsetWidth;
+    wrap.classList.add("reject");
+    setTimeout(function () { wrap.classList.remove("reject"); }, 400);
+  }
+
+  // Enter and the autocomplete row both commit without the button ever
+  // entering :active, so the press has to be fired by hand.
+  function stamp(btn) {
+    if (!btn || reducedMotion()) return;
+    btn.classList.remove("sent");
+    void btn.offsetWidth;
+    btn.classList.add("sent");
+    setTimeout(function () { btn.classList.remove("sent"); }, 400);
   }
 
   function submitGuess(coin) {
     if (done || guesses.length >= MAX_GUESSES) return;
     guesses.push(coin);
+    stamp($("btn-go"));
     $("guess-input").value = "";
     acIndex = -1; renderAC();
     var win = coin.n === target.n;
@@ -837,7 +874,9 @@
       var delay = MODE_BY_ID[modeId].kind === "grid" ? 5 * 180 + 420 : 500;
       if (won) setTimeout(confettiBurst, Math.max(0, delay - 360));
       setTimeout(openReveal, delay);
-      if (typeof LB !== "undefined" && !isArchive()) LB.report(modeId, won, guesses.length, dayNumber(), hintAxis >= 0);
+      if (typeof LB !== "undefined" && !unlimited && !isArchive()) {
+        LB.report(modeId, won, guesses.length, dayNumber(), hintAxis >= 0);
+      }
     } else {
       $("guess-input").focus();
     }
@@ -849,14 +888,14 @@
     var score = (won ? guesses.length : "X") + "/" + MAX_GUESSES;
     var head = unlimited ? "Memedle " + m.name + " · endless · " + score
       : "Memedle " + m.name + " #" + (playDay + 1) + " · " + score;
-    if (hintAxis >= 0 && modeId === "classic" && !unlimited) head += " 💡";
+    if (hintAxis >= 0 && modeId === "classic" && !unlimited) head += " · hint";
     var SQ = squares();
     var rows = m.kind === "grid"
       ? guesses.map(function (c) { return grade(c, target).map(function (cell) { return SQ[cell.s]; }).join(""); })
       : [guesses.map(function (c) { return c.n === target.n ? SQ.g : SQ.x; }).join("")];
     return head + "\n\n" + rows.join("\n") + "\n\n" + SITE_URL;
   }
-  function copyShare(btn) {
+  function copyShare() {
     var txt = shareText();
     function fallback() {
       var ta = document.createElement("textarea");
@@ -867,16 +906,97 @@
     }
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).catch(fallback);
     else fallback();
-    var old = btn.textContent;
-    btn.textContent = "copied ✓";
-    setTimeout(function () { btn.textContent = old; }, 1600);
+    flash("Grid copied.");
+  }
+
+  // The line that lands in the X composer. The card carries the grid, so the
+  // caption does not narrate the image — it states the result and stops, and
+  // the ~150 characters it leaves behind are the point: a short prefill invites
+  // people to add their own line instead of deleting yours.
+  function shareCaption() {
+    var m = MODE_BY_ID[modeId];
+    var score = (won ? guesses.length : "X") + "/" + MAX_GUESSES;
+    var head = unlimited
+      ? "Memedle " + m.name + " endless — " + score
+      : "Memedle " + m.name + " #" + (playDay + 1) + " — " + score;
+    if (hintAxis >= 0 && modeId === "classic" && !unlimited) head += " · hint";
+    return head + ". https://" + SITE_URL;
+  }
+
+  // What the PNG needs. Deliberately not the answer: a result card that spoils
+  // the coin is a card nobody can post until their whole timeline has played.
+  function cardState() {
+    var m = MODE_BY_ID[modeId];
+    var grid = m.kind === "grid";
+    var rows;
+    if (grid) {
+      rows = guesses.map(function (c) {
+        return grade(c, target).map(function (cell) { return cell.s; });
+      });
+    } else {
+      var one = guesses.map(function (c) { return c.n === target.n ? "g" : "x"; });
+      while (one.length < MAX_GUESSES) one.push(null);
+      rows = [one];
+    }
+    var st = loadStats(modeId) || defaultStats;
+    return {
+      mode: modeId,
+      modeName: m.name,
+      blurb: m.blurb,
+      day: playDay + 1,
+      unlimited: unlimited,
+      won: won,
+      guesses: guesses.length,
+      max: MAX_GUESSES,
+      slots: grid ? MAX_GUESSES : 1,
+      rows: rows,
+      hint: hintAxis >= 0 && modeId === "classic" && !unlimited,
+      streak: (!unlimited && !isArchive() && st.streak) || 0,
+      url: SITE_URL,
+      cb: document.body.classList.contains("cb")
+    };
+  }
+
+  function postToX(btn) {
+    if (typeof SHARE === "undefined") { copyShare(); return; }
+    btn.disabled = true;
+    SHARE.postToX(cardState(), shareCaption()).then(function (how) {
+      btn.disabled = false;
+      if (how === "clipboard") flash("Card copied — paste it into the post.");
+      else if (how === "download") flash("Card saved — attach it to the post.");
+      else if (how === "text") flash("Couldn't build the card. The words went over.");
+    }, function () {
+      btn.disabled = false;
+      flash("X didn't open. Check your popup blocker.");
+    });
+  }
+
+  // ──────────────── flash ────────────────
+  function flash(msg) {
+    var layer = $("flash-layer");
+    if (!layer) return;
+    while (layer.children.length > 2) layer.removeChild(layer.firstChild);
+    var node = el("div", "flash", msg);
+    layer.appendChild(node);
+    // 1600ms dwell + 150ms exit; the CSS reads the same two tokens, so the
+    // timer and the animation cannot drift apart.
+    setTimeout(function () { if (node.parentNode) node.parentNode.removeChild(node); }, 1780);
   }
 
   // ──────────────── modals ────────────────
   function openModal(id) { $(id).classList.remove("hidden"); }
-  function closeModals() {
+  function closeModal(node) {
+    if (!node || node.classList.contains("hidden")) return;
+    if (reducedMotion()) { node.classList.add("hidden"); return; }
+    node.classList.add("closing");
+    setTimeout(function () { node.classList.remove("closing"); node.classList.add("hidden"); }, 150);
+  }
+  function closeModals(force) {
     Array.prototype.forEach.call(document.querySelectorAll(".modal-backdrop"), function (m) {
-      m.classList.add("hidden");
+      // the handle gate is a decision, not a dialog: it does not take a
+      // backdrop click, an Escape, or a route change for an answer
+      if (!force && m.hasAttribute("data-lock")) return;
+      closeModal(m);
     });
     if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
   }
@@ -889,10 +1009,19 @@
   }
 
   var countdownTimer = null;
+  var pendingReveal = false;
+  function gateOpen() {
+    var g = $("modal-gate");
+    return !!g && !g.classList.contains("hidden");
+  }
+  function maybeReveal() {
+    if (gateOpen()) { pendingReveal = true; return; }
+    openReveal();
+  }
   function openReveal() {
     var box = $("reveal-body");
     clear(box);
-    box.appendChild(el("div", "reveal-verdict " + (won ? "win" : "lose"), won ? "You were early." : "Rugged."));
+    box.appendChild(el("div", "reveal-verdict " + (won ? "win" : "lose"), won ? "Early." : "Rugged."));
     box.appendChild(el("div", "reveal-sub", won
       ? "Got it in " + guesses.length + "/" + MAX_GUESSES + "."
       : "The coin walks free."));
@@ -938,8 +1067,15 @@
     box.appendChild(card);
 
     var row = el("div", "btn-row");
-    var share = el("button", "btn btn-primary", "share");
-    share.addEventListener("click", function () { copyShare(share); });
+    // The card is rendered now, not on the click. Safari only honours a
+    // clipboard write and a popup inside the gesture that started them, and
+    // awaiting a canvas first throws that gesture away.
+    if (typeof SHARE !== "undefined") SHARE.prime(cardState());
+    var xbtn = el("button", "btn btn-primary", "Post on X");
+    xbtn.addEventListener("click", function () { postToX(xbtn); });
+    row.appendChild(xbtn);
+    var share = el("button", "btn", "Copy grid");
+    share.addEventListener("click", function () { copyShare(); });
     row.appendChild(share);
 
     if (unlimited) {
@@ -1095,10 +1231,10 @@
     input.disabled = done;
     $("btn-go").disabled = done;
     input.value = "";
-    input.placeholder = done ? "Come back tomorrow" : "Type a memecoin…";
+    input.placeholder = done ? (unlimited ? "Next coin ↻" : "Come back tomorrow") : "Type a memecoin…";
     renderAll(false);
-    if (done) setTimeout(openReveal, 320);
-    else if (!("ontouchstart" in window)) input.focus();
+    if (done) setTimeout(maybeReveal, 320);
+    else if (!("ontouchstart" in window) && !gateOpen()) input.focus();
   }
 
   function route() {
@@ -1160,7 +1296,7 @@
       b.addEventListener("click", function () {
         var go = b.getAttribute("data-go");
         if (go === "stats") openStats();
-        else if (go === "board") LB.open(dayNumber());
+        else if (go === "board" && typeof LB !== "undefined") LB.open(dayNumber(), modeId);
       });
     });
     Array.prototype.forEach.call(document.querySelectorAll("[data-close]"), function (b) {
@@ -1183,25 +1319,37 @@
         return;
       }
       try {
+        var keep = { md_cid: 1, md_name: 1, md_x: 1 };
         var kill = [];
         for (var i = 0; i < localStorage.length; i++) {
           var k = localStorage.key(i);
-          if (k && (k.indexOf("md_") === 0 || k.indexOf("mcdl_") === 0)) kill.push(k);
+          if (k && !keep[k] && (k.indexOf("md_") === 0 || k.indexOf("mcdl_") === 0)) kill.push(k);
         }
         kill.forEach(function (k) { localStorage.removeItem(k); });
       } catch (e) {}
       location.reload();
     });
 
+    // Without a touch listener somewhere in the document, iOS Safari never
+    // applies :active — which silently disables every press animation on the
+    // page for every iPhone visitor.
+    document.addEventListener("touchstart", function () {}, { passive: true });
+
     window.addEventListener("hashchange", route);
 
     route();
 
     // after route() — it clears open modals on every navigation, this one included
-    if (!lsGet("md_seen")) {
-      lsSet("md_seen", "1");
-      openModal("modal-help");
+    function firstRun() {
+      if (!lsGet("md_seen")) {
+        lsSet("md_seen", "1");
+        openModal("modal-help");
+        return;
+      }
+      if (pendingReveal) { pendingReveal = false; openReveal(); }
     }
+    if (typeof LB !== "undefined") LB.boot(firstRun);
+    else firstRun();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
