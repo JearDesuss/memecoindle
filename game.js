@@ -3,7 +3,11 @@
   "use strict";
 
   // ──────────────── constants ────────────────
-  var EPOCH = new Date(2026, 7, 21);   // puzzle #1 = Aug 21 2026 (local time)
+  // Puzzle #1 = 21 Aug 2026, 00:00 UTC. The day number is UTC, not local, because it
+  // is also the leaderboard's key and the pot pays at a UTC instant: keyed locally,
+  // board N accepted posts across a 50-hour window spanning UTC+14 to UTC-12, so
+  // there was no moment at which a board was complete and payable.
+  var EPOCH = Date.UTC(2026, 7, 21);
   var MAX_GUESSES = 6;
   var SITE_URL = "memedle-weld.vercel.app";
 
@@ -40,11 +44,7 @@
   }
 
   // ──────────────── daily selection ────────────────
-  function todayLocal() {
-    var n = new Date();
-    return new Date(n.getFullYear(), n.getMonth(), n.getDate());
-  }
-  function dayNumber() { return Math.round((todayLocal() - EPOCH) / 86400000); }
+  function dayNumber() { return Math.floor((Date.now() - EPOCH) / 86400000); }
 
   // The list spans 2013 to now, but a player's recall doesn't: a coin that ran
   // this year is a fair puzzle, one from 2021 is trivia. Weight the rotation so
@@ -71,33 +71,49 @@
     ORDERS[modeId] = keyed.map(function (e) { return e.i; });
     return ORDERS[modeId];
   }
-  // Independent shuffles occasionally hand the same coin to two modes on the
-  // same day, which turns solving one into a free hint for the other. Assign in
-  // a fixed mode order and walk past collisions — classic is first, so its
-  // historical sequence is never touched. The stride must be coprime with the
-  // list length so it walks the whole permutation; 61 is prime, so that holds
-  // for any length that isn't a multiple of it. A big stride also keeps a
-  // displaced pick far from that mode's neighbouring days (a +1 walk would land
-  // on its own next day).
+  // Independent shuffles occasionally hand the same coin to two modes on the same day,
+  // which turns solving one into a free hint for the other.
+  //
+  // This used to be resolved per day, by walking STRIDE places forward and serving
+  // whatever was there. That silently broke the permutation: the displaced coin was
+  // never served at all, and the coin walked ONTO was served twice — once as the
+  // stand-in and again on its own day, a fixed 61 days later. On the 186-coin roster
+  // that made 5 coins unreachable in Blur and 5 more come up at double rate.
+  //
+  // So de-conflict once, over the whole cycle, by SWAPPING inside the mode's own order.
+  // A swap keeps the order a permutation by construction, so every coin still comes up
+  // exactly once per cycle. Modes are resolved in MODES order and classic is first, so
+  // its sequence is never perturbed by another mode.
   var STRIDE = 61;
-  var dayPicks = {};
-  function picksFor(day) {
-    if (dayPicks[day]) return dayPicks[day];
-    var used = {}, out = {};
+  var CYCLE = null;
+  function cycleOrders() {
+    if (CYCLE) return CYCLE;
+    var len = COINS.length, out = {}, atPos = [];
+    for (var p = 0; p < len; p++) atPos[p] = {};
     MODES.forEach(function (m) {
-      var o = orderFor(m.id), len = o.length, pick = null;
-      for (var k = 0; k < len; k++) {
-        var c = COINS[o[((((day + k * STRIDE) % len) + len) % len)]];
-        if (!used[c.t]) { pick = c; break; }
+      var o = orderFor(m.id).slice();
+      for (var i = 0; i < len; i++) {
+        if (!atPos[i][COINS[o[i]].t]) continue;
+        // Find a partner whose coin is free here and whose slot can take ours. The
+        // stride keeps the partner far away, so a displaced pick never lands on a
+        // neighbouring day of its own mode.
+        for (var k = 1; k < len; k++) {
+          var j = (i + k * STRIDE) % len;
+          if (j === i || atPos[i][COINS[o[j]].t] || atPos[j][COINS[o[i]].t]) continue;
+          var t = o[i]; o[i] = o[j]; o[j] = t;
+          break;
+        }
       }
-      if (!pick) pick = COINS[o[(((day % len) + len) % len)]];
-      used[pick.t] = 1;
-      out[m.id] = pick;
+      for (var q = 0; q < len; q++) atPos[q][COINS[o[q]].t] = 1;
+      out[m.id] = o;
     });
-    dayPicks[day] = out;
+    CYCLE = out;
     return out;
   }
-  function dailyCoin(modeId, day) { return picksFor(day)[modeId]; }
+  function dailyCoin(modeId, day) {
+    var o = cycleOrders()[modeId], len = o.length;
+    return COINS[o[(((day % len) + len) % len)]];
+  }
   function randomCoin(excludeName) {
     var c;
     do { c = COINS[Math.floor(Math.random() * COINS.length)]; }
@@ -145,11 +161,25 @@
   ];
 
   // ──────────────── lore redaction ────────────────
-  var STOP = { with: 1, that: 1, from: 1, into: 1, then: 1, this: 1, coin: 1, token: 1, meme: 1 };
+  // Words that carry no identity, so redacting them only mangles the sentence. The
+  // short function words matter now that the length floor is 3: without them a coin
+  // named "Cat in a Dogs World" blacked out every "in" and "a" on the card.
+  var STOP = {
+    with: 1, that: 1, from: 1, into: 1, then: 1, this: 1, coin: 1, token: 1, meme: 1,
+    the: 1, and: 1, for: 1, its: 1, it: 1, of: 1, in: 1, on: 1, at: 1, to: 1, by: 1,
+    an: 1, as: 1, is: 1, be: 1, or: 1, my: 1, me: 1, we: 1, you: 1, all: 1, out: 1,
+    up: 1, one: 1, two: 1, new: 1, own: 1, has: 1, had: 1, was: 1, are: 1, not: 1
+  };
   function reEsc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
   function loreParts(coin) {
     var terms = [coin.n, coin.t];
-    coin.n.split(/[\s\-']+/).forEach(function (w) { if (w.length >= 4 && !STOP[w.toLowerCase()]) terms.push(w); });
+    // Floor of 3 on the coin's OWN words, not 4: at 4 the second half of a two-word
+    // answer printed in clear, and "Base God" rendered as "████ God".
+    coin.n.split(/[\s\-']+/).forEach(function (w) { if (w.length >= 3 && !STOP[w.toLowerCase()]) terms.push(w); });
+    // Aliases carry the native-script name, which the latin name can never match —
+    // four coins used to print their own name in Chinese, unredacted, in the clue.
+    if (coin.a) coin.a.forEach(function (w) { if (w) terms.push(w); });
+    // The slug keeps its floor: short slug fragments are noise, not identity.
     if (coin.w) coin.w.split("_").forEach(function (w) { if (w.length >= 4 && !STOP[w.toLowerCase()]) terms.push(w); });
     var seen = {}, uniq = [];
     terms.forEach(function (t) {
@@ -157,7 +187,10 @@
       if (t && !seen[k]) { seen[k] = 1; uniq.push(t); }
     });
     uniq.sort(function (a, b) { return b.length - a.length; });
-    var re = new RegExp("(" + uniq.map(reEsc).join("|") + ")", "gi");
+    // Grow every hit out to the whole word it lands in. Matching bare terms redacted
+    // mid-word, and the letters left standing spelled the answer: "Pengu" inside
+    // "Penguins" rendered "Pudgy █████ins", which is a free win on guess one.
+    var re = new RegExp("([A-Za-z0-9'’]*(?:" + uniq.map(reEsc).join("|") + ")[A-Za-z0-9'’]*)", "gi");
     return coin.l.split(re);   // split keeps the group: pieces alternate plain / match
   }
 
@@ -171,7 +204,11 @@
   var hintAxis = -1;
   var statsMode = "classic";
 
-  function isArchive() { return !unlimited && playDay !== dayNumber(); }
+  // Fixed when the board is built, never re-derived from the clock. Read live, a run
+  // started at 23:58 and won at 00:03 looked like an archive replay at submit time, so
+  // the win was thrown away: no stat, no streak, no leaderboard row.
+  var runArchive = false;
+  function isArchive() { return runArchive; }
   function statsKey(m) { return "md_stats_v1_" + m; }
   var defaultStats = { played: 0, wins: 0, streak: 0, maxStreak: 0, lastWinDay: -2, lastPlayedDay: -2, dist: [0, 0, 0, 0, 0, 0] };
 
@@ -181,7 +218,8 @@
   function saveDaily() {
     if (unlimited) return;
     lsSet("md_day_" + modeId + "_" + playDay, JSON.stringify({
-      g: guesses.map(function (c) { return c.n; }), done: done, won: won, h: hintAxis
+      g: guesses.map(function (c) { return c.n; }), done: done, won: won, h: hintAxis,
+      t: target ? target.t : null
     }));
   }
   function loadDay(m, day) {
@@ -193,7 +231,7 @@
   function recordResult(win, n) {
     if (unlimited || isArchive()) return;   // archive runs never touch the streak
     var st = loadStats(modeId) || JSON.parse(JSON.stringify(defaultStats));
-    var d = dayNumber();
+    var d = playDay;                        // the day the run belongs to, not the clock
     if (st.lastPlayedDay === d) return;
     st.played++; st.lastPlayedDay = d;
     if (win) {
@@ -493,7 +531,9 @@
     var box = $("yesterday-body");
     if (!box) return;
     clear(box);
-    var d = dayNumber() - 1;
+    // Relative to the board on screen, not the wall clock. Read from the clock, this
+    // printed the answer to the archive puzzle being played right now.
+    var d = (unlimited ? dayNumber() : playDay) - 1;
     if (d < 0) {
       box.appendChild(el("p", "lb-empty", "Nothing yet — today is puzzle #1."));
       return;
@@ -550,6 +590,11 @@
   }
 
   var lastStreak = null;
+  // A streak is only live if it was extended today or yesterday; older than that and
+  // the next win starts again at 1, so reporting the stored number is a lie.
+  function liveStreak(st, d) {
+    return st && (st.lastWinDay === d || st.lastWinDay === d - 1) ? st.streak : 0;
+  }
   function renderStreak() {
     var pill = $("streak-pill");
     var st = loadStats(modeId);
@@ -875,7 +920,7 @@
       if (won) setTimeout(confettiBurst, Math.max(0, delay - 360));
       setTimeout(openReveal, delay);
       if (typeof LB !== "undefined" && !unlimited && !isArchive()) {
-        LB.report(modeId, won, guesses.length, dayNumber(), hintAxis >= 0);
+        LB.report(modeId, won, guesses.length, playDay, hintAxis >= 0);
       }
     } else {
       $("guess-input").focus();
@@ -984,7 +1029,18 @@
   }
 
   // ──────────────── modals ────────────────
-  function openModal(id) { $(id).classList.remove("hidden"); }
+  // One dialog at a time. Opening a second used to stack it on the first: on a day you
+  // had already solved, the reveal card is up on load, and clicking Coin list or Stats
+  // opened that modal *behind* it — two ✕ buttons, two scrolls, one unreadable screen.
+  function openModal(id) {
+    Array.prototype.forEach.call(document.querySelectorAll(".modal-backdrop:not(.hidden)"), function (m) {
+      if (m.id === id || m.hasAttribute("data-lock")) return;
+      m.classList.remove("closing");
+      m.classList.add("hidden");
+      if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+    });
+    $(id).classList.remove("hidden");
+  }
   function closeModal(node) {
     if (!node || node.classList.contains("hidden")) return;
     if (reducedMotion()) { node.classList.add("hidden"); return; }
@@ -999,11 +1055,17 @@
       closeModal(m);
     });
     if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+    // A reveal that deferred to whatever the player had open gets its turn now,
+    // once the close animation has actually finished.
+    if (pendingReveal) {
+      setTimeout(function () {
+        if (pendingReveal && !anyModalOpen()) { pendingReveal = false; openReveal(); }
+      }, 180);
+    }
   }
   function countdownStr() {
-    var now = new Date();
-    var next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    var s = Math.max(0, Math.floor((next - now) / 1000));
+    // Counts to the next UTC midnight, which is when dayNumber() actually rolls.
+    var s = Math.max(0, Math.ceil(((dayNumber() + 1) * 86400000 + EPOCH - Date.now()) / 1000));
     function p(x) { return (x < 10 ? "0" : "") + x; }
     return p(Math.floor(s / 3600)) + ":" + p(Math.floor((s % 3600) / 60)) + ":" + p(s % 60);
   }
@@ -1014,8 +1076,15 @@
     var g = $("modal-gate");
     return !!g && !g.classList.contains("hidden");
   }
+  // The auto-reveal fires 320ms after a solved board is restored. Deferring only for
+  // the gate was too narrow: open the coin list or the stats on a day you had already
+  // solved and the reveal card dropped on top of it a moment later. Wait for whatever
+  // the player opened to close instead.
+  function anyModalOpen() {
+    return !!document.querySelector(".modal-backdrop:not(.hidden)");
+  }
   function maybeReveal() {
-    if (gateOpen()) { pendingReveal = true; return; }
+    if (gateOpen() || anyModalOpen()) { pendingReveal = true; return; }
     openReveal();
   }
   function openReveal() {
@@ -1124,7 +1193,9 @@
     var st = loadStats(statsMode) || defaultStats;
     $("st-played").textContent = st.played;
     $("st-winpct").textContent = st.played ? Math.round(100 * st.wins / st.played) + "%" : "—";
-    $("st-streak").textContent = st.streak;
+    // Same freshness test the header pill uses. Without it the modal kept reporting a
+    // streak that had been dead for weeks, while the pill correctly hid it.
+    $("st-streak").textContent = liveStreak(st, dayNumber());
     $("st-max").textContent = st.maxStreak;
     var wrap = $("dist");
     clear(wrap);
@@ -1148,21 +1219,70 @@
   }
   function openStats() { statsMode = modeId; renderStats(); openModal("modal-stats"); }
 
+  // ──────────────── coin list ────────────────
+  // The whole roster, so a player can see what they are guessing against. Sorted by
+  // name rather than by the internal order, because the internal order is the shuffle
+  // seed's business and printing it would leak the rotation.
+  function renderCoinList(q) {
+    var box = $("coins-body");
+    if (!box) return;
+    clear(box);
+    var needle = String(q || "").trim().toLowerCase();
+    var list = COINS.slice().sort(function (a, b) { return a.n.localeCompare(b.n); });
+    if (needle) {
+      list = list.filter(function (c) {
+        return (c.n + " " + c.t + " " + c.c + " " + c.g).toLowerCase().indexOf(needle) >= 0;
+      });
+    }
+    $("coins-count").textContent = needle
+      ? list.length + " of " + COINS.length + " coins"
+      : COINS.length + " coins in the game right now";
+    if (!list.length) {
+      box.appendChild(el("p", "coins-empty", "Nothing matches “" + q + "”."));
+      return;
+    }
+    var frag = document.createDocumentFragment();
+    list.forEach(function (c) {
+      var row = el("div", "coin-row");
+      row.appendChild(logoImg(c, "coin-row-logo"));
+      var txt = el("div", "coin-row-text");
+      txt.appendChild(el("span", "coin-row-name", c.n));
+      txt.appendChild(el("span", "coin-row-meta", c.c + " · " + c.y + " · " + c.g));
+      row.appendChild(txt);
+      row.appendChild(el("span", "coin-row-ticker", "$" + c.t));
+      frag.appendChild(row);
+    });
+    box.appendChild(frag);
+  }
+  function openCoinList() {
+    var input = $("coins-search");
+    if (input) input.value = "";
+    renderCoinList("");
+    renderSocial("coins-social");
+    openModal("modal-coins");
+    // Not on touch: focusing here throws up the keyboard over the list you opened.
+    if (input && !("ontouchstart" in window)) input.focus();
+  }
+
   function openArchive() {
     var box = $("archive-body");
     clear(box);
     var today = dayNumber();
     var rows = 0;
     for (var d = today - 1; d >= 0 && rows < 60; d--) {
+      // `var d` is function-scoped, so every click handler used to read the value the
+      // loop ended on (-1). Every row navigated to #/<mode>/d-1, which route() rejects,
+      // and the Archive quietly opened today's live puzzle instead.
+      var day = d;
       MODES.forEach(function (m) {
-        var st = loadDay(m.id, d);
+        var st = loadDay(m.id, day);
         var btn = el("button", "arch-row");
-        btn.appendChild(el("span", "arch-day", "#" + (d + 1)));
+        btn.appendChild(el("span", "arch-day", "#" + (day + 1)));
         btn.appendChild(el("span", "arch-mode", m.name));
-        btn.appendChild(el("span", "arch-state", st && st.done ? (st.won ? "✓ " + st.n + "/6" : "✕") : "play →"));
+        btn.appendChild(el("span", "arch-state", st && st.done ? (st.won ? "✓ " + (st.g ? st.g.length : "?") + "/6" : "✕") : "play →"));
         btn.addEventListener("click", function () {
           closeModals();
-          location.hash = "#/" + m.id + "/d" + d;
+          location.hash = "#/" + m.id + "/d" + day;
         });
         box.appendChild(btn);
       });
@@ -1192,8 +1312,8 @@
     // currentColor and sits on the same 24px grid as the X mark
     dex: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 2h3v4h2v9H9v4H6v-4H4V6h2V2zm9 3h3v5h2v7h-2v5h-3v-5h-2v-7h2V5z"/></svg>'
   };
-  function renderSocial() {
-    var row = $("social-row");
+  function renderSocial(id) {
+    var row = $(id || "social-row");
     if (!row) return;
     clear(row);
     SOCIAL.forEach(function (s) {
@@ -1223,13 +1343,17 @@
   function startGame() {
     var input = $("guess-input");
     guesses = []; done = false; won = false; hintAxis = -1; lastBlur = null;
+    runArchive = !unlimited && playDay !== dayNumber();
 
     if (unlimited) {
       target = randomCoin(target ? target.n : null);
     } else {
       target = dailyCoin(modeId, playDay);
       var saved = loadDay(modeId, playDay);
-      if (saved && Array.isArray(saved.g)) {
+      // A saved board is only this board if it was played against this coin. The roster
+      // changes, and without the stamp an old save was restored onto a new answer and
+      // repainted a solved run as an all-miss loss.
+      if (saved && Array.isArray(saved.g) && (!saved.t || saved.t === target.t)) {
         var byName = {};
         COINS.forEach(function (c) { byName[c.n] = c; });
         saved.g.forEach(function (n) { if (byName[n]) guesses.push(byName[n]); });
@@ -1306,16 +1430,23 @@
       b.addEventListener("click", function () {
         var go = b.getAttribute("data-go");
         if (go === "stats") openStats();
+        else if (go === "coins") openCoinList();
         else if (go === "board" && typeof LB !== "undefined") LB.open(dayNumber(), modeId);
       });
     });
     Array.prototype.forEach.call(document.querySelectorAll("[data-close]"), function (b) {
-      b.addEventListener("click", closeModals);
+      // Wrapped, not passed directly: as a listener the MouseEvent arrives as `force`,
+      // which is truthy, so every ✕ press bypassed the data-lock guard and dismissed
+      // the handle gate that is explicitly meant to be undismissable.
+      b.addEventListener("click", function () { closeModals(); });
     });
     Array.prototype.forEach.call(document.querySelectorAll(".modal-backdrop"), function (m) {
       m.addEventListener("click", function (ev) { if (ev.target === m) closeModals(); });
     });
     document.addEventListener("keydown", function (ev) { if (ev.key === "Escape") closeModals(); });
+
+    var coinSearch = $("coins-search");
+    if (coinSearch) coinSearch.addEventListener("input", function () { renderCoinList(coinSearch.value); });
 
     bindToggle($("cb-toggle"), "cb", "md_cb");
     bindToggle($("cb-toggle-2"), "cb", "md_cb");

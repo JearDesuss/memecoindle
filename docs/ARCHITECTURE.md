@@ -6,7 +6,7 @@ scripts loaded in order; everything else is optional.
 ```
 index.html      the whole dashboard + modals (help/settings/stats/archive/reveal/board)
 style.css       the whole design system (tokens up top in :root)
-data.js         the item list — 186 coins + enums + tier functions
+data.js         the item list — 105 coins + enums + tier functions
 logos.js        generated manifest: ticker -> img/<TICKER>.png
 art.js          generated manifest: name -> [w,h] of img/art/<NAME>.webp
 lb.js           handles, X links and the board (talks to api/)
@@ -62,7 +62,10 @@ peak → now). Only Classic has the per-day hint.
 
 Every client must agree on each mode's coin with no server. `game.js`:
 
-- `EPOCH = 2026-08-21` (local time). Day number = whole days since epoch.
+- `EPOCH = 2026-08-21 00:00 UTC`. Day number = whole UTC days since epoch.
+  It is UTC, not local, because the same integer keys the leaderboard and the pot
+  pays at a UTC instant: keyed locally, one board accepted posts across a 50-hour
+  window spanning UTC+14 to UTC-12, so no moment existed at which it was complete.
 - Each mode has its **own fixed seed**; a mulberry32 weighted shuffle of the
   coin indices gives that mode one canonical permutation, identical everywhere.
   Three seeds → three different coins per day.
@@ -81,14 +84,22 @@ Ties break on index so node and the browser can't disagree.
 
 Independent shuffles do occasionally hand the same coin to two modes on the same
 day, which turns solving one into a free hint for the other. `picksFor(day)`
-assigns modes in a fixed order and, on a collision, walks that mode's
-permutation forward by `STRIDE = 61` until it finds a free coin. Classic is
-assigned first, so it never walks and its sequence is untouched. The stride is
-large on purpose: a `+1` walk lands on that mode's *next day*, producing a
-same-coin-twice-in-a-row repeat. The stride must be coprime with the list length
-to visit every index; 61 is prime, so that holds for any length that is not a
-multiple of it (186 % 61 = 3). Verified over 400 days: zero same-day collisions,
-zero same-mode repeats inside any 7-day window.
+assigns modes in a fixed order and de-conflicts **once over the whole cycle**, by
+swapping inside that mode's own order. Classic is resolved first, so its sequence
+is never perturbed by another mode. A swap keeps each order a permutation by
+construction, so every coin still comes up exactly once per cycle. The partner
+slot is found by walking `STRIDE = 61` places, which keeps a displaced pick far
+from that mode's neighbouring days; the stride must be coprime with the list
+length to reach every index, and 61 is prime, so that holds for any length that
+is not a multiple of it (105 % 61 = 44).
+
+This used to be resolved per *day* instead: on a collision the mode served
+whatever sat 61 places forward, for that day only. That silently broke the
+permutation — the displaced coin was never served at all, and the coin walked
+onto was served twice, once as the stand-in and again on its own day exactly 61
+days later. On the old 186-coin roster that made 5 coins unreachable in Blur and
+5 more come up at double rate. If you touch this, re-run the check: every mode
+must serve every coin exactly once per cycle, and no two modes may share a day.
 
 `tools/schedule.js` and `test/cdp-test.js` each reimplement this — keep the
 three copies in sync if you ever touch the seeds, the stride, the mode order or

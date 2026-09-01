@@ -115,13 +115,14 @@ var LB = (function () {
 
   function report(mode, won, guesses, day, hintUsed) {
     var run = { day: day, mode: mode, won: !!won, guesses: guesses, hint: !!hintUsed };
-    if (!hasName()) {
-      var q = queue();
-      for (var i = 0; i < q.length; i++) if (q[i].day === day && q[i].mode === mode) return;
-      q.push(run); setQueue(q);
-      return;
-    }
-    post(run);
+    // Always park the run first, even when a handle exists. A direct post that failed
+    // used to take the run with it — the queue was only ever a waiting room for
+    // unnamed players, so a named player on a flaky connection simply lost the game
+    // they had just finished. flushQueue() removes it once the server confirms.
+    var q = queue();
+    for (var i = 0; i < q.length; i++) if (q[i].day === day && q[i].mode === mode) return;
+    q.push(run); setQueue(q);
+    if (hasName()) flushQueue();
   }
   function post(run) {
     // The handle travels with the run rather than being joined at read time —
@@ -141,8 +142,18 @@ var LB = (function () {
     if (!hasName()) return Promise.resolve();
     var q = queue();
     if (!q.length) return Promise.resolve();
-    setQueue([]);
-    return Promise.all(q.map(post));
+    // Keep the runs in storage until each one is known to have landed. Emptying the
+    // queue first meant one flush while offline destroyed every run in it: the posts
+    // rejected, the queue was already "[]", and the finished games existed nowhere.
+    return Promise.all(q.map(function (run) {
+      return post(run).then(
+        function (r) { return { run: run, ok: !!(r && (r.ok || r.dup)) }; },
+        function () { return { run: run, ok: false }; }
+      );
+    })).then(function (results) {
+      setQueue(results.filter(function (r) { return !r.ok; }).map(function (r) { return r.run; }));
+      return results;
+    });
   }
 
   // ── dom helpers ─────────────────────────────────────────────────────────

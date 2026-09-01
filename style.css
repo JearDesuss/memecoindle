@@ -902,6 +902,54 @@ a { color: inherit; }
 .arch-mode { flex: 1; font-size: 13.5px; color: var(--ink-2); }
 .arch-state { font-size: 12px; flex: none; }
 
+/* The coin list is the roster, printed. Same sticker rules as the archive: rows are
+   an Inset recess on the modal's Sheet, one cut-in hairline, no lift — they are a
+   printed table, not a stack of pressable controls. The only lift in here is the
+   search field, which is the one thing you touch. */
+.coins-search {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  font-size: 16px;
+  border-radius: var(--r-1);
+  background: var(--snow);
+  border: var(--cut) solid var(--ink);
+  outline: none;
+  transition: box-shadow 130ms var(--ease-out);
+}
+.coins-search::placeholder { color: var(--ink-3); }
+.coins-search:focus { box-shadow: 0 0 0 var(--cut) var(--gold); }
+
+.coins-body { display: flex; flex-direction: column; gap: 5px; max-height: 44dvh; overflow-y: auto; }
+.coin-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 6px 9px;
+  border-radius: var(--r-1);
+  background: var(--snow);
+  border: var(--cut-in) solid var(--cream-3);
+}
+.coin-row-logo {
+  width: 28px; height: 28px; flex: none;
+  border-radius: var(--r-1);
+  border: var(--cut-in) solid var(--ink);
+  object-fit: cover;
+}
+.coin-row-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.coin-row-name { font-size: 13.5px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+/* Baloo 2, not Jersey 15: this line always contains a year. */
+.coin-row-meta { font-family: var(--font-ui); font-size: 11.5px; font-weight: 600; color: var(--ink-2); }
+.coin-row-ticker {
+  flex: none;
+  font-family: var(--font-ui); font-weight: 800; font-size: 12px;
+  font-feature-settings: "tnum" 1;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: var(--cream-2);
+  border: var(--cut-in) solid var(--cream-3);
+}
+.coins-note { margin-top: 12px; }
+.coins-empty { font-size: 13.5px; color: var(--ink-2); padding: 10px 2px; }
+
 .reveal-verdict { font-family: var(--font-display); font-size: 25px; letter-spacing: -.01em; text-align: center; margin: 26px 0 4px; line-height: 1.35; }
 .reveal-verdict.win { color: var(--bull); }
 .reveal-verdict.lose { color: var(--bear); }

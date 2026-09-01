@@ -21,7 +21,7 @@ function mulberry32(a) {
 
 // must match the MODES array in game.js
 const SEEDS = { classic: 0x5EED1337, blur: 0x1D0FBE47, lore: 0x4B19AC03 };
-const EPOCH = new Date(2026, 7, 21); // must match game.js
+const EPOCH = Date.UTC(2026, 7, 21); // must match game.js — UTC, so the schedule matches the board
 
 // must match recencyWeight() in game.js — newer coins sort to the front
 function recencyWeight(y) {
@@ -39,24 +39,32 @@ for (const [mode, seed] of Object.entries(SEEDS)) {
   ORDER[mode] = keyed.map((e) => e.i);
 }
 const STRIDE = 61; // must match game.js
-// must match dailyCoin() in game.js: fixed mode order, walk past collisions
+// must match cycleOrders() in game.js: de-conflict ONCE over the whole cycle by
+// swapping inside each mode's own order, so every order stays a permutation.
 const ALL = Object.keys(SEEDS);
-function picksFor(d) {
-  const used = {}, out = {};
+const CYCLE = (() => {
+  const len = COINS.length, out = {}, atPos = [];
+  for (let p = 0; p < len; p++) atPos[p] = {};
   for (const m of ALL) {
-    const o = ORDER[m], len = o.length;
-    let chosen = null;
-    for (let k = 0; k < len; k++) {
-      const c = COINS[o[((((d + k * STRIDE) % len) + len) % len)]];
-      if (!used[c.t]) { chosen = c; break; }
+    const o = ORDER[m].slice();
+    for (let i = 0; i < len; i++) {
+      if (!atPos[i][COINS[o[i]].t]) continue;
+      for (let k = 1; k < len; k++) {
+        const j = (i + k * STRIDE) % len;
+        if (j === i || atPos[i][COINS[o[j]].t] || atPos[j][COINS[o[i]].t]) continue;
+        const t = o[i]; o[i] = o[j]; o[j] = t;
+        break;
+      }
     }
-    if (!chosen) chosen = COINS[o[(((d % len) + len) % len)]];
-    used[chosen.t] = 1;
-    out[m] = chosen;
+    for (let q = 0; q < len; q++) atPos[q][COINS[o[q]].t] = 1;
+    out[m] = o;
   }
   return out;
-}
-const pick = (mode, d) => picksFor(d)[mode];
+})();
+const pick = (mode, d) => {
+  const o = CYCLE[mode], len = o.length;
+  return COINS[o[(((d % len) + len) % len)]];
+};
 
 const args = process.argv.slice(2);
 const asJson = args.includes("--json");
@@ -64,16 +72,12 @@ const only = args.find((a) => SEEDS[a]);
 const modes = only ? [only] : Object.keys(SEEDS);
 const days = parseInt(args.find((a) => /^\d+$/.test(a)), 10) || 7;
 
-const today = new Date();
-const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-const startDay = Math.round((start - EPOCH) / 86400000);
+const startDay = Math.floor((Date.now() - EPOCH) / 86400000);
 
 const rows = [];
 for (let d = startDay; d < startDay + days; d++) {
-  const date = new Date(EPOCH.getFullYear(), EPOCH.getMonth(), EPOCH.getDate() + d);
-  const localISO = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") +
-    "-" + String(date.getDate()).padStart(2, "0");
-  const row = { puzzle: d + 1, date: localISO };
+  const utcISO = new Date(EPOCH + d * 86400000).toISOString().slice(0, 10);
+  const row = { puzzle: d + 1, date: utcISO };
   for (const m of modes) {
     const c = pick(m, d);
     row[m] = only

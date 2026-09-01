@@ -10,9 +10,8 @@ eval(fs.readFileSync(path.join(GAME_DIR, "data.js"), "utf8"));
 function mulberry32(a){return function(){a|=0;a=(a+0x6D2B79F5)|0;var t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
 const SEEDS = { classic: 0x5EED1337, blur: 0x1D0FBE47, lore: 0x4B19AC03 };
 const MODES = Object.keys(SEEDS);
-const EPOCH = new Date(2026, 7, 21);
-const now = new Date();
-const day = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - EPOCH) / 86400000);
+const EPOCH = Date.UTC(2026, 7, 21);
+const day = Math.floor((Date.now() - EPOCH) / 86400000);
 // must match recencyWeight() in game.js
 function recencyWeight(y){ if(y>=2026) return 4; if(y===2025) return 2.5; if(y===2024) return 1.5; return 1; }
 const ORDER = {};
@@ -24,20 +23,30 @@ for (const m of MODES) {
   ORDER[m] = keyed.map((e) => e.i);
 }
 const STRIDE = 61; // must match game.js
-// mirrors dailyCoin(): fixed mode order, walk forward past collisions
-function answerFor(mode, d = day) {
-  const used = {};
+// mirrors cycleOrders(): de-conflict once per cycle by swapping inside each mode's
+// own order, so every mode's order stays a permutation of the whole roster.
+const CYCLE = (() => {
+  const len = COINS.length, out = {}, atPos = [];
+  for (let p = 0; p < len; p++) atPos[p] = {};
   for (const m of MODES) {
-    const o = ORDER[m], len = o.length;
-    let chosen = null;
-    for (let k = 0; k < len; k++) {
-      const c = COINS[o[((((d + k * STRIDE) % len) + len) % len)]];
-      if (!used[c.t]) { chosen = c; break; }
+    const o = ORDER[m].slice();
+    for (let i = 0; i < len; i++) {
+      if (!atPos[i][COINS[o[i]].t]) continue;
+      for (let k = 1; k < len; k++) {
+        const j = (i + k * STRIDE) % len;
+        if (j === i || atPos[i][COINS[o[j]].t] || atPos[j][COINS[o[i]].t]) continue;
+        const t = o[i]; o[i] = o[j]; o[j] = t;
+        break;
+      }
     }
-    if (!chosen) chosen = COINS[o[(((d % len) + len) % len)]];
-    used[chosen.t] = 1;
-    if (m === mode) return chosen;
+    for (let q = 0; q < len; q++) atPos[q][COINS[o[q]].t] = 1;
+    out[m] = o;
   }
+  return out;
+})();
+function answerFor(mode, d = day) {
+  const o = CYCLE[mode], len = o.length;
+  return COINS[o[(((d % len) + len) % len)]];
 }
 console.log("day #" + (day + 1) + " answers:", MODES.map(m => m + "=$" + answerFor(m).t).join("  "));
 

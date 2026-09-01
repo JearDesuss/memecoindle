@@ -13,6 +13,9 @@ The item list is the product. Everything else is a commodity Wordle shell.
   cm: 10900,            // CURRENT market cap, $ millions, snapshot
   g: "Dog",             // type — one of CATS (what the mascot IS)
   s: "Icon",            // fate — metadata only, not a game axis
+  a: ["哈基米"],        // OPTIONAL aliases — extra names the lore redaction must
+                        //   also black out. Needed when the lore mentions the coin
+                        //   in a script the latin name cannot match.
   l: "one-line lore",   // shown on the reveal card
   w: "dogecoin" }       // memecoin.wiki slug, or null
 ```
@@ -23,7 +26,16 @@ Enums and family groupings (for yellow matches) live at the top of data.js.
 
 - **Tiers over precision.** The game grades mcap by order of magnitude, so a
   peak recorded as 700 when the truth is 685 changes nothing. Get the tier
-  right; don't sweat the digit.
+  right; don't sweat the digit. But the Classic grid *prints* these figures on
+  every guess, so a number that is wrong by 10x is visible even when it grades
+  the same.
+- **Read the pool, not the listing.** CoinGecko's "current" price can freeze:
+  `little-john` still reported a $17M cap and $167M of daily volume seven weeks
+  after its last price point, against $400 of on-chain reserves. Check the
+  contract's pools (DexScreener, GeckoTerminal) before trusting a listing.
+- **A pool whose liquidity equals its own market cap is not a market.** Seeded
+  impostor pools quote a huge cap and trade nothing; rank candidates by 24h
+  volume, never by liquidity.
 - `cm` is a **snapshot** (currently mid/late-2026, sourced from memecoin.wiki
   article "as of" figures where available). Refresh it occasionally —
   memecoins only die downward, so tiers mostly hold.
@@ -64,9 +76,10 @@ length** — both reshuffle future days.
    :9223) to pull real resolution, then `node tools/resize-logos.js --clean`.
    Blur asserts the logo beats its frame at 2x, so anything stuck at 250px will
    fail the test on the day it comes up.
-5. Validate: `node -e "eval(require('fs').readFileSync('data.js','utf8'))"`
-   plus the checks in the repo's CI-less ritual: unique n/t, enum membership,
-   and `COINS.length % 61 !== 0` (the daily-pick stride, see ARCHITECTURE.md).
+5. Validate. The whole ritual is one script — unique n/t, enum membership, every
+   chain in CHAINS actually used, cm never above m, a logo file on disk for every
+   coin, and `COINS.length % 61 !== 0` (the daily-pick stride, see
+   ARCHITECTURE.md). It exits non-zero on any failure.
 6. `node tools/bump-assets.js` — data.js changed, so the cache stamp must move.
 7. `node tools/schedule.js 7` — accept that future dailies just moved.
 

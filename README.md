@@ -2,11 +2,14 @@
 
 **Play: https://jeardesuss.github.io/memecoindle/**
 
-Guess the memecoin of the day — three ways, on one screen. 186 coins, from $DOGE
+Guess the memecoin of the day — three ways, on one screen. 105 coins, from $DOGE
 in 2013 to whatever rotated on pump.fun, four.meme and Robinhood Chain this
 summer. Six tries each, a fresh coin per mode every day, and a spoiler-free
-share grid at the end. The daily rotation is weighted towards recent coins —
-2026 launches come up roughly three times as often as pre-2024 ones.
+share grid at the end. The roster is curated rather than exhaustive: a coin earns
+its slot by being recognisable, because an unguessable answer is not a hard
+puzzle, just an unfair one. The daily rotation is weighted towards recent coins —
+2026 launches come up roughly three times as often as pre-2024 ones — and every
+coin appears exactly once per cycle in every mode.
 
 | mode | the puzzle |
 |------|-----------|
@@ -24,6 +27,7 @@ crime scenes.
 - One dashboard: mode rail, live board, yesterday's answer and the rules
 - Three daily puzzles, one per mode, deterministic with no server
 - Archive: replay any past puzzle without risking your streak
+- Coin list: the whole roster, searchable, so you can see what you are guessing against
 - Six tries each; misses hand you clues (chain → year → type → peak → now)
 - One hint per Classic daily, flagged in your share
 - Real coin logos (64px WebP, 0.3MB total) with a procedural badge fallback
@@ -52,6 +56,8 @@ No build, no dependencies.
   touching `style.css` · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ·
   [docs/DATA.md](docs/DATA.md) · [docs/LEADERBOARD.md](docs/LEADERBOARD.md)
 - **Daily schedule (spoilers)**: `node tools/schedule.js 30`
+- **Day boundary**: puzzles roll at **00:00 UTC**, the same instant the board seals
+  and the pot pays
 - **Test** (node 22+, Chrome): serve on :8471, run Chrome with
   `--remote-debugging-port=9223`, then `node test/cdp-test.js` — 52 checks
   across all three modes, endless and the archive

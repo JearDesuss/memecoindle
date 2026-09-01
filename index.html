@@ -17,8 +17,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Jersey+15&family=Baloo+2:wght@500..800&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="img/memedle-mascot-horizon-v2.webp?v=14350b95" type="image/webp" fetchpriority="high">
-<link rel="stylesheet" href="style.css?v=14350b95">
+<link rel="preload" as="image" href="img/memedle-mascot-horizon-v2.webp?v=64a7d830" type="image/webp" fetchpriority="high">
+<link rel="stylesheet" href="style.css?v=64a7d830">
 </head>
 <body>
 
@@ -109,6 +109,7 @@
     <div class="pill-row" id="pill-row"></div>
     <p class="text-links">
       <button data-go="stats">Stats</button><span>·</span>
+      <button data-go="coins">Coin list</button><span>·</span>
       <button data-go="board">Leaderboard</button><span>·</span>
       <a href="https://memecoin.wiki" target="_blank" rel="noopener">memecoin.wiki</a>
     </p>
@@ -184,6 +185,20 @@
   </div>
 </div>
 
+<div id="modal-coins" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="coins-h">
+  <div class="modal">
+    <button class="modal-close" data-close aria-label="Close">✕</button>
+    <h2 id="coins-h">Coin list</h2>
+    <p class="fine" id="coins-count"></p>
+    <input id="coins-search" class="coins-search" type="search" autocomplete="off"
+           placeholder="Filter by name, ticker or chain…" aria-label="Filter the coin list">
+    <div id="coins-body" class="coins-body"></div>
+    <p class="fine coins-note">We add new coins regularly — this list grows over time.
+      Follow along for the latest drops.</p>
+    <div class="social-row" id="coins-social"></div>
+  </div>
+</div>
+
 <div id="modal-archive" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="arch-h">
   <div class="modal">
     <button class="modal-close" data-close aria-label="Close">✕</button>
@@ -217,10 +232,11 @@
 
 <div class="flash-layer" id="flash-layer" aria-live="polite"></div>
 
-<script src="data.js?v=14350b95"></script>
-<script src="logos.js?v=14350b95"></script>
-<script src="lb.js?v=14350b95"></script>
-<script src="share.js?v=14350b95"></script>
-<script src="game.js?v=14350b95"></script>
+<script src="data.js?v=64a7d830"></script>
+<script src="logos.js?v=64a7d830"></script>
+<script src="art.js?v=64a7d830"></script>
+<script src="lb.js?v=64a7d830"></script>
+<script src="share.js?v=64a7d830"></script>
+<script src="game.js?v=64a7d830"></script>
 </body>
 </html>

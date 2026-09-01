@@ -19,6 +19,7 @@ const ASSETS = [
   "style.css",
   "data.js",
   "logos.js",
+  "art.js",
   "lb.js",
   "share.js",
   "game.js",
