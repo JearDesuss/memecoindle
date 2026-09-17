@@ -4,3 +4,7 @@ tools/
 docs/
 server/
 dist-artifact.html
+output/
+.git/
+.env*
+scratchpad/
