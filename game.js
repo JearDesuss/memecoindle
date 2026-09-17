@@ -299,179 +299,132 @@
     return img;
   }
 
-  // ──────────────── brand: chunky extruded pixel wordmark ────────────────
-  function brandSVG(sfx) {
-    var gid = "bg-" + sfx;
-    var DEPTH = 9;
-    function line(y, fill, stroke) {
-      return '<text x="280" y="' + y + '" text-anchor="middle" ' +
-        'font-family="Luckiest Guy, Arial Black, sans-serif" font-size="80" fill="' + fill +
-        '" stroke="' + stroke + '" stroke-width="14" stroke-linejoin="round" ' +
-        'paint-order="stroke">MEMEDLE</text>';
-    }
-    var out = '<svg viewBox="0 0 560 140" role="img" aria-label="Memedle">' +
-      '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="#FFF3A6"/><stop offset="48%" stop-color="#FFD93B"/>' +
-      '<stop offset="100%" stop-color="#FFC01F"/></linearGradient></defs><g>';
-    // extrusion slabs, deepest first, each outlined so the stack reads as one solid
-    for (var i = DEPTH; i >= 1; i--) out += line(88 + i, "#E08A12", "#2B2C4B");
-    out += line(88, "url(#" + gid + ")", "#2B2C4B");
-    return out + "</g></svg>";
+  // ──────────────── brand: heavy rounded type over a Lime offset ────────────────
+  // The offset is a real element rather than a text-shadow so motion.js can
+  // move it on its own when a guess lands.
+  function brandHTML() {
+    return '<span class="b-under" aria-hidden="true">memedle</span>' +
+      '<span class="b-face">memedle</span>' +
+      '<span class="b-spark" aria-hidden="true">✦</span>';
   }
 
-  // ──────────────── clouds: outlined pixel blocks ────────────────
-  var CLOUD_SHAPES = [
-    [[2,0],[3,0],[1,1],[2,1],[3,1],[4,1],[0,2],[1,2],[2,2],[3,2],[4,2],[5,2]],
-    [[3,0],[4,0],[5,0],[1,1],[2,1],[3,1],[4,1],[5,1],[6,1],
-     [0,2],[1,2],[2,2],[3,2],[4,2],[5,2],[6,2],[7,2],[8,2]],
-    [[2,0],[3,0],[6,0],[7,0],[1,1],[2,1],[3,1],[4,1],[5,1],[6,1],[7,1],[8,1],
-     [0,2],[1,2],[2,2],[3,2],[4,2],[5,2],[6,2],[7,2],[8,2],[9,2]],
-    [[1,0],[2,0],[0,1],[1,1],[2,1],[3,1]]
-  ];
-  function cloudSVG(shape) {
-    var has = {}, i, x, y;
-    for (i = 0; i < shape.length; i++) has[shape[i][0] + "," + shape[i][1]] = 1;
-    // outline = every empty cell orthogonally touching the shape
-    var outline = {};
-    for (i = 0; i < shape.length; i++) {
-      x = shape[i][0]; y = shape[i][1];
-      [[1,0],[-1,0],[0,1],[0,-1]].forEach(function (d) {
-        var k = (x + d[0]) + "," + (y + d[1]);
-        if (!has[k]) outline[k] = 1;
-      });
-    }
-    var minX = 0, minY = 0, maxX = 0, maxY = 0, first = true;
-    function span(k) {
-      var p = k.split(","), px = +p[0], py = +p[1];
-      if (first) { minX = maxX = px; minY = maxY = py; first = false; }
-      if (px < minX) minX = px; if (px > maxX) maxX = px;
-      if (py < minY) minY = py; if (py > maxY) maxY = py;
-    }
-    Object.keys(has).forEach(span); Object.keys(outline).forEach(span);
-    var lowest = {};
-    for (i = 0; i < shape.length; i++) {
-      x = shape[i][0]; y = shape[i][1];
-      if (lowest[x] === undefined || y > lowest[x]) lowest[x] = y;
-    }
-    var r = "";
-    Object.keys(outline).forEach(function (k) {
-      var p = k.split(",");
-      r += "%3Crect x='" + (+p[0] - minX) + "' y='" + (+p[1] - minY) + "' width='1' height='1' fill='%232B2C4B'/%3E";
-    });
-    for (i = 0; i < shape.length; i++) {
-      x = shape[i][0]; y = shape[i][1];
-      var fill = y === lowest[x] ? "%23C9E4F5" : "%23FFFFFF";
-      r += "%3Crect x='" + (x - minX) + "' y='" + (y - minY) + "' width='1' height='1' fill='" + fill + "'/%3E";
-    }
-    return {
-      uri: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 " +
-        (maxX - minX + 1) + " " + (maxY - minY + 1) + "'%3E" + r + "%3C/svg%3E",
-      w: maxX - minX + 1, h: maxY - minY + 1
-    };
-  }
-  function buildClouds() {
-    var wrap = $("clouds");
-    if (!wrap) return;
-    clear(wrap);
-    var rnd = mulberry32(0xC10D5);
-    var n = window.innerWidth <= 760 ? 5 : 8;
-    for (var i = 0; i < n; i++) {
-      var svg = cloudSVG(CLOUD_SHAPES[Math.floor(rnd() * CLOUD_SHAPES.length)]);
-      var px = 5 + Math.round(rnd() * 5);
-      var c = el("div", "cloud");
-      c.style.backgroundImage = 'url("' + svg.uri + '")';
-      c.style.width = svg.w * px + "px";
-      c.style.height = svg.h * px + "px";
-      c.style.top = (3 + rnd() * 30).toFixed(1) + "%";
-      c.style.opacity = (0.75 + rnd() * 0.25).toFixed(2);
-      c.style.animationDuration = (85 + rnd() * 120).toFixed(0) + "s";
-      c.style.animationDelay = "-" + (rnd() * 150).toFixed(0) + "s";
-      wrap.appendChild(c);
-    }
-  }
-
-  // ──────────────── the crowd standing in the grass ────────────────
-  function artList() {
-    if (typeof ART === "undefined") return [];
-    var keys = Object.keys(ART);
-    var rnd = mulberry32(0x120573);
-    for (var i = keys.length - 1; i > 0; i--) {
-      var j = Math.floor(rnd() * (i + 1));
-      var t = keys[i]; keys[i] = keys[j]; keys[j] = t;
-    }
-    return keys;
-  }
-  function artImg(name, h) {
-    var dims = ART[name];
-    var img = document.createElement("img");
-    img.src = (typeof ART_SRC !== "undefined" && ART_SRC[name]) || ("img/art/" + name + ".webp");
-    img.alt = ""; img.loading = "lazy"; img.decoding = "async";
-    img.title = name.replace(/\d+$/, "");
-    var w = Math.max(8, Math.round(h * (dims[0] / dims[1])));
-    img.style.height = h + "px";
-    img.style.width = w + "px";
-    // real intrinsic size so the row reserves its space before the art decodes
-    img.width = w; img.height = h;
-    return img;
-  }
-  function buildCrowd() {
-    var wrap = $("crowd");
-    if (!wrap) return;
-    var rows = wrap.querySelectorAll(".crowd-row");
-    var keys = artList();
-    if (!rows.length || !keys.length) return;
-    var vw = window.innerWidth;
-    // the art is real illustration now, not a 160px token icon, so it can be
-    // shown at a size where you can actually tell who is standing there
-    var HEIGHTS = vw <= 760 ? [42, 58, 76] : [58, 80, 106];
-    var rnd = mulberry32(0x9F17E5);
-    var at = 0;
-    for (var b = 0; b < rows.length && b < HEIGHTS.length; b++) {
-      var row = rows[b], bh = HEIGHTS[b];
-      clear(row);
-      // fill the viewport rather than a fixed count, or the crowd sits as a
-      // small clump in the middle of a wide screen
-      var n = Math.ceil(vw / (bh * 0.78)) + 2;
-      for (var i = 0; i < n; i++) {
-        var h = Math.round(bh * (0.82 + rnd() * 0.4));
-        var img = artImg(keys[at % keys.length], h); at++;
-        // enough overlap to read as a crowd, little enough that you can still
-        // tell who each one is — the art is worth seeing now
-        img.style.marginInline = "-" + Math.round(h * (0.01 + rnd() * 0.06)) + "px";
-        img.style.marginBottom = "-" + Math.round(rnd() * 7) + "px";
-        if (rnd() < 0.5) img.style.transform = "scaleX(-1)";
-        row.appendChild(img);
-      }
-    }
-  }
-  function buildFloaters() {
-    var wrap = $("floaters");
-    if (!wrap || typeof ART === "undefined") return;
-    var keys = artList();
-    if (!keys.length) return;
-    clear(wrap);
-    var rnd = mulberry32(0x5C1E5);
-    // keep them in the gutters beside the column so they read as sky, not as
-    // fragments peeking out from behind a panel
-    var spots = window.innerWidth <= 760
-      ? [[12, 13], [88, 9]]
-      : [[6, 12], [94, 8], [4, 34], [96, 29]];
-    for (var i = 0; i < spots.length; i++) {
-      var img = artImg(keys[(keys.length - 1 - i + keys.length) % keys.length], 32 + Math.round(rnd() * 16));
-      img.className = "floater";
-      img.style.left = spots[i][0] + "%";
-      img.style.top = spots[i][1] + "%";
-      img.style.opacity = (0.78 + rnd() * 0.2).toFixed(2);
-      img.style.animationDuration = (3.4 + rnd() * 2.6).toFixed(1) + "s";
-      img.style.animationDelay = "-" + (rnd() * 3).toFixed(1) + "s";
-      wrap.appendChild(img);
-    }
-  }
-
+  // The world layer (hills, clouds, coins, mascots) belongs to motion.js now.
+  // game.js only asks it to rebuild after a resize changes how many fit.
   var decorTimer = null;
   function refreshDecor() {
     clearTimeout(decorTimer);
-    decorTimer = setTimeout(function () { buildClouds(); buildCrowd(); buildFloaters(); }, 220);
+    decorTimer = setTimeout(function () {
+      if (window.MO && MO.build) MO.build();
+    }, 220);
+  }
+
+  // ──────────────── the tray of side quests ────────────────
+  // Six tiles in the shape the mockup asks for, but every one of them opens
+  // something that exists. A tile that does nothing is worse than no tile.
+  function icon(paths) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="#16161A" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
+  }
+  var DOCK = [
+    { key: "share", label: "Ask a<br>friend", ico: icon(
+      '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/>' +
+      '<path d="M17 4.5v7M13.5 8h7"/>') },
+    { key: "archive", label: "Daily<br>puzzle", ico: icon(
+      '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>' +
+      '<circle cx="12" cy="15.5" r="1.6"/>') },
+    { key: "board", label: "Leader<br>board", ico: icon(
+      '<path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3"/>' +
+      '<path d="M12 13v4M9 21h6M10 17h4"/>') },
+    { key: "pot", label: "Daily<br>pot", ico: icon(
+      '<path d="M12 3v18M8.5 7h6.2a2.8 2.8 0 0 1 0 5.6H9.3a2.8 2.8 0 0 0 0 5.6H16"/>') },
+    { key: "hint", label: "Free<br>hints", ico: icon(
+      '<path d="M9.5 18h5M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5.9 1.2.9 1.9V16h5.2v-.2c0-.7.3-1.4.9-1.9A6 6 0 0 0 12 3Z"/>') },
+    { key: "coins", label: "The<br>deck", ico: icon(
+      '<ellipse cx="12" cy="6.5" rx="7.5" ry="3.2"/><path d="M4.5 6.5v5c0 1.8 3.4 3.2 7.5 3.2s7.5-1.4 7.5-3.2v-5"/>' +
+      '<path d="M4.5 11.5v5c0 1.8 3.4 3.2 7.5 3.2s7.5-1.4 7.5-3.2v-5"/>') }
+  ];
+
+  var dockTiles = null;
+  function buildDock() {
+    var wrap = $("dock");
+    if (!wrap) return;
+    clear(wrap);
+    dockTiles = DOCK.map(function (item) {
+      var b = el("button", "dock-item");
+      b.type = "button";
+      b.setAttribute("data-dock", item.key);
+      var plate = el("span", "dock-plate");
+      plate.innerHTML = item.ico;
+      b.appendChild(plate);
+      var lab = el("span", "dock-label");
+      lab.innerHTML = item.label;
+      b.appendChild(lab);
+      var badge = el("span", "dock-badge hidden");
+      b.appendChild(badge);
+      b.addEventListener("click", function () { dockGo(item.key); });
+      wrap.appendChild(b);
+      return { key: item.key, node: b, badge: badge };
+    });
+  }
+
+  // Pass the page's own URL around rather than a hardcoded one: the game is
+  // served from two origins and the Vercel one is canonical for identity, so a
+  // link copied on either host has to be the host it was copied from.
+  function inviteLink() {
+    return location.origin + location.pathname + "#/" + modeId;
+  }
+  function invite() {
+    var text = "Memedle — one memecoin a day, six guesses. Can you beat me?";
+    if (navigator.share) {
+      navigator.share({ title: "Memedle", text: text, url: inviteLink() })
+        .catch(function () {});
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text + " " + inviteLink())
+        .then(function () { flash("Invite copied."); })
+        .catch(function () { flash(inviteLink()); });
+      return;
+    }
+    flash(inviteLink());
+  }
+
+  function dockGo(key) {
+    sfx("open");
+    if (key === "share") invite();
+    else if (key === "archive") openArchive();
+    else if (key === "board") { if (typeof LB !== "undefined") LB.open(dayNumber(), modeId); }
+    else if (key === "pot") openModal("modal-help");
+    else if (key === "hint") {
+      var btn = $("hint-area").querySelector(".hint-btn");
+      if (btn) { btn.click(); if (window.MO) MO.pop($("hint-area").firstChild); }
+      else flash(hintAxis >= 0 ? "Hint already spent today." : "Make a guess first.");
+    } else if (key === "coins") openCoinList();
+  }
+
+  // Badges count what is actually waiting for the player, so they go to zero
+  // when there is nothing left to do rather than sitting there decoratively.
+  function renderDock() {
+    if (!dockTiles) buildDock();
+    if (!dockTiles) return;
+    var left = 0;
+    MODES.forEach(function (m) {
+      var st = dayStatusFor(m.id);
+      if (!st || !st.done) left++;
+    });
+    var counts = {
+      share: 0,
+      archive: left,
+      board: 0,
+      pot: MODES.length,
+      hint: (modeId === "classic" && !unlimited && hintAxis < 0 && !done) ? 1 : 0,
+      coins: 0
+    };
+    dockTiles.forEach(function (t) {
+      var n = counts[t.key] || 0;
+      t.badge.textContent = n;
+      t.badge.classList.toggle("hidden", n === 0);
+    });
   }
 
   // ──────────────── mode rail ────────────────
@@ -546,34 +499,30 @@
     txt.appendChild(el("span", "yday-label", MODE_BY_ID[modeId].name + " #" + (d + 1)));
     txt.appendChild(el("span", "yday-name", "$" + coin.t));
     row.appendChild(txt);
-    var flag = el("span", "yday-flag");
     if (st && st.done) {
-      flag.classList.add(st.won ? "win" : "lost");
-      flag.textContent = st.won ? "✓" : "✕";
-    } else { flag.textContent = "–"; flag.title = "not played"; }
-    row.appendChild(flag);
+      var flag = el("span", "yday-flag " + (st.won ? "win" : "lost"), st.won ? "✓" : "✕");
+      flag.title = st.won ? "solved" : "missed";
+      row.appendChild(flag);
+    } else {
+      // An unplayed day is the one thing on this card worth acting on, so it
+      // is a key that opens that run, not a dash that says nothing.
+      var go = el("button", "yday-flag go", "→");
+      go.type = "button";
+      go.title = "Play puzzle #" + (d + 1);
+      go.setAttribute("aria-label", "Play " + MODE_BY_ID[modeId].name + " puzzle " + (d + 1));
+      go.addEventListener("click", function () {
+        sfx("swap");
+        location.hash = "#/" + modeId + "/" + (d + 1);
+      });
+      row.appendChild(go);
+    }
     box.appendChild(row);
   }
 
-  // ──────────────── more memedle pills ────────────────
-  function renderPills() {
-    var row = $("pill-row");
-    if (!row) return;
-    clear(row);
-    MODES.forEach(function (m) {
-      if (m.id === modeId) return;
-      var a = document.createElement("a");
-      a.className = "pill";
-      a.href = "#/" + m.id;
-      a.textContent = m.name;
-      row.appendChild(a);
-    });
-    var endless = el("a", "pill", "Endless");
-    endless.href = "#/" + modeId + "/unlimited";
-    row.appendChild(endless);
-    var arch = el("button", "pill", "Archive");
-    arch.addEventListener("click", openArchive);
-    row.appendChild(arch);
+  // ──────────────── footer ────────────────
+  function renderDeckCount() {
+    var n = $("deck-count");
+    if (n) n.textContent = COINS.length + " coins in the deck";
   }
 
   // ──────────────── panel chrome ────────────────
@@ -627,13 +576,14 @@
   function renderStage() {
     var stage = $("stage");
     clear(stage);
-    stage.classList.remove("burst");
+    stage.classList.remove("burst", "tight");
     var kind = MODE_BY_ID[modeId].kind;
     var lvl = revealLevel();
 
     if (kind === "grid") {
       // classic has no image to show, so the panel gets the mystery coin
       stage.classList.add("burst");
+      if (guesses.length) stage.classList.add("tight");
       if (done) {
         var solved = logoImg(target, "");
         solved.style.cssText = "position:relative;width:108px;height:108px;border-radius:50%;border:5px solid var(--ink);object-fit:cover";
@@ -800,7 +750,7 @@
     renderPanelChrome();
     renderModeRail();
     renderYesterday();
-    renderPills();
+    renderDock();
     renderStage();
     renderBoard(animateLast);
     renderClues();
@@ -887,7 +837,14 @@
     wrap.classList.remove("reject");
     void wrap.offsetWidth;
     wrap.classList.add("reject");
+    sfx("deny");
     setTimeout(function () { wrap.classList.remove("reject"); }, 400);
+  }
+
+  // One door to the sound kit, so nothing in here has to know whether the
+  // player has opted in or whether the file even loaded.
+  function sfx(name, arg) {
+    if (window.SFX) SFX.play(name, arg);
   }
 
   // Enter and the autocomplete row both commit without the button ever
@@ -904,6 +861,8 @@
     if (done || guesses.length >= MAX_GUESSES) return;
     guesses.push(coin);
     stamp($("btn-go"));
+    sfx("submit");
+    if (window.MO) MO.brandKick();
     $("guess-input").value = "";
     acIndex = -1; renderAC();
     var win = coin.n === target.n;
@@ -913,16 +872,32 @@
     }
     saveDaily();
     renderAll(true);
+    // one click per tile as the row turns over, pitched by column so a whole
+    // row reads as a run rather than as five copies of the same sound
+    if (MODE_BY_ID[modeId].kind === "grid" && !reducedMotion()) {
+      for (var i = 0; i < 5; i++) {
+        (function (k) { setTimeout(function () { sfx("flip", k); }, k * 180 + 180); })(i);
+      }
+    }
     if (done) {
       $("guess-input").disabled = true;
       $("btn-go").disabled = true;
       var delay = MODE_BY_ID[modeId].kind === "grid" ? 5 * 180 + 420 : 500;
-      if (won) setTimeout(confettiBurst, Math.max(0, delay - 360));
+      if (won) {
+        setTimeout(confettiBurst, Math.max(0, delay - 360));
+        setTimeout(function () {
+          sfx("win");
+          if (window.MO) { MO.cheer(); MO.coinBurst(); }
+        }, Math.max(0, delay - 360));
+      } else {
+        setTimeout(function () { sfx("lose"); }, Math.max(0, delay - 200));
+      }
       setTimeout(openReveal, delay);
       if (typeof LB !== "undefined" && !unlimited && !isArchive()) {
         LB.report(modeId, won, guesses.length, playDay, hintAxis >= 0);
       }
     } else {
+      sfx(win ? "hit" : "miss");
       $("guess-input").focus();
     }
   }
@@ -1404,8 +1379,44 @@
 
   function init() {
     migrate();
-    $("brand-slot").innerHTML = brandSVG("a");
+    $("brand-slot").innerHTML = brandHTML();
+    buildDock();
+    renderDeckCount();
     renderHelpModes(); renderSocial();
+
+    // Sound: the button and the Settings checkbox are two views of one stored
+    // flag, so either one moves both. Nothing is constructed until a press.
+    // Drawn, not an emoji: the crossed-out speaker renders as a grey tofu box
+    // on Windows, which looks like a broken asset rather than a muted state.
+    function sfxIcon(on) {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="#16161A" stroke-width="2" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M11 5 6.5 9H3v6h3.5L11 19V5Z"/>' +
+        (on
+          ? '<path d="M15.5 9.2a4 4 0 0 1 0 5.6M18.4 6.4a8 8 0 0 1 0 11.2"/>'
+          : '<path d="M16 10l4 4M20 10l-4 4"/>') +
+        '</svg>';
+    }
+    function syncSfx() {
+      var on = !!(window.SFX && SFX.enabled);
+      var btn = $("btn-sfx"), ico = $("sfx-ico"), box = $("sfx-toggle");
+      if (btn) { btn.setAttribute("aria-pressed", on ? "true" : "false"); btn.title = on ? "Sound on" : "Sound off"; }
+      if (ico) ico.innerHTML = sfxIcon(on);
+      if (box) box.checked = on;
+    }
+    if ($("btn-sfx")) {
+      $("btn-sfx").addEventListener("click", function () {
+        if (window.SFX) SFX.toggle();
+        syncSfx();
+      });
+    }
+    if ($("sfx-toggle")) {
+      $("sfx-toggle").addEventListener("change", function () {
+        if (window.SFX) SFX.set($("sfx-toggle").checked);
+        syncSfx();
+      });
+    }
+    syncSfx();
 
     var input = $("guess-input");
     input.addEventListener("input", function () { acIndex = -1; renderAC(); });
@@ -1491,6 +1502,9 @@
     }
     if (typeof LB !== "undefined") LB.boot(firstRun);
     else firstRun();
+
+    // last: the board is rendered, so the entrance has something to stagger
+    if (window.MO) MO.start();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

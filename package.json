@@ -10,8 +10,10 @@
     "@vercel/blob": "^2.8.0"
   },
   "scripts": {
-    "test": "node test/cdp-test.js",
+    "test": "node tools/run-test.mjs",
     "stamp": "node tools/bump-assets.js",
-    "validate": "node tools/validate-data.js"
+    "validate": "node tools/validate-data.js",
+    "scene": "node tools/build-scene.mjs",
+    "shot": "node tools/shot.mjs"
   }
 }

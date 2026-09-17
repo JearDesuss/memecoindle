@@ -13,17 +13,36 @@
 <meta name="twitter:title" content="Memedle">
 <meta name="twitter:description" content="One memecoin a day, three ways to guess it. Six guesses each.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪙</text></svg>">
-<meta name="theme-color" content="#5CC0F0">
+<meta name="theme-color" content="#F4F1E8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Jersey+15&family=Baloo+2:wght@500..800&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="img/memedle-mascot-horizon-v2.webp?v=64a7d830" type="image/webp" fetchpriority="high">
-<link rel="stylesheet" href="style.css?v=64a7d830">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600..800&family=Figtree:wght@400..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=1d345930">
 </head>
 <body>
 
-<div class="sky" aria-hidden="true"></div>
+<!-- ══════════════ the world: a play mat the cards rest on ══════════════ -->
+<div class="world" aria-hidden="true">
+  <div class="clouds" id="clouds"></div>
+  <!--scene--><svg class="hills" viewBox="0 0 1536 420" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false"><path class="l-1" d="M-40,460 L-40,46 L0,46 C96,46 96,112 192,112 C288,112 288,248 384,248 C480,248 480,346 576,346 C672,346 672,380 768,380 C864,380 864,342 960,342 C1056,342 1056,240 1152,240 C1248,240 1248,104 1344,104 C1440,104 1440,40 1536,40 L1576,40 L1576,460 Z"/><path class="d-1" d="M-40,460 L-40,46 L0,46 C96,46 96,112 192,112 C288,112 288,248 384,248 C480,248 480,346 576,346 C672,346 672,380 768,380 C864,380 864,342 960,342 C1056,342 1056,240 1152,240 C1248,240 1248,104 1344,104 C1440,104 1440,40 1536,40 L1576,40 L1576,460 Z" transform="translate(0 34)"/><path class="l-2" d="M-40,460 L-40,126 L0,126 C96,126 96,194 192,194 C288,194 288,306 384,306 C480,306 480,382 576,382 C672,382 672,404 768,404 C864,404 864,378 960,378 C1056,378 1056,296 1152,296 C1248,296 1248,184 1344,184 C1440,184 1440,114 1536,114 L1576,114 L1576,460 Z"/><path class="d-2" d="M-40,460 L-40,126 L0,126 C96,126 96,194 192,194 C288,194 288,306 384,306 C480,306 480,382 576,382 C672,382 672,404 768,404 C864,404 864,378 960,378 C1056,378 1056,296 1152,296 C1248,296 1248,184 1344,184 C1440,184 1440,114 1536,114 L1576,114 L1576,460 Z" transform="translate(0 32)"/><path class="l-3" d="M-40,460 L-40,264 L0,264 C96,264 96,304 192,304 C288,304 288,356 384,356 C480,356 480,388 576,388 C672,388 672,398 768,398 C864,398 864,386 960,386 C1056,386 1056,350 1152,350 C1248,350 1248,298 1344,298 C1440,298 1440,254 1536,254 L1576,254 L1576,460 Z"/><path class="d-3" d="M-40,460 L-40,264 L0,264 C96,264 96,304 192,304 C288,304 288,356 384,356 C480,356 480,388 576,388 C672,388 672,398 768,398 C864,398 864,386 960,386 C1056,386 1056,350 1152,350 C1248,350 1248,298 1344,298 C1440,298 1440,254 1536,254 L1576,254 L1576,460 Z" transform="translate(0 28)"/><g class="cube p-l"><polygon class="c-l" points="118,251.9 149,267.4 149,304.6 118,289.1"/><polygon class="c-r" points="149,267.4 180,251.9 180,289.1 149,304.6"/><polygon class="c-t" points="118,251.9 149,236.4 180,251.9 149,267.4"/></g><g class="cube p-l"><polygon class="c-l" points="180,266 211,281.5 211,318.7 180,303.2"/><polygon class="c-r" points="211,281.5 242,266 242,303.2 211,318.7"/><polygon class="c-t" points="180,266 211,250.5 242,266 211,281.5"/></g><g class="cube p-l"><polygon class="c-l" points="242,282.8 273,298.3 273,335.5 242,320"/><polygon class="c-r" points="273,298.3 304,282.8 304,320 273,335.5"/><polygon class="c-t" points="242,282.8 273,267.3 304,282.8 273,298.3"/></g><g class="cube p-l"><polygon class="c-l" points="304,299.6 335,315.1 335,352.3 304,336.8"/><polygon class="c-r" points="335,315.1 366,299.6 366,336.8 335,352.3"/><polygon class="c-t" points="304,299.6 335,284.1 366,299.6 335,315.1"/></g><g class="cube p-l"><polygon class="c-l" points="87,267.8 118,283.3 118,320.5 87,305"/><polygon class="c-r" points="118,283.3 149,267.8 149,305 118,320.5"/><polygon class="c-t" points="87,267.8 118,252.3 149,267.8 118,283.3"/></g><g class="cube p-l"><polygon class="c-l" points="149,280.7 180,296.2 180,333.4 149,317.9"/><polygon class="c-r" points="180,296.2 211,280.7 211,317.9 180,333.4"/><polygon class="c-t" points="149,280.7 180,265.2 211,280.7 180,296.2"/></g><g class="cube p-l"><polygon class="c-l" points="211,296.7 242,312.2 242,349.4 211,333.9"/><polygon class="c-r" points="242,312.2 273,296.7 273,333.9 242,349.4"/><polygon class="c-t" points="211,296.7 242,281.2 273,296.7 242,312.2"/></g><g class="cube p-l"><polygon class="c-l" points="273,313.5 304,329 304,366.2 273,350.7"/><polygon class="c-r" points="304,329 335,313.5 335,350.7 304,366.2"/><polygon class="c-t" points="273,313.5 304,298 335,313.5 304,329"/></g><g class="cube p-l"><polygon class="c-l" points="56,283.6 87,299.1 87,336.3 56,320.8"/><polygon class="c-r" points="87,299.1 118,283.6 118,320.8 87,336.3"/><polygon class="c-t" points="56,283.6 87,268.1 118,283.6 87,299.1"/></g><g class="cube p-l"><polygon class="c-l" points="118,296.5 149,312 149,349.2 118,333.7"/><polygon class="c-r" points="149,312 180,296.5 180,333.7 149,349.2"/><polygon class="c-t" points="118,296.5 149,281 180,296.5 149,312"/></g><g class="cube p-l"><polygon class="c-l" points="180,310.6 211,326.1 211,363.3 180,347.8"/><polygon class="c-r" points="211,326.1 242,310.6 242,347.8 211,363.3"/><polygon class="c-t" points="180,310.6 211,295.1 242,310.6 211,326.1"/></g><g class="cube p-l"><polygon class="c-l" points="242,327.4 273,342.9 273,380.1 242,364.6"/><polygon class="c-r" points="273,342.9 304,327.4 304,364.6 273,380.1"/><polygon class="c-t" points="242,327.4 273,311.9 304,327.4 273,342.9"/></g><g class="cube p-r"><polygon class="c-l" points="1210,281.5 1242,297.5 1242,335.9 1210,319.9"/><polygon class="c-r" points="1242,297.5 1274,281.5 1274,319.9 1242,335.9"/><polygon class="c-t" points="1210,281.5 1242,265.5 1274,281.5 1242,297.5"/></g><g class="cube p-r"><polygon class="c-l" points="1274,264.2 1306,280.2 1306,318.6 1274,302.6"/><polygon class="c-r" points="1306,280.2 1338,264.2 1338,302.6 1306,318.6"/><polygon class="c-t" points="1274,264.2 1306,248.2 1338,264.2 1306,280.2"/></g><g class="cube p-r"><polygon class="c-l" points="1338,248 1370,264 1370,302.4 1338,286.4"/><polygon class="c-r" points="1370,264 1402,248 1402,286.4 1370,302.4"/><polygon class="c-t" points="1338,248 1370,232 1402,248 1370,264"/></g><g class="cube p-r"><polygon class="c-l" points="1402,233.3 1434,249.3 1434,287.7 1402,271.7"/><polygon class="c-r" points="1434,249.3 1466,233.3 1466,271.7 1434,287.7"/><polygon class="c-t" points="1402,233.3 1434,217.3 1466,233.3 1434,249.3"/></g><g class="cube p-r"><polygon class="c-l" points="1178,313.3 1210,329.3 1210,367.7 1178,351.7"/><polygon class="c-r" points="1210,329.3 1242,313.3 1242,351.7 1210,367.7"/><polygon class="c-t" points="1178,313.3 1210,297.3 1242,313.3 1210,329.3"/></g><g class="cube p-r"><polygon class="c-l" points="1242,295.9 1274,311.9 1274,350.3 1242,334.3"/><polygon class="c-r" points="1274,311.9 1306,295.9 1306,334.3 1274,350.3"/><polygon class="c-t" points="1242,295.9 1274,279.9 1306,295.9 1274,311.9"/></g><g class="cube p-r"><polygon class="c-l" points="1306,278.6 1338,294.6 1338,333 1306,317"/><polygon class="c-r" points="1338,294.6 1370,278.6 1370,317 1338,333"/><polygon class="c-t" points="1306,278.6 1338,262.6 1370,278.6 1338,294.6"/></g><g class="cube p-r"><polygon class="c-l" points="1370,263.7 1402,279.7 1402,318.1 1370,302.1"/><polygon class="c-r" points="1402,279.7 1434,263.7 1434,302.1 1402,318.1"/><polygon class="c-t" points="1370,263.7 1402,247.7 1434,263.7 1402,279.7"/></g><g class="cube p-r"><polygon class="c-l" points="1146,345 1178,361 1178,399.4 1146,383.4"/><polygon class="c-r" points="1178,361 1210,345 1210,383.4 1178,399.4"/><polygon class="c-t" points="1146,345 1178,329 1210,345 1178,361"/></g><g class="cube p-r"><polygon class="c-l" points="1210,327.6 1242,343.6 1242,382 1210,366"/><polygon class="c-r" points="1242,343.6 1274,327.6 1274,366 1242,382"/><polygon class="c-t" points="1210,327.6 1242,311.6 1274,327.6 1242,343.6"/></g><g class="cube p-r"><polygon class="c-l" points="1274,310.3 1306,326.3 1306,364.7 1274,348.7"/><polygon class="c-r" points="1306,326.3 1338,310.3 1338,348.7 1306,364.7"/><polygon class="c-t" points="1274,310.3 1306,294.3 1338,310.3 1306,326.3"/></g><g class="cube p-r"><polygon class="c-l" points="1338,294 1370,310 1370,348.4 1338,332.4"/><polygon class="c-r" points="1370,310 1402,294 1402,332.4 1370,348.4"/><polygon class="c-t" points="1338,294 1370,278 1402,294 1370,310"/></g><g class="cube p-s"><polygon class="c-l" points="452,414.7 472,424.7 472,444.7 452,434.7"/><polygon class="c-r" points="472,424.7 492,414.7 492,434.7 472,444.7"/><polygon class="c-t" points="452,414.7 472,404.7 492,414.7 472,424.7"/></g><g class="cube p-s"><polygon class="c-l" points="598,431.4 613,438.9 613,453.9 598,446.4"/><polygon class="c-r" points="613,438.9 628,431.4 628,446.4 613,453.9"/><polygon class="c-t" points="598,431.4 613,423.9 628,431.4 613,438.9"/></g><g class="cube p-s"><polygon class="c-l" points="742,440 759,448.5 759,465.5 742,457"/><polygon class="c-r" points="759,448.5 776,440 776,457 759,465.5"/><polygon class="c-t" points="742,440 759,431.5 776,440 759,448.5"/></g><g class="cube p-s"><polygon class="c-l" points="906,429.5 920,436.5 920,450.5 906,443.5"/><polygon class="c-r" points="920,436.5 934,429.5 934,443.5 920,450.5"/><polygon class="c-t" points="906,429.5 920,422.5 934,429.5 920,436.5"/></g><g class="cube p-s"><polygon class="c-l" points="1042,410.6 1061,420.1 1061,439.1 1042,429.6"/><polygon class="c-r" points="1061,420.1 1080,410.6 1080,429.6 1061,439.1"/><polygon class="c-t" points="1042,410.6 1061,401.1 1080,410.6 1061,420.1"/></g></svg><!--/scene-->
+  <div class="coins" id="coins"></div>
+
+  <div class="mascot m-left">
+    <div class="prop flag"><i class="flag-pole"></i><span class="flag-cloth">Good memes<br>better people.</span></div>
+    <img class="m-art" src="img/art/CHILLGUY.webp" alt="" width="240" height="360" decoding="async">
+  </div>
+
+  <div class="mascot m-right">
+    <div class="prop bubble">Same coins<br>tomorrow?</div>
+    <img class="m-art" src="img/art/MANEKI.webp" alt="" width="240" height="252" decoding="async">
+  </div>
+</div>
+
 <canvas id="confetti" aria-hidden="true"></canvas>
+
+<p class="corner corner-tl">Meme today.<br>Smarter tomorrow.</p>
+<p class="corner corner-bl">A small game<br>for a larger culture.</p>
+<p class="corner corner-br">Built for<br>meme investors.</p>
 
 <div class="app">
 
@@ -33,6 +52,7 @@
     </div>
     <h1 class="brand" id="brand-slot"></h1>
     <div class="topbar-side right">
+      <button class="ico-btn" id="btn-sfx" title="Sound" aria-label="Sound" aria-pressed="false"><span class="ico ico-sfx" id="sfx-ico"></span></button>
       <button class="ico-btn" id="btn-help" title="How to play" aria-label="How to play"><span class="ico">?</span></button>
       <button class="ico-btn" id="btn-settings" title="Settings" aria-label="Settings"><span class="ico">⚙</span></button>
     </div>
@@ -57,7 +77,6 @@
         <div class="panel-body">
 
           <div id="stage" class="stage"></div>
-
           <p class="game-meta" id="game-meta"></p>
 
           <div class="input-wrap">
@@ -91,31 +110,34 @@
           <h2 class="panel-title">How to play</h2>
         </div>
         <div class="panel-body">
-          <ul class="rule-list">
-            <li><b>6</b><span>guesses a day</span></li>
-            <li><b>3</b><span>modes, a coin each</span></li>
-            <li><b>1</b><span>missed day ends the streak</span></li>
-            <li><b>100%</b><span>of trading fees, paid out daily</span></li>
-          </ul>
-          <button class="btn btn-block" id="btn-help-2">Full rules</button>
+          <ol class="rule-list">
+            <li>Guess the memecoin of the day</li>
+            <li>Every guess hands back five clues</li>
+            <li>You get six tries</li>
+            <li>A new coin daily, in all three modes</li>
+            <li><b>100%</b> of trading fees, paid out daily</li>
+          </ol>
+          <button class="btn btn-block" id="btn-help-2">View full rules</button>
         </div>
       </section>
     </aside>
   </div>
 
-  <!-- ── more memedle ── -->
-  <section class="more">
-    <h2 class="more-title">Keep playing</h2>
-    <div class="pill-row" id="pill-row"></div>
+  <!-- ── the tray of side quests ── -->
+  <nav class="dock" id="dock" aria-label="More to play"></nav>
+
+  <!-- ── footer ── -->
+  <footer class="more">
     <p class="text-links">
-      <button data-go="stats">Stats</button><span>·</span>
-      <button data-go="coins">Coin list</button><span>·</span>
-      <button data-go="board">Leaderboard</button><span>·</span>
+      <span id="deck-count" class="deck-count"></span><span class="sep">·</span>
+      <button data-go="stats">Stats</button><span class="sep">·</span>
+      <button data-go="coins">Coin list</button><span class="sep">·</span>
+      <button data-go="board">Leaderboard</button><span class="sep">·</span>
       <a href="https://memecoin.wiki" target="_blank" rel="noopener">memecoin.wiki</a>
     </p>
     <div class="social-row" id="social-row"></div>
     <p class="fineprint">An unofficial fan game · lore via memecoin.wiki · market caps are approximate</p>
-  </section>
+  </footer>
 
 </div><!-- /.app -->
 
@@ -163,6 +185,7 @@
     <p class="fine">Where your slice of the daily pot is sent at 00:00 UTC. Solana or EVM, paste it rather than type it — nothing here can check an address.</p>
     <div id="wallet-body" class="profile-body"></div>
     <label class="cb-row"><input type="checkbox" id="cb-toggle-2"> High-contrast tiles (blue / orange)</label>
+    <label class="cb-row"><input type="checkbox" id="sfx-toggle"> Sound effects</label>
     <h3>Danger zone</h3>
     <p class="fine">Wipes today's progress, your streak and every stat on this device. Your handle stays yours.</p>
     <button class="btn btn-danger" id="btn-wipe">Erase my record</button>
@@ -232,11 +255,13 @@
 
 <div class="flash-layer" id="flash-layer" aria-live="polite"></div>
 
-<script src="data.js?v=64a7d830"></script>
-<script src="logos.js?v=64a7d830"></script>
-<script src="art.js?v=64a7d830"></script>
-<script src="lb.js?v=64a7d830"></script>
-<script src="share.js?v=64a7d830"></script>
-<script src="game.js?v=64a7d830"></script>
+<script src="vendor/gsap.min.js?v=1d345930"></script>
+<script src="data.js?v=1d345930"></script>
+<script src="logos.js?v=1d345930"></script>
+<script src="sfx.js?v=1d345930"></script>
+<script src="motion.js?v=1d345930"></script>
+<script src="lb.js?v=1d345930"></script>
+<script src="share.js?v=1d345930"></script>
+<script src="game.js?v=1d345930"></script>
 </body>
 </html>

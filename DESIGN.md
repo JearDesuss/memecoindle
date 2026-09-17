@@ -1,280 +1,350 @@
 # Memedle — design contract
 
-> Read this before changing `style.css`. Any literal hex or px inside a component
-> rule is a bug: the value belongs in `:root` or it does not exist.
+> Read this before touching `style.css`. A literal hex or px inside a component
+> rule is a bug: every value in this system is named, and the name is the
+> vocabulary. If a decision needs a number that is not here, the vocabulary is
+> wrong — fix it in `:root`, globally, once.
+
+---
 
 ## north_star
 
-**A sheet of die-cut vinyl stickers pressed flat onto a sunlit arcade cabinet.**
+**A sunlit paper tabletop where the whole memecoin world has been built out of
+lime-green toy blocks.**
 
-Noon light, no dusk. Every box on this page is a sticker: one die width all the way
-round, one flat ink, and it lifts off the sheet by a fixed amount when it wants to be
-pressed. Stickers do not have bevels, they do not glow, and they do not each come in a
-different colour because the printer was bored.
+Warm bone paper, lit flat and evenly from above. A rolling landscape of
+extruded lime cubes runs along the bottom edge like a play mat someone snapped
+together. Everything the player touches is a clean white card resting on that
+paper. The only things that look *pressable* are drawn with a hard black die
+line and a shadow that has zero blur, because they are the tokens you move.
 
-Everything below falls out of that sentence. When a decision is contested, ask what a
-sticker would do.
+The previous world — a blue pixel-art overworld with a crowd of sprites — is
+**gone**. Do not regress to it: no pixel fonts, no sky gradient, no 1px-grid
+imagery, no `image-rendering: pixelated`. A note in a commit message is not a
+licence to bring back a token that this file deleted.
 
-## theme
+**theme** light
+**industry** daily puzzle game / crypto culture
+**description**
+One screen, three columns, no scrolling on desktop. A mode rail on the left, the
+live game in the middle, yesterday's answer and the rules on the right, a tray of
+side-quests beneath. The page reads as a game board photographed from above, not
+as a dashboard. Motion is the whole difference between those two readings, so
+motion is not optional decoration here — see **elevation** and **motion**.
 
-light · single theme · `body.cb` swaps only the two status hues for colourblind play
-
-## industry
-
-Consumer daily puzzle game (Wordle-descended) for a crypto-native audience. Read in 30
-seconds on a phone, shared as a grid.
-
-## description
-
-One screen. A mode rail on the left, the live board in the middle, yesterday and the
-rules on the right, a dark backing card at the bottom for everything else. It sits on
-an illustrated overworld that is scenery, never chrome — the UI never borrows the
-illustration's colours and the illustration never borrows the UI's outline.
-
-The whole system is one sticker component with three roles and three sizes. If a new
-element needs a look the sticker cannot give it, the answer is almost always that the
-element should not exist.
+---
 
 ## colors
 
-The neutral ramp is named. Hex-only palettes drift.
+### The neutral ramp — Ink → Paper
 
-| hex | name | group | role — where it is allowed to appear |
-|---|---|---|---|
-| `#2B2C4B` | Ink | neutral | every die-cut outline, every lift shadow, body text. The only outline colour on the page. |
-| `#55567A` | Slate | neutral | secondary text: blurbs, captions, column heads, `.fine` |
-| `#8B8CAB` | Fog | neutral | tertiary: placeholder, quote mark, unplayed marks |
-| `#B9BAD2` | Ash | neutral | inert fills — the unused guess pip — and tertiary text on the Night card, where Fog fails contrast. |
-| `#E5D08A` | Rind | neutral | hairline *inside* a sticker: recessed rows, quiet borders |
-| `#F6E9B8` | Card | neutral | recessed surface inside a sticker: panel bars, quiet buttons |
-| `#FDF6DA` | Paper | neutral | the sticker face. The default surface of the whole system. |
-| `#FFFDF2` | Snow | neutral | the one lit surface: text input, hover state |
-| `#2F3358` | Night | neutral | the single dark backing card (`.more`) and the unsolved coin |
-| `#FFD93B` | **Gold** | **accent** | **the one live action in a view, and the wordmark. Nothing else.** |
-| `#3FA84F` | Bull | status | correct — guess tile, win flag, distribution bar, win verdict |
-| `#F5B321` | Amber | status | close — guess tile, revealed clue chip |
-| `#E04B42` | Miss | status | wrong — guess tile, loss flag, loss verdict, danger button |
+Nine steps, named. Never write one as a hex in a component.
 
-**Accent scarcity is the whole trick.** Gold is the only chromatic *control* fill on
-the page. One per view: the submit button, or the active mode card, or the primary
-button in a modal — never two at once, never as decoration. Purple and pink were cut
-outright; they were four sibling buttons wearing four unrelated hues, which is the
-loudest tell of a UI nobody planned.
+| token | hex | name | role |
+| --- | --- | --- | --- |
+| `--ink` | `#16161A` | **Ink** | every die line, every hard shadow, primary text |
+| `--ink-2` | `#4A4A52` | **Slate** | secondary text, card sub-copy, the blurb line |
+| `--ink-3` | `#84848F` | **Fog** | placeholder, meta, the footer line, disabled label |
+| `--ash` | `#C9C8C2` | **Ash** | inert fills and empty pips only — **never text** |
+| `--line` | `#E4E2D9` | **Rule** | the hairline border on a calm card |
+| `--card-2` | `#F2F0E8` | **Shelf** | a recessed surface *inside* a card (tile back, input) |
+| `--card` | `#FFFFFF` | **Card** | the default card face |
+| `--paper` | `#F4F1E8` | **Paper** | the page itself; the tabletop |
+| `--paper-2` | `#EAE7DC` | **Paper Deep** | the band behind the tray, under the fold |
 
-Amber sits deliberately clear of Gold (`#F5B321` vs `#FFD93B`). They collided before,
-and an accent indistinguishable from a status colour is not an accent.
+### The accent — exactly one, and it is spent
 
-Status colours are allowed on tiles, flags, bars and verdicts. **A status colour may
-never fill a button.** The one exception is `.btn-danger`, which is a status *as* an
-action and is confined to the settings danger zone.
+| token | hex | name | role |
+| --- | --- | --- | --- |
+| `--lime` | `#BCF23F` | **Lime** | the active mode card, the submit key, the rule numerals, the scenery |
+| `--lime-2` | `#A6DE23` | **Lime Deep** | the pressed/hover state of anything Lime, cube side faces |
+| `--lime-3` | `#EDFBC4` | **Lime Wash** | a Lime tint on a white card: the dock icon plates |
+
+**Accent scarcity is the rule that makes this page not look generic.** Lime is
+allowed on: the one active mode card, the one submit key, the how-to-play
+numerals, the dock icon plates, and the landscape. It is banned from: body text,
+card borders, secondary buttons, modal chrome, and anything that appears more
+than once in a row for decoration. If you are reaching for Lime to make
+something stand out, the answer is contrast or weight, not more Lime.
+
+### Status — grid tiles, flags and verdicts only. Never a button fill.
+
+| token | hex | name | role |
+| --- | --- | --- | --- |
+| `--hit` | `#8BD418` | **Hit** | exact match |
+| `--hit-ink` | `#16161A` | — | text on Hit |
+| `--near` | `#FFC53D` | **Near** | close: same family, ±1 year, adjacent band |
+| `--near-ink` | `#3A2A00` | — | text on Near |
+| `--miss` | `#FB6F84` | **Miss** | wrong |
+| `--miss-ink` | `#3A0C14` | — | text on Miss |
+
+`body.cb` swaps **Hit → `#3B7FD4`** and **Miss → `#E07B18`** for colourblind
+play. Near and Lime are untouched by that swap; that is deliberate, they are
+already distinguishable by position and by shape.
+
+### Scenery — illustration only, never a UI surface
+
+`--g-top #C9EF5A` · `--g-face #A9DF2C` · `--g-side #8CC71C` · `--g-deep
+#6FA714` · `--g-edge #5C8E10` · `--cloud #FFFFFF` · `--cloud-line #CDEE7C`
+
+These five greens are the extruded-cube ramp: lit top face, front face, side
+face, the face in shadow, and the die line between blocks. They may only appear
+inside `.world` and its SVG. A card that borrows a scenery green is a bug.
+
+---
 
 ## surfaces
 
-| hex | name | level | purpose |
-|---|---|---|---|
-| illustration | Overworld | 0 | the fixed background image. Scenery. Never a UI surface. |
-| `#FDF6DA` Paper | Sheet | 1 | every panel, modal, mode card, and pressable sticker |
-| `#F6E9B8` Card | Inset | 2 | a recess *within* level 1: panel bars, quiet buttons, chips |
-| `#2F3358` Night | Backing | 3 | one element only — the footer card. Its contents invert to Paper. |
+| level | token | purpose |
+| --- | --- | --- |
+| 0 | `--paper` | the tabletop, and the landscape drawn on it |
+| 1 | `--card` | every calm panel: game panel, rules, yesterday, modals |
+| 2 | `--card-2` | recessed inside a card: input well, empty tile, dist bar track |
+| 3 | `--ink` | the one dark object per view — the flag, the reveal banner |
+
+---
 
 ## typography
 
-Three families, three jobs, no overlap. A family with two jobs is a family too many.
+Two families. That is the whole list. **Jersey 15 and Luckiest Guy are deleted**
+— the pixel display face belonged to the old world and reintroducing it breaks
+the north star.
 
 | family | substitute | weights | role |
-|---|---|---|---|
-| Luckiest Guy | Arial Black, system-ui | 400 | **display only** — the SVG wordmark and the reveal verdict. Banned from UI and body copy. |
-| Jersey 15 | ui-monospace, monospace | 400 | **letter-only uppercase labels** — mode names, button faces, section and modal headings |
-| Baloo 2 | Segoe UI, system-ui | 600 / 800 | **everything else** — all body copy, and every label that can contain a digit |
+| --- | --- | --- | --- |
+| **Baloo 2** | `"Segoe UI", system-ui, sans-serif` | 600 / 700 / 800 | the wordmark, mode names, card titles, big numerals. Round terminals and a tall x-height are what make the page read as a toy. |
+| **Figtree** | `system-ui, sans-serif` | 400 / 500 / 600 / 700 / 800 | everything else: body, labels, meta, counters, tiles. |
 
-**The digit rule is load-bearing.** Jersey 15's `6` has a nearly closed counter, so
-`0/6` reads as `0/8`. Any string that may contain a numeral uses Baloo 2 at 800, even
-when its neighbours are Jersey 15. Silkscreen (`M` reads as `H`) and Pixelify (`C`
-reads as `O`) were both rejected on the same test.
+`--font-num` does not exist and must not be re-added. **Figtree carries every
+digit in the interface** because it has real tabular figures — `font-variant-
+numeric: tabular-nums` genuinely works in it, so counters like `0/6` and the
+stats grid do not jiggle as they tick. Baloo 2's digits are proportional; it is
+allowed a number only where the number never changes in place (the wordmark, a
+mode name).
 
-`font-feature-settings: "tnum" 1` on every numeral run — counters, countdowns and
-badges must not reflow as they tick.
+Tracking tightens as size grows: `-0.03em` at 48px+, `-0.01em` at 20–32px,
+normal at body, `+0.08em` on uppercase labels at 11–13px.
 
-## type_scale
+### type_scale
 
-| role | family | size | weight | line-height | tracking |
-|---|---|---|---|---|---|
-| wordmark | Luckiest Guy | SVG, fluid | 400 | — | −0.01em |
-| verdict | Luckiest Guy | 25px | 400 | 1.3 | −0.01em |
-| label-lg | Jersey 15 | 20px | 400 | 1.05 | +0.03em |
-| label-md | Jersey 15 | 15px | 400 | 1.1 | +0.04em |
-| label-sm | Baloo 2 | 13px | 800 | 1.2 | +0.05em |
-| body | Baloo 2 | 15px | 600 | 1.5 | 0 |
-| body-sm | Baloo 2 | 13px | 600 | 1.45 | 0 |
-| num | Baloo 2 | 23px | 800 | 1 | 0 |
+| role | size | weight | line-height | tracking | family |
+| --- | --- | --- | --- | --- | --- |
+| `wordmark` | clamp(44px, 7vw, 74px) | 800 | 0.9 | -0.035em | Baloo 2 |
+| `title` | 20px | 700 | 1.15 | -0.01em | Baloo 2 |
+| `mode` | 17px | 700 | 1.1 | 0 | Baloo 2 |
+| `numeral` | 26px | 800 | 1 | -0.01em | Baloo 2 |
+| `label` | 12px | 700 | 1 | +0.08em, uppercase | Figtree |
+| `body` | 15px | 400 | 1.5 | 0 | Figtree |
+| `sub` | 13.5px | 400 | 1.4 | 0 | Figtree |
+| `meta` | 12px | 500 | 1.3 | 0 | Figtree |
+| `tile` | 13px | 700 | 1.15 | 0 | Figtree |
 
-White display text over the illustration carries an 8-way 2px Ink stroke
-(`--stroke`), never a soft shadow. It is a sprite outline, not a glow, and it is the
-only text effect in the system.
+---
 
 ## spacing
 
-    base            4px — every gap is a multiple, no exceptions
-    elementGap      8px
-    cardPadding     12px
-    sectionGap      24px
-    pageMaxWidth    1180px
+`base` 4px · `elementGap` 12px · `cardPadding` 18px · `sectionGap` 28px ·
+`pageMaxWidth` 1340px · `railWidth` 300px · `sideRailWidth` 320px
 
-    radius
-      control       6px    buttons, inputs, tiles, chips, logos, icons
-      card          12px   panels, modals, the backing card
-      pill          999px  badges, streak, clue chips, progress tracks — never a button
+### radius — three, total
 
-**Three radii. That is the whole list.** Eleven different values were in use; the
-drift is why the page read as assembled rather than designed. `50%` is not a fourth
-radius — it is reserved for things that are round *in the fiction*: a coin, a guess
-pip. No control is ever a circle.
+| token | value | applies to |
+| --- | --- | --- |
+| `--r-1` | 12px | controls: buttons, inputs, tiles, chips, logo plates |
+| `--r-2` | 20px | cards: panels, modals, the dock tray, mode cards |
+| `--r-pill` | 999px | pills, counters, badges, the guess input |
 
-    cut             4px  the die-cut on anything that is its own sticker
-    cut-in          3px  a mark printed inside a sticker — tile, chip, logo, pip
+Nothing rounds at any other value. 20px is the **maximum** card radius in this
+system: larger reads as a phone app and breaks against the 12px controls sitting
+inside it.
 
-    lift            3px  small controls
-    lift-card       5px  panels, modals, mode cards, the backing card
+### die line
+
+`--cut: 2px` — the black outline on a pressable object.
+`--cut-in: 1.5px` — a line printed *inside* a card (a tile edge, a badge ring).
+
+---
 
 ## elevation
 
-**One philosophy: a sticker lifts off the sheet. Hard offset, zero blur, Ink only.**
+**One philosophy, two tiers, and the tier is the affordance.**
 
-`box-shadow: 0 var(--lift) 0 var(--ink)`. Pressing translates the element down by
-exactly the lift and zeroes the shadow, so the sticker meets the sheet. Nothing else.
+- **Calm (level 1).** A white card, a `--line` hairline border, and
+  `--shadow-soft` (`0 2px 0 var(--line)`) — a shadow with zero blur that is
+  barely darker than the border. It rests on the paper. It does not invite a
+  click.
+- **Live (level 2).** A black `--cut` die line and `--shadow`
+  (`0 var(--lift) 0 var(--ink)`, `--lift: 4px`) — hard offset, **zero blur,
+  Ink only**. This is a token you can pick up.
 
-No blurred `rgba()` drop shadows anywhere in the UI — 29 of them were layered *on top
-of* the hard shadows, which is three elevation systems fighting inside one rule. The
-4px Ink outline is what separates a panel from the background; a soft shadow beneath
-it does nothing except make it look like a stock template. Blur survives in exactly
-two places, both illustration: the crowd's contact shadow and the modal backdrop
-scrim.
+Pressing a live object translates it down by exactly `--lift` and zeroes the
+shadow, so the object meets the paper. Hovering lifts it by `--rise` (2px) and
+deepens the shadow to match. The arithmetic must always close: `translateY` plus
+shadow offset is a constant, or the object appears to grow rather than move.
 
-No inner shadows. No bevels. No `to bottom` gradient on any control — 25 of those were
-the "shiny plastic" that made every button look extruded from the same generator.
-Fills are flat. Gradients exist only in the scenery (sky, grass, dirt).
+**There are no blurred drop shadows anywhere in the UI.** Blur exists in exactly
+two places on this site: the modal scrim, and Blur mode's coin — which is the
+literal subject of that game mode. A soft shadow on a card is the single
+fastest way to make this page look like every other template.
 
-## layout
+Only things that are *pressable or active* get the Live tier. In practice, per
+view, that is: the active mode card, the submit key, the two top-bar icon
+buttons, the full-rules button, the dock tiles, and the primary button inside an
+open modal. If a seventh thing is Live, one of them is wrong.
 
-Three columns at `1fr 1.65fr 1fr` with an 8px gutter, collapsing to `1fr 1.5fr` at
-1040px (right rail wraps full-width) and to a single column at 760px, where the mode
-rail becomes a 3-up strip of name-and-flag chips.
-
-Vertical rhythm inside a panel is 12px; between panels, 12px; between sections, 24px.
-The page is centred at 1180px and the illustration bleeds past it on both sides — the
-content column must never touch the viewport edge, because the crowd needs shoulder
-room to read as a world rather than a border.
-
-The footer backing card is deliberately narrower (620px) than the board above it. It
-is the only element that steps in, and that step is what signals the game is over.
-
-## imagery
-
-- **Coin logos are the subject.** Always in a `cut-in` Ink frame at `control` radius,
-  `object-fit: cover`, never floating and never circular. A cropped square reads as an
-  asset; a circle reads as an avatar.
-- **The overworld is scenery.** One fixed background image, `cover`, anchored bottom.
-  It never scrolls independently, never sits above the content, and never contributes
-  a colour to a token.
-- **Never derive UI art from token icons.** A token icon is a character crammed inside
-  a coloured disc, so background-removal returns a disc. The crowd is hand-picked
-  illustration; see `docs/ARCHITECTURE.md`.
-- Logos ship at up to 320px so Blur mode out-resolves its frame at 2x.
-
-## components
-
-| name | role | description |
-|---|---|---|
-| `.btn` | the one button | Paper fill, `cut` Ink, `control` radius, `lift`. Jersey 15 uppercase. Everything pressable is this, at one of three sizes. |
-| `.btn-primary` | the live action | The `.btn`, filled Gold. **One per view.** |
-| `.btn-quiet` | peer options | The `.btn` with a Rind border and no lift — for sets of equals (stat tabs, archive rows) where nothing is primary. |
-| `.btn-danger` | destructive | The `.btn`, filled Miss. Danger zone only. |
-| `.ico-btn` | square icon | The `.btn` at 42px square. Topbar and social row use the identical element — same size, same radius, same lift. |
-| `.pill` | inline nav | The `.btn`, for the footer's "keep playing" row. All peers, so all Paper — pill radius on a control reads as a tag cloud. |
-| `.panel` | a sticker | Paper, `cut` Ink, `card` radius, `lift-card`. Optional `.panel-bar` header in Card with a `cut` Ink rule beneath. One bar treatment — colour-coded bars were decoration carrying no information. |
-| `.mode-card` | rail entry | A pressable `.panel`: logo, name, blurb, flag, progress track. The active one is **pressed flat** into the sheet with a Gold spine down its left edge — selection is state, so it borrows the system's physics rather than a second Gold fill. |
-| `.tile` | graded answer | `cut-in` Ink, `control` radius, flat status fill. The only place status colour is large. |
-| `.chip` | inline fact | `pill` radius, `cut-in`, Card or Amber fill. Never pressable. |
-| `.social-btn` | outbound link | The `.btn` at 42px tall with a 17px glyph. The X mark carries no word beside it — it *is* the wordmark; DexScreener's candlestick is not self-identifying, so it keeps one. A missing URL renders it Card-filled with a quiet `soon` tag. |
-| `.flash` | acknowledgement | The `.btn` sticker as a message, parked bottom-centre: Paper, `cut`, `r-1`, `lift-card`, body weight. It introduces no new *look*, only a new position — which is the only reason it is allowed to exist. **No status variant**: a toast is not a tile, a flag, a bar or a verdict, so a failure gets the same Paper flash with different words. |
-| `.field` | text entry | `#guess-input` in a wrapper, so a prefix (`@`) can sit inside the die. Snow face, `cut` Ink, `r-1`, and the same Gold focus ring the guess box uses. |
-| `.more` | backing card | The one Night surface. Same cut, radius and lift as everything else — it is a sticker that happens to be dark, not a foreign object. Ink and Night are three shades apart, so this card re-points `--shadow` at a deeper value or every lift inside it vanishes. |
+---
 
 ## motion
 
-**Down flat and fast, up with energy.** `--press` used to be symmetric — 110ms
-both ways — which is a state toggle, not a material. `:active` now carries
-`--press-in` (70ms, `--ease-out`) and the base rule carries `--press` (190ms,
-`--ease-pop`), so a sticker springs back rather than sliding. `box-shadow` stays
-pinned to `--ease-out` inside both, so **the printed shadow never renders deeper
-than `--lift`** while the body overshoots.
+Motion is load-bearing here, not polish. GSAP is vendored at
+`vendor/gsap.min.js`; `motion.js` owns every timeline and `sfx.js` owns sound.
 
-**A press throws the die line.** The one press effect in the system is
-`::after`, an `outline` at `--cut-in` that flies from the die line out to
-`--burst-reach` and dims in `steps(3, end)`. `outline-offset` is used rather
-than `scale()` because scaling a die changes its width, and a 4px cut at 1.06 is
-a fifth die width. It is a three-frame sprite, not a ripple: vinyl does not glow.
+**The curve vocabulary** — three easings, taken from the tables, never
+hand-rolled:
 
-**No `scale()` on anything carrying a die.** A 4px cut at `scale(.94)` is 3.76px
-and `--r-2` becomes 11.3px — a fourth radius by the back door. Every keyframe
-here translates instead, including the modal entrance, which used to scale.
+```
+--ease-out:    cubic-bezier(.23, 1, .32, 1)      entering, exiting
+--ease-in-out: cubic-bezier(.77, 0, .175, 1)     moving on screen
+--ease-pop:    cubic-bezier(.2, .9, .3, 1.35)    a toy springing back
+```
 
-**Leaving is faster than arriving.** `--dur-close` (150ms) against the 240ms
-entrance, and always on `--ease-out` — an overshoot on the way out reads as the
-panel lunging at the viewer.
+**Never `ease-in` on a UI element**, and never the browser's built-in
+`ease-out` on anything deliberate — both are too weak to read at these
+durations.
 
-**Reduced motion collapses the tokens, not the states.** The media block sets
-every `--dur-*` to 1ms and re-points `--ease-pop` at `--ease-out`, which kills
-every overshoot in the system in one line. A pressed sticker must still visibly
-*be* down; that is state, not animation.
+**The duration vocabulary.** Down is faster than up; leaving is faster than
+arriving.
 
-**One line makes any of this exist on a phone.** iOS Safari does not apply
-`:active` unless the document has a touch listener, so `game.js` registers an
-empty passive `touchstart`. Without it the whole press system is dead on iPhone.
+| token | ms | for |
+| --- | --- | --- |
+| `--dur-press` | 90 | the downstroke, before the finger knows it moved |
+| `--dur-tint` | 130 | a hover fill fading |
+| `--dur-close` | 160 | any dismissal |
+| `--dur-pop` | 220 | the release, long enough for the overshoot to read |
+| `--dur-flip` | 420 | one clue tile turning over |
+| `--hold-flash` | 1800 | how long a flash message sits before it leaves |
+
+**The stagger is 60ms** everywhere: entrance cards, clue tiles, dock tiles.
+Nothing in this interface arrives all at once.
+
+**Reduced motion is a gentler variant, not zero.** Under
+`prefers-reduced-motion: reduce`: transforms and travel are dropped, opacity and
+colour transitions are **kept** (they are what make a state change legible), the
+landscape and mascots hold still, and the tile flip becomes a cross-fade of the
+same duration. Never write a blanket `* { transition-duration: .01ms }` — it
+makes descendants transition `visibility` and quietly breaks focus into a newly
+opened dialog.
+
+**Hover motion is gated** behind `@media (hover: hover) and (pointer: fine)`.
+Touch fires a false hover on tap, and a card that lifts and stays lifted after a
+tap looks broken.
+
+**Sound is off until the player opts in**, remembered in `md_sfx`. Every cue is
+synthesised in `sfx.js` from oscillators — there are no audio files to ship, and
+nothing plays before the first real gesture, because browsers will not allow it
+and because a page that makes noise on load is a page people close.
+
+---
+
+## layout
+
+A 1340px page, centred, with a 300px mode rail, a fluid centre, and a 320px
+info rail, at a 28px section gap. The three columns collapse at 1100px to
+centre-then-rails, and at 760px to one column in reading order: brand, modes,
+game, tray, rails.
+
+The landscape is **fixed to the bottom of the viewport** and never scrolls with
+the content; it is the table the cards are lying on, and a table that slides
+away is a parallax effect, which this system does not have. Content sits in a
+column above it with enough bottom padding that no card ever collides with a
+mascot.
+
+The four corner mottos (`MEME TODAY / SMARTER TOMORROW` and the three others)
+are set in `label` and pinned to the viewport corners in Fog. They are texture,
+not navigation — they must never be a link, and they disappear below 1100px
+where there is no corner to spare.
+
+---
+
+## imagery
+
+Three kinds of picture, with three different treatments, and they must not be
+merged.
+
+1. **Coin logos** (`img/<TICKER>.png`) are the game's *subject*. They always sit
+   in a rounded `--r-1` plate with a `--cut-in` line and `object-fit: cover` —
+   never bare on the paper, never circular except in the reveal.
+2. **Mascots** (`img/art/<NAME>.webp`) are transparent cut-out meme
+   illustrations standing on the landscape at the two bottom corners. They are
+   decoration, they are `aria-hidden`, and they carry a prop drawn in CSS — a
+   flag on the left, a speech bubble on the right. **A token icon is not a
+   mascot**: it is a character inside a coloured disc, so cutting it out returns
+   a disc. Only art from `tools/art-sources.json` is eligible.
+3. **The landscape** is hand-authored inline SVG in `index.html`, not an image
+   file. It must paint on the first frame with no request, and it must be able
+   to take a `viewBox` change at any width without re-cropping.
+
+---
+
+## components
+
+| name | role |
+| --- | --- |
+| `.world` | fixed-position landscape layer: hills, clouds, coins, mascots. `aria-hidden`, `pointer-events: none`. |
+| `.brand` | the wordmark — Ink type over a Lime Deep offset copy at `translate(3px, 4px)`, plus one sparkle. The offset is a second element, not a `text-shadow`, so it can be animated independently. |
+| `.mode-card` | one per game mode. Calm when idle; **Live and Lime-filled when active**. Carries a logo plate, a name, a blurb, a `x/6` counter and a progress rail. |
+| `.panel` | the calm white card. A `panel-bar` title row over a `panel-body`. |
+| `.tile` | one clue cell. `--r-1`, `--cut-in` edge, status fill, flips on reveal. |
+| `.guess-input` | a pill well at `--card-2` with the Live submit key sitting beside it. |
+| `.dock` | the tray of six side-quests. Each tile: a Lime Wash icon plate, a two-line uppercase label, and an optional Miss-coloured count badge. |
+| `.rule-list` | the numbered how-to-play list. Lime numerals in a circle, one line of copy each. |
+| `.yday` | yesterday's answer: logo plate, mode + number, ticker, a link key. |
+| `.flag` / `.bubble` | the two mascot props. Ink flag with Paper type; Card bubble with a `--cut` line and a tail. |
+| `.modal` | a Card at `--r-2` over a blurred scrim. The only blur in the UI. |
+
+---
 
 ## dos
 
-- **Write the north-star sentence before the CSS.** Generic UI is what happens when
-  nobody did. Every rule here is derivable from the sticker sentence; if a new rule is
-  not, it is probably wrong.
-- **Spend the accent once per view.** If two things are Gold, neither is the action.
-  Demote one to Paper and the eye lands where it should.
-- **Flat fills only.** A `to bottom` gradient on a control is the fastest way to make a
-  hand-built page look machine-generated, because that is what every generator emits.
-- **Match siblings exactly.** Four buttons in a row are four peers: same fill, same
-  size, same weight. Differentiating them by hue invents a hierarchy that does not
-  exist and destroys the one that does.
-- **Reach for the ramp, not a new hex.** If Slate is too dark for a caption, the
-  caption is at the wrong size — the ramp has nine stops and they are enough.
-- **Keep the digit rule.** Jersey 15 anywhere a numeral can appear will eventually ship
-  `0/8` to a player. Baloo 2 800 for those, always.
-- **Ink means spent.** A used guess pip, the rail's progress fill and the guess
-  counter are all Ink — they report consumption. Spending Gold on them would
-  mean the accent no longer points at the live control, and spending Bull would
-  mean green no longer only means correct.
-- **Let the outline do the separating.** 4px of Ink against sky is more contrast than
-  any shadow will buy, and it costs nothing on a busy background.
+1. **Name the value in `:root` before you use it.** A literal in a component is
+   how a system becomes a pile of CSS — the next person has no way to know
+   whether `#FB6F84` was Miss or a typo.
+2. **Spend Lime once per view.** The page has one thing it wants you to do; Lime
+   is how it says so, and a second Lime object makes the first one silent.
+3. **Let the tier do the talking.** If an object is not pressable it gets the
+   Calm treatment, no exceptions — a black die line on a static card is a
+   promise the interface does not keep.
+4. **Keep the press arithmetic closed.** `--lift` down, `--lift` off the shadow.
+   Any other pairing reads as the object changing size, which no physical token
+   does.
+5. **Stagger everything that arrives in a group**, 60ms. Simultaneous entrance
+   is the single clearest tell that motion was added at the end.
+6. **Put digits in Figtree with `tabular-nums`.** A counter that changes width
+   as it counts drags the layout with it, and the eye catches it every time.
+7. **Draw the landscape, do not photograph it.** Inline SVG paints on the first
+   frame and scales to any viewport; a raster hill is a request, a crop bug and
+   a blurry edge at 2x.
 
 ## donts
 
-- **No emoji as UI furniture.** 🏆 on a section header, ✦ flanking a title, 🎮 in a
-  panel bar — pure filler, rendered at a different weight than the pixel art beside
-  it, and a sparkle-flanked heading is the most recognisable AI-slop tell on the web.
-  The one sanctioned exception is 🔥 on the streak pill, where the emoji is the
-  established convention for the thing itself.
-- **No blurred shadow in the UI.** Ever. It is a third elevation system and it makes a
-  flat world look like a template. Blur is for scenery and the modal scrim only.
-- **No fourth radius.** A one-off 18px or 24px corner is how a system becomes eleven
-  radii; large radii additionally read as consumer-app and break against the 6px
-  controls.
-- **No border width outside `cut`/`cut-in`.** Five ad-hoc widths made identical
-  components look subtly mismatched at every zoom level.
-- **No status colour on a button.** Green means correct, not clickable. Overloading it
-  costs the player the one signal the game actually runs on.
-- **No second job for a font.** `--font-num` and `--font-ui` both resolved to Baloo 2
-  — a distinction the code claimed and the design never had. One family, one job.
-- **No advisory or hedging copy.** "Spend them wisely", "the majors make good openers",
-  "think like a degen" are an assistant talking, not a game. State the rule, or say
-  nothing. Same for "unhinged" and "flavours", which now read as generated on sight.
-- **Never regress to the dark "degen terminal" look.** It was tried and cut. The world
-  is noon, not midnight, and the whole palette is built on Paper.
+1. **No blurred shadows on UI.** Zero-blur offset or a hairline border, nothing
+   else. Blur belongs to the modal scrim and to Blur mode's coin, which is the
+   puzzle.
+2. **No pixel font, no pixel art, no sky gradient.** That was the old world.
+   Jersey 15 and Luckiest Guy are removed from the page; adding either back
+   reintroduces a second visual language that fights this one.
+3. **No radius outside 12 / 20 / 999.** Especially not 24px or 28px on a card —
+   it drags the whole page toward generic consumer-app and stops the 12px
+   controls from looking deliberately smaller.
+4. **Never `transition: all`, and never animate `width`/`height`/`top`/`left`.**
+   Transform and opacity only; the tray, the tiles and the cards all animate on
+   screens where a layout-triggering property would drop frames.
+5. **Never `scale(0)` for an entrance.** Start at `scale(.94)` with
+   `opacity: 0`. Nothing in a physical world appears out of nothing, and the
+   snap from zero reads as a glitch rather than as an arrival.
+6. **No sound without a gesture, and none at all until the player opts in.**
+   Autoplaying audio is blocked by the browser anyway, so code that assumes it
+   works is code that silently fails.
+7. **No scenery colour on a UI surface, and no UI neutral in the scenery.** The
+   two palettes are deliberately disjoint; the moment a card borrows `--g-face`
+   the landscape stops reading as a separate physical layer behind the cards.

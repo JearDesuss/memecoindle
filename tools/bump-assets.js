@@ -17,13 +17,14 @@ const ROOT = path.join(__dirname, "..");
 const INDEX = path.join(ROOT, "index.html");
 const ASSETS = [
   "style.css",
+  "vendor/gsap.min.js",
   "data.js",
   "logos.js",
-  "art.js",
+  "sfx.js",
+  "motion.js",
   "lb.js",
   "share.js",
   "game.js",
-  "img/memedle-mascot-horizon-v2.webp",
 ];
 
 const args = process.argv.slice(2);

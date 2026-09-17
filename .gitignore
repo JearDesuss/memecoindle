@@ -12,3 +12,6 @@ dist-artifact.html
 img/_hires/
 tools/.art-cache/
 tools/.logo-src.json
+
+# screenshots from tools/shot.mjs — review artefacts, not source
+output/

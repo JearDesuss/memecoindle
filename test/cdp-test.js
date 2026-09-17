@@ -119,14 +119,25 @@ async function cdp() {
   check("three mode cards in the rail", await evaljs("document.querySelectorAll('.mode-card').length") === 3);
   check("classic is the default and is marked active", await evaljs("!!document.querySelector('.mode-card.on')")
     && /classic/i.test(await evaljs("document.getElementById('game-title').textContent")));
-  check("wordmark rendered", await evaljs("!!document.querySelector('.brand svg')"));
+  check("wordmark rendered", await evaljs("!!document.querySelector('.brand .b-face')"));
   check("game panel, yesterday panel and rules panel all present", await evaljs("document.querySelectorAll('.panel').length") >= 3);
   check("yesterday panel filled", await evaljs("document.getElementById('yesterday-body').children.length") > 0);
-  check("more-memedle pills rendered", await evaljs("document.querySelectorAll('#pill-row .pill').length") === 4);
-  check("mascot horizon is the live page background", /memedle-mascot-horizon-v2/.test(await evaljs(
-    "getComputedStyle(document.querySelector('.sky')).backgroundImage")));
-  check("mascot horizon is preloaded", await evaljs(
-    "!!document.querySelector('link[rel=preload][href*=memedle-mascot-horizon-v2]')"));
+  check("the tray renders six side quests", await evaljs("document.querySelectorAll('.dock-item').length") === 6);
+  check("every tray tile drew its icon", await evaljs("document.querySelectorAll('.dock-plate svg').length") === 6);
+  check("the deck count is printed in the footer", /[0-9]+ coins in the deck/.test(
+    await evaljs("document.getElementById('deck-count').textContent")));
+  // The landscape is inline SVG on purpose: it has to paint on the first frame
+  // with no request, so a missing <svg> here means someone made it an <img>.
+  check("the landscape is inline SVG", await evaljs("document.querySelectorAll('.world svg.hills path').length") >= 6);
+  check("clouds and coins built", await evaljs("document.querySelectorAll('.cloud').length") > 0
+    && await evaljs("document.querySelectorAll('.coin').length") > 0);
+  check("both mascots carry a prop", await evaljs("document.querySelectorAll('.mascot .prop').length") === 2);
+  // The old pixel world is deleted by DESIGN.md; a reappearance means someone
+  // restored a rule from git rather than reading the contract.
+  check("the retired pixel world is gone", await evaljs(
+    "!document.querySelector('.sky') && !document.querySelector('.crowd') && !document.querySelector('#pill-row')"));
+  check("sound is off until the player opts in", await evaljs(
+    "document.getElementById('btn-sfx').getAttribute('aria-pressed')") === "false");
   check("no images failed to load", await evaljs(
     "Array.from(document.images).filter(function(i){return i.complete && i.naturalWidth===0}).length") === 0);
   check("X and DexScreener social buttons rendered", await evaljs("document.querySelectorAll('.social-btn').length") === 2);
@@ -263,24 +274,35 @@ async function cdp() {
   await closeModals();
 
   console.log("\nmotion");
-  check("press tokens are asymmetric (down fast, up springs)", await evaljs(
-    "getComputedStyle(document.documentElement).getPropertyValue('--press-in').indexOf('70ms') >= 0"));
-  check("the die-cut ring exists on the primary button", await evaljs(`(function(){
-    var b=document.querySelector('.btn')||document.querySelector('.pill');
-    return getComputedStyle(b,'::after').content === '""';
+  // Down flat and fast, back with energy. Asserted as the relationship rather
+  // than as a literal, so retuning the scale in :root does not fail the suite
+  // while a symmetric toggle — which is the actual defect — still does.
+  check("press tokens are asymmetric (down fast, up springs)", await evaljs(`(function(){
+    var cs=getComputedStyle(document.documentElement);
+    function ms(v){ var m=/([\\d.]+)m?s/.exec(v); return m ? (v.indexOf('ms')>=0 ? +m[1] : +m[1]*1000) : 0; }
+    var up=ms(cs.getPropertyValue('--press')), down=ms(cs.getPropertyValue('--press-in'));
+    return down > 0 && up > 0 && down < up;
+  })()`));
+  // DESIGN.md's elevation rule: the Live tier is a hard offset with ZERO blur.
+  // A blur radius creeping in here is the fastest way to make the page generic.
+  check("the live tier casts a zero-blur shadow", await evaljs(`(function(){
+    var b=document.querySelector('.btn');
+    var s=getComputedStyle(b).boxShadow;
+    var m=/(-?[\\d.]+)px (-?[\\d.]+)px (-?[\\d.]+)px/.exec(s);
+    return !!m && +m[3] === 0 && +m[2] > 0;
   })()`));
   check("a submitted guess stamps the go button", await evaljs(`(function(){
     var b=document.getElementById('btn-go');
     b.classList.add('sent');
     var an=getComputedStyle(b).animationName;
     b.classList.remove('sent');
-    return an === 'stamp';
+    return an === 'stamp-down';
   })()`));
   check("the flash layer is mounted", await evaljs("!!document.getElementById('flash-layer')"));
 
   console.log("\nrules card and the payout wallet");
-  check("the rules card is a four-line figure column", await evaljs(
-    "document.querySelectorAll('.rule-list li b').length") === 4);
+  check("the rules card is a five-step numbered list", await evaljs(
+    "document.querySelectorAll('.rule-list li').length") === 5);
   check("the pot line is in the rules card", /100%/.test(await evaljs(
     "document.querySelector('.rule-list').textContent")));
   check("the rules CTA is the system button", (await evaljs(
