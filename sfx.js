@@ -1,18 +1,22 @@
 /* Memedle — sound.
    Every cue is synthesised from oscillators, so there are no audio files to
-   ship and nothing to preload. Sound is OFF until the player opts in (stored
-   in md_sfx) and the AudioContext is not even constructed until the first real
-   gesture, because browsers will not start one without it and a page that
-   makes noise on load is a page people close. */
+   ship and nothing to preload. Sound is ON unless the player mutes it (a
+   remembered "0" in md_sfx), but the AudioContext is not constructed until the
+   first real gesture — browsers will not start one without it, so the first
+   sound is always an answer to the player's own press, never noise on load. */
 (function (w) {
   "use strict";
 
   var KEY = "md_sfx";
   var ctx = null;
   var master = null;
-  var on = false;
+  // On unless the player has turned it off. That is not "noise on load": no
+  // AudioContext can start before a real gesture, so the first sound is always
+  // an answer to the player's own press. Off-by-default meant almost nobody
+  // ever heard the kit. "0" is an explicit, remembered mute.
+  var on = true;
 
-  try { on = localStorage.getItem(KEY) === "1"; } catch (e) { on = false; }
+  try { on = localStorage.getItem(KEY) !== "0"; } catch (e) { on = true; }
 
   function ready() {
     if (!on) return false;
@@ -95,6 +99,27 @@
         tone({ f: f, dur: 0.22, type: "triangle", v: 0.36, at: i * 0.085 });
       });
       noise({ f: 3200, q: 0.8, dur: 0.5, v: 0.14, at: 0.1 });
+    },
+    // a letter of the wordmark, or any small toy being poked
+    pop:    function (i) { tone({ f: 620 + (i || 0) * 70, to: 880 + (i || 0) * 70, dur: 0.07, type: "sine", v: 0.26 }); },
+    // the mystery coin spun by hand: a rising sweep plus a little metal
+    spin:   function () {
+      tone({ f: 300, to: 1200, dur: 0.34, type: "triangle", v: 0.24 });
+      noise({ f: 5200, q: 3, dur: 0.18, v: 0.07, at: 0.16 });
+    },
+    // one step of a stat counting up — kept very quiet, it fires many times
+    tick:   function (i) { tone({ f: 1100 + (i || 0) * 12, dur: 0.025, type: "square", v: 0.05 }); },
+    // a hint turning over: a quick bright arpeggio
+    sparkle: function () {
+      [1319, 1568, 2093].forEach(function (f, i) {
+        tone({ f: f, dur: 0.1, type: "sine", v: 0.16, at: i * 0.045 });
+      });
+    },
+    // the streak going up: two notes, shorter than the win so it never
+    // competes with the win it is part of
+    streak: function () {
+      tone({ f: 784, dur: 0.1, type: "triangle", v: 0.3 });
+      tone({ f: 1175, dur: 0.18, type: "triangle", v: 0.3, at: 0.09 });
     },
     // the loss: a short fall, and then it stops talking
     lose:   function () {

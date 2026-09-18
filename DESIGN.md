@@ -49,20 +49,20 @@ Nine steps, named. Never write one as a hex in a component.
 | `--line` | `#E4E2D9` | **Rule** | the hairline border on a calm card |
 | `--card-2` | `#F2F0E8` | **Shelf** | a recessed surface *inside* a card (tile back, input) |
 | `--card` | `#FFFFFF` | **Card** | the default card face |
-| `--paper` | `#F4F1E8` | **Paper** | the page itself; the tabletop |
+| `--paper` | `#FEFDF7` | **Paper** | the page itself — **sampled from the plate's own field** by `tools/use-bg.mjs`, never hand-edited |
 | `--paper-2` | `#EAE7DC` | **Paper Deep** | the band behind the tray, under the fold |
 
 ### The accent — exactly one, and it is spent
 
 | token | hex | name | role |
 | --- | --- | --- | --- |
-| `--lime` | `#BCF23F` | **Lime** | the active mode card, the submit key, the rule numerals, the scenery |
-| `--lime-2` | `#A6DE23` | **Lime Deep** | the pressed/hover state of anything Lime, cube side faces |
+| `--lime` | `#BCF23F` | **Lime** | the active mode card, the submit key, the rule numerals |
+| `--lime-2` | `#A6DE23` | **Lime Deep** | the pressed/hover state of anything Lime, the wordmark shadow |
 | `--lime-3` | `#EDFBC4` | **Lime Wash** | a Lime tint on a white card: the dock icon plates |
 
 **Accent scarcity is the rule that makes this page not look generic.** Lime is
 allowed on: the one active mode card, the one submit key, the how-to-play
-numerals, the dock icon plates, and the landscape. It is banned from: body text,
+numerals and the dock icon plates. It is banned from: body text,
 card borders, secondary buttons, modal chrome, and anything that appears more
 than once in a row for decoration. If you are reaching for Lime to make
 something stand out, the answer is contrast or weight, not more Lime.
@@ -82,14 +82,22 @@ something stand out, the answer is contrast or weight, not more Lime.
 play. Near and Lime are untouched by that swap; that is deliberate, they are
 already distinguishable by position and by shape.
 
-### Scenery — illustration only, never a UI surface
+### Scenery — the supplied plate
 
-`--g-top #C9EF5A` · `--g-face #A9DF2C` · `--g-side #8CC71C` · `--g-deep
-#6FA714` · `--g-edge #5C8E10` · `--cloud #FFFFFF` · `--cloud-line #CDEE7C`
+The landscape is **not drawn in code**. It is the artwork the owner supplied,
+`img/bg.webp` (a 1672×941 16:9 plate), painted by CSS on `.world`. It was
+redrawn in SVG for several rounds first and never matched, because a redraw is
+an approximation by construction. There is therefore no scenery colour ramp to
+name: the only green the UI owns is the Lime accent.
 
-These five greens are the extruded-cube ramp: lit top face, front face, side
-face, the face in shadow, and the die line between blocks. They may only appear
-inside `.world` and its SVG. A card that borrows a scenery green is a bug.
+- **`--paper` is the plate's own field colour**, sampled by `tools/use-bg.mjs`.
+  The plate stops partway up the viewport on anything taller than 16:9, so a
+  shade of drift puts a visible seam across the full width. A test pins it.
+- **One sizing rule everywhere: `100% auto`, anchored bottom.** Never `cover` —
+  above 16:9 it fills the height and crops the sides, and the sides are both
+  character clusters.
+- To replace the plate: `node tools/use-bg.mjs <path>`. It re-encodes to WebP,
+  re-samples `--paper`, and restamps. Do not hand-wire a new image.
 
 ---
 
@@ -97,7 +105,7 @@ inside `.world` and its SVG. A card that borrows a scenery green is a bug.
 
 | level | token | purpose |
 | --- | --- | --- |
-| 0 | `--paper` | the tabletop, and the landscape drawn on it |
+| 0 | `--paper` | the tabletop, and the plate that sits on it |
 | 1 | `--card` | every calm panel: game panel, rules, yesterday, modals |
 | 2 | `--card-2` | recessed inside a card: input well, empty tile, dist bar track |
 | 3 | `--ink` | the one dark object per view — the flag, the reveal banner |
@@ -144,7 +152,27 @@ normal at body, `+0.08em` on uppercase labels at 11–13px.
 ## spacing
 
 `base` 4px · `elementGap` 12px · `cardPadding` 18px · `sectionGap` 28px ·
-`pageMaxWidth` 1340px · `railWidth` 300px · `sideRailWidth` 320px
+`pageWidth` clamp(960px, 84vw, 1480px) · `railWidth` clamp(214px, 15.5vw, 296px) ·
+`sideRailWidth` clamp(228px, 16.5vw, 306px) · three columns from 1240px up
+
+All fluid, and **the centre column is the budget**. The rails and the plate get
+what is left over, never the other way round.
+
+This was learned the hard way. The page was once sized at 70vw so the cards
+would clear the plate's characters — a row-by-row scan put the plate's cream gap
+at ~71% of its width — and it starved the board: at 1280px, **20 of 23 clue
+tiles were clipped to 29px** ("Eth…", "20…"), and every test still passed
+because none of them measured a tile. A legible board beats uncovered background
+art; the cards are opaque and sit *on* the plate, which is how a tabletop reads
+anyway. The suite now asserts that no tile clips its value.
+
+On phones (≤620px) the chain column shows its short form — ETH, SOL, HOOD, BNB,
+BTC, ADA — because a 46px tile cannot print "Robinhood", and it is how crypto
+players say it anyway. The full name stays in the tile's `title`.
+
+`tools/sweep.mjs` renders twelve real viewports (360×780 → 2560×1440) and fails
+on horizontal overflow or a clipped card. It does NOT play a game, so it cannot
+see a clipped tile — that is what the suite's tile check is for.
 
 ### radius — three, total
 
@@ -239,30 +267,58 @@ opened dialog.
 Touch fires a false hover on tap, and a card that lifts and stays lifted after a
 tap looks broken.
 
-**Sound is off until the player opts in**, remembered in `md_sfx`. Every cue is
-synthesised in `sfx.js` from oscillators — there are no audio files to ship, and
-nothing plays before the first real gesture, because browsers will not allow it
-and because a page that makes noise on load is a page people close.
+**Sound is on by default, and nothing plays before a gesture.** Those are two
+different rules and only the second one is about noise. A browser will not start
+an `AudioContext` until the player has pressed something, so the first sound is
+always an answer to their own press — never noise on load. Off-by-default was
+tried first and meant almost nobody ever heard the kit. The mute is one tap in
+the top bar and in Settings, and a remembered `"0"` in `md_sfx` is honoured.
+Every cue is synthesised in `sfx.js` from oscillators: there are no audio files
+to ship. **Never put a sound on hover** — it fires every time the pointer
+crosses something, and becomes noise inside a minute.
+
+### the reveal
+
+A clue tile waits **blank**, turns over, and its colour lands on the exact frame
+it is edge-on (`flip-reveal`, the 49.9% / 50% keyframe pair — a snap, not a
+fade). The earlier version arrived already coloured and then flipped, which gave
+the answer away before the motion that was supposed to deliver it. Each status
+names its own `--tile-bg` / `--tile-ink`, so one keyframe lands any of the
+three. Per-tile timing is the variable `--d`, not `animation-delay`, because an
+exact match's overshoot has to begin the instant its own flip ends and only a
+shared variable lets both animations read the same number.
+
+### the toys
+
+Two things on the page do nothing useful and exist to be poked: **the wordmark**
+(each letter jumps on hover and leaves its Lime shadow behind; a click sends the
+whole word up as a wave) and **the mystery coin** (click to spin it twice). They
+are where the delight budget is cheapest — both are seen rarely, and neither is
+on a path the player must take to play. Do not add a third toy to anything the
+player touches every guess.
+
+### what never animates
+
+The autocomplete list re-renders on every keystroke and arrow-key navigation
+moves through it dozens of times a game. Neither animates, ever. Animation on a
+keyboard-driven, high-frequency action makes the interface feel slower than it
+is.
 
 ---
 
 ## layout
 
-A 1340px page, centred, with a 300px mode rail, a fluid centre, and a 320px
-info rail, at a 28px section gap. The three columns collapse at 1100px to
-centre-then-rails, and at 760px to one column in reading order: brand, modes,
-game, tray, rails.
+A fluid page (see **spacing**), centred, with a mode rail, a fluid centre and an
+info rail. The three columns collapse at 1180px to centre-then-rails, and at
+860px to one column in reading order: brand, modes, game, tray, rails.
 
-The landscape is **fixed to the bottom of the viewport** and never scrolls with
-the content; it is the table the cards are lying on, and a table that slides
-away is a parallax effect, which this system does not have. Content sits in a
-column above it with enough bottom padding that no card ever collides with a
-mascot.
+The plate is **fixed** and never scrolls with the content; it is the table the
+cards are lying on, and a table that slides away is a parallax effect, which
+this system does not have.
 
-The four corner mottos (`MEME TODAY / SMARTER TOMORROW` and the three others)
-are set in `label` and pinned to the viewport corners in Fog. They are texture,
-not navigation — they must never be a link, and they disappear below 1100px
-where there is no corner to spare.
+There are **no corner mottos**. The four pinned taglines (`MEME TODAY / SMARTER
+TOMORROW` and the rest) were removed at the owner's request on 2026-09-18 — do
+not bring them back as decoration.
 
 ---
 
@@ -342,9 +398,10 @@ merged.
 5. **Never `scale(0)` for an entrance.** Start at `scale(.94)` with
    `opacity: 0`. Nothing in a physical world appears out of nothing, and the
    snap from zero reads as a glitch rather than as an arrival.
-6. **No sound without a gesture, and none at all until the player opts in.**
-   Autoplaying audio is blocked by the browser anyway, so code that assumes it
-   works is code that silently fails.
+6. **No sound before a gesture, and none on hover.** Autoplaying audio is
+   blocked by the browser anyway, so code that assumes it works silently fails;
+   and a hover sound fires on every pass of the pointer, which turns the kit
+   into noise the player mutes and never turns back on.
 7. **No scenery colour on a UI surface, and no UI neutral in the scenery.** The
    two palettes are deliberately disjoint; the moment a card borrows `--g-face`
    the landscape stops reading as a separate physical layer behind the cards.

@@ -551,6 +551,7 @@
     if (st && st.streak > 0 && (st.lastWinDay === d || st.lastWinDay === d - 1)) {
       pill.textContent = "🔥 " + st.streak + " day streak";
       pill.classList.remove("hidden");
+      if (lastStreak !== null && st.streak > lastStreak) sfx("streak");
       if (lastStreak !== null && st.streak > lastStreak && !reducedMotion()) {
         pill.classList.remove("bump");
         void pill.offsetWidth;
@@ -656,6 +657,13 @@
     }
   }
 
+  // Short chain names for narrow tiles. Every chain in data.js has an entry;
+  // one without a short form simply keeps its full name.
+  var CHAIN_SHORT = {
+    "Ethereum": "ETH", "Solana": "SOL", "Robinhood": "HOOD", "BNB Chain": "BNB",
+    "Bitcoin": "BTC", "Cardano": "ADA", "Stable Chain": "Stable", "Own chain": "Own"
+  };
+
   // ──────────────── board ────────────────
   function renderBoard(animateLast) {
     var board = $("board"), head = $("col-head");
@@ -676,8 +684,8 @@
         : "Each miss reveals a clue."));
     } else if (isGrid) {
       guesses.forEach(function (coin, gi) {
-        var row = el("div", "guess-row");
         var isLast = gi === guesses.length - 1;
+        var row = el("div", "guess-row" + (animateLast && isLast ? " fresh" : ""));
         var label = el("div", "coin-label");
         label.appendChild(logoImg(coin, "coin-logo"));
         var nw = el("div", "coin-label-text");
@@ -688,11 +696,27 @@
         row.appendChild(label);
         grade(coin, target).forEach(function (cell, ci) {
           var tile = el("div", "tile s-" + cell.s);
-          tile.appendChild(el("span", "tile-val", cell.v));
+          // The chain column carries a short form too — ETH, SOL, HOOD — which
+          // is how crypto players say it anyway. Phones show the short form,
+          // because at 43px a tile cannot print "Robinhood"; the full name
+          // stays in the title for anyone who hovers or long-presses.
+          var short = ci === 0 && CHAIN_SHORT[cell.v];
+          if (short) {
+            var val = el("span", "tile-val");
+            val.appendChild(el("span", "v-full", cell.v));
+            val.appendChild(el("span", "v-short", short));
+            tile.appendChild(val);
+            tile.title = cell.v;
+          } else {
+            tile.appendChild(el("span", "tile-val", cell.v));
+          }
           if (cell.d) tile.appendChild(el("span", "tile-dir", cell.d === "up" ? "▲" : "▼"));
           if (animateLast && isLast) {
             tile.classList.add("flip");
-            tile.style.animationDelay = (ci * 0.18) + "s";
+            // A variable, not animation-delay: the exact-match pop has to start
+            // the instant this tile's own flip ends, and only a shared variable
+            // lets both animations read the same number.
+            tile.style.setProperty("--d", (ci * 0.18) + "s");
           }
           row.appendChild(tile);
         });
@@ -719,13 +743,17 @@
   }
 
   // ──────────────── hint (classic daily only) ────────────────
+  // Only the render that follows a spend animates the chip in. Every other
+  // render (a reload, a mode switch back) shows it already there.
+  var hintFresh = false;
   function renderHint() {
     var area = $("hint-area");
     clear(area);
     if (modeId !== "classic" || unlimited) return;
     if (hintAxis >= 0) {
       var v = [target.c, target.g, String(target.y), fmtCap(target.m), fmtCap(target.cm)][hintAxis];
-      var chip = el("div", "hint-chip");
+      var chip = el("div", "hint-chip" + (hintFresh ? " fresh" : ""));
+      hintFresh = false;
       chip.appendChild(el("span", null, COL_NAMES[hintAxis] + ": " + v));
       area.appendChild(chip);
       return;
@@ -741,7 +769,10 @@
       if (!open.length) open = [0, 1, 2, 3, 4];
       hintAxis = open[Math.floor(Math.random() * open.length)];
       saveDaily();
+      hintFresh = true;
+      sfx("sparkle");
       renderHint();
+      renderDock();
     });
     area.appendChild(btn);
   }
@@ -883,16 +914,31 @@
       $("guess-input").disabled = true;
       $("btn-go").disabled = true;
       var delay = MODE_BY_ID[modeId].kind === "grid" ? 5 * 180 + 420 : 500;
+      var isGrid = MODE_BY_ID[modeId].kind === "grid";
+      // On a win the reveal waits a beat. It used to open the instant the last
+      // tile landed, and the modal covered the board at exactly the moment the
+      // row was worth looking at. The win is the one place in this game with a
+      // delight budget; it gets room to be seen.
+      var revealAt = won && isGrid ? delay + 600 : delay;
       if (won) {
         setTimeout(confettiBurst, Math.max(0, delay - 360));
         setTimeout(function () {
           sfx("win");
           if (window.MO) { MO.cheer(); MO.coinBurst(); }
         }, Math.max(0, delay - 360));
+        if (isGrid) {
+          setTimeout(function () {
+            var rows = $("board").querySelectorAll(".guess-row");
+            if (window.MO && rows.length) MO.winWave(rows[rows.length - 1]);
+          }, delay);
+        }
       } else {
-        setTimeout(function () { sfx("lose"); }, Math.max(0, delay - 200));
+        setTimeout(function () {
+          sfx("lose");
+          if (window.MO) MO.lose($("board"));
+        }, Math.max(0, delay - 200));
       }
-      setTimeout(openReveal, delay);
+      setTimeout(openReveal, revealAt);
       if (typeof LB !== "undefined" && !unlimited && !isArchive()) {
         LB.report(modeId, won, guesses.length, playDay, hintAxis >= 0);
       }
@@ -1162,16 +1208,31 @@
       }
     }
     openModal("modal-reveal");
+    if (window.MO) {
+      MO.coinIn(box.querySelector(".coin-card-logo"));
+      MO.stagger(box.querySelectorAll(".fact-chip"), 0.28);
+    }
   }
 
   function renderStats() {
     var st = loadStats(statsMode) || defaultStats;
-    $("st-played").textContent = st.played;
-    $("st-winpct").textContent = st.played ? Math.round(100 * st.wins / st.played) + "%" : "—";
+    // The numbers count up from zero. The count is the flourish, not the
+    // information: under reduced motion MO.countUp writes the final value at
+    // once, and win rate keeps its em dash when nothing has been played.
+    var count = function (id, v, fmt) {
+      if (window.MO) MO.countUp($(id), v, fmt);
+      else $(id).textContent = fmt ? fmt(v) : v;
+    };
+    count("st-played", st.played);
+    if (st.played) {
+      count("st-winpct", Math.round(100 * st.wins / st.played), function (v) { return Math.round(v) + "%"; });
+    } else {
+      $("st-winpct").textContent = "—";
+    }
     // Same freshness test the header pill uses. Without it the modal kept reporting a
     // streak that had been dead for weeks, while the pill correctly hid it.
-    $("st-streak").textContent = liveStreak(st, dayNumber());
-    $("st-max").textContent = st.maxStreak;
+    count("st-streak", liveStreak(st, dayNumber()));
+    count("st-max", st.maxStreak);
     var wrap = $("dist");
     clear(wrap);
     var max = Math.max.apply(null, st.dist.concat([1]));
@@ -1346,9 +1407,11 @@
     else if (!("ontouchstart" in window) && !gateOpen()) input.focus();
   }
 
+  var routedOnce = false;
   function route() {
     var h = (location.hash || "").replace(/^#\/?/, "");
     var parts = h.split("/").filter(Boolean);
+    var prevMode = modeId;
     modeId = MODE_BY_ID[parts[0]] ? parts[0] : "classic";
     unlimited = parts[1] === "unlimited";
     playDay = dayNumber();
@@ -1359,6 +1422,13 @@
     closeModals();
     startGame();
     window.scrollTo(0, 0);
+    // Not on first load: the page-wide entrance already moves everything, and
+    // a second animation on top of it reads as a stutter.
+    if (routedOnce && prevMode !== modeId) {
+      sfx("swap");
+      if (window.MO) MO.modeIn();
+    }
+    routedOnce = true;
   }
 
   // ──────────────── wire up ────────────────

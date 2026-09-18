@@ -145,15 +145,6 @@ async function cdp() {
     var v = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim();
     return v.toUpperCase() === '#FEFDF7';
   })()`), await evaljs("getComputedStyle(document.documentElement).getPropertyValue('--paper')"));
-  // The cards have to sit inside the plate's cream gap, which was measured row
-  // by row at ~71% of the image width. Wider than that and they cover the cast.
-  // Only meaningful while the layout is the full three columns and the whole
-  // composition is on screen. Below that the rails reflow and cards sitting on
-  // the artwork is expected — they are opaque, so nothing is lost.
-  check("the content column fits the plate's cream gap (>=1280px)", await evaljs(`(function(){
-    if (window.innerWidth < 1280) return true;
-    return document.querySelector('.app').getBoundingClientRect().width <= window.innerWidth * 0.74;
-  })()`), await evaljs("Math.round(document.querySelector('.app').getBoundingClientRect().width) + 'px of ' + window.innerWidth"));
   check("nothing in the world is positioned HTML", await evaljs(
     "document.querySelectorAll('.world > *').length") === 0);
   // The old pixel world is deleted by DESIGN.md; a reappearance means someone
@@ -161,8 +152,11 @@ async function cdp() {
   check("the retired worlds are gone", await evaljs(
     "!document.querySelector('.sky') && !document.querySelector('.crowd') && " +
     "!document.querySelector('#pill-row') && !document.querySelector('svg.hills')"));
-  check("sound is off until the player opts in", await evaljs(
-    "document.getElementById('btn-sfx').getAttribute('aria-pressed')") === "false");
+  // On by default, but nothing can play before a gesture: the browser will
+  // not start an AudioContext without one, so the first sound is always an
+  // answer to the player's own press. A remembered "0" is an explicit mute.
+  check("sound is on by default, and a mute is remembered", await evaljs(
+    "document.getElementById('btn-sfx').getAttribute('aria-pressed')") === "true");
   check("no images failed to load", await evaljs(
     "Array.from(document.images).filter(function(i){return i.complete && i.naturalWidth===0}).length") === 0);
   check("X and DexScreener social buttons rendered", await evaljs("document.querySelectorAll('.social-btn').length") === 2);
@@ -191,6 +185,16 @@ async function cdp() {
   check("badge counts down", (await evaljs("document.getElementById('panel-badge').textContent")) === "5/6");
   check("mode rail progress advanced", await evaljs("document.querySelector('.mode-card .mode-prog i').style.width") !== "0%");
   check("hint button appears after guess 1", await evaljs("!!document.querySelector('.hint-btn')"));
+  // No clue tile may clip its value. This is the check that was missing when
+  // the page was narrowed to 70vw to clear the background art: at 1280px, 20 of
+  // 23 tiles were cut to 29px ("Eth…", "20…") and every other test still
+  // passed, because none of them read a tile's width. The board being legible
+  // is not negotiable; the page width answers to it, not the other way round.
+  check("no clue tile clips its value", await evaljs(`(function(){
+    return [].filter.call(document.querySelectorAll('.tile-val'), function(v){
+      return v.scrollWidth > v.clientWidth + 1;
+    }).length === 0;
+  })()`), await evaljs("[].filter.call(document.querySelectorAll('.tile-val'),function(v){return v.scrollWidth>v.clientWidth+1}).map(function(v){return v.innerText}).join(', ')"));
   await sleep(1200);
   await guess(wrong[1].n);
   await sleep(1200);
