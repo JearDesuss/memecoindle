@@ -1,15 +1,18 @@
-// Writes brag-output/composition/index.html from ONE timing table, so every
-// tile flip, key tick and sound effect is placed by the same numbers and the
-// picture and the audio cannot drift apart.
+// Writes both cuts from ONE timing table, so every tile flip, key tick and
+// sound effect is placed by the same numbers and the picture and the audio
+// cannot drift apart:
+//   composition/index.html        landscape 1920x1080
+//   composition-9x16/index.html   vertical  1080x1920 (and the 4:5 feed cut,
+//                                 which is a crop of it; see PORTRAIT_CSS)
 //   node brag-output/build-composition.mjs
 //
 // The three guesses and every tile colour are real: graded by the game's own
 // grade() against the answer POPCAT (see brag-plan.md).
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync, cpSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-const OUT = join(dirname(fileURLToPath(import.meta.url)), 'composition', 'index.html');
+const HERE = dirname(fileURLToPath(import.meta.url));
 const DURATION = 23;
 const r2 = (n) => Math.round(n * 1000) / 1000;
 
@@ -78,7 +81,13 @@ add(WIN, 'impactBell_heavy_000.ogg', 0.75, 23);
 add(LOCK - 0.02, 'impactSoft_medium_004.ogg', 0.8, 24);
 
 // ═══════════ markup ═══════════
-const hookSpans = [...HOOK].map((c, i) => `<span id="hk${i}">${c === ' ' ? '&#32;' : c}</span>`).join('');
+const hookSpan = (c, i) => `<span id="hk${i}">${c === ' ' ? '&#32;' : c}</span>`;
+const hookSpans = [...HOOK].map(hookSpan).join('');
+// Vertical: the line breaks at its last space. That space keeps its span (the
+// timeline still reveals it) but is hidden, so neither line is pushed off centre.
+const HOOK_BREAK = HOOK.lastIndexOf(' ');
+const hookLines = [[0, HOOK_BREAK + 1], [HOOK_BREAK + 1, HOOK.length]].map(([a, b]) =>
+  `<div class="hookline">${[...HOOK].slice(a, b).map((c, i) => hookSpan(c, a + i)).join('')}</div>`).join('');
 const headCells = HEADS.map((h, i) => `<div class="head" id="hd${i}">${h}</div>`).join('');
 
 const rows = GUESSES.map((gs, gi) => {
@@ -207,11 +216,68 @@ T(`tl.fromTo("#url", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.35, 
 T(`tl.fromTo("#bgm", { volume: 0 }, { volume: 0.3, duration: 0.9, ease: "none" }, 0);`);
 T(`tl.to("#bgm", { volume: 0, duration: 1.4, ease: "none" }, ${DURATION - 1.5});`);
 
-const html = `<!doctype html>
+// ═══════════ vertical cut ═══════════
+// The same page with these rules laid over it. Every element that carries
+// meaning sits inside the central 1080x1350 band (y 285 to 1635), for two
+// reasons: a 9:16 player covers the top and bottom of the frame with its own
+// chrome, and the 4:5 feed cut is then a plain crop of this render.
+// The row label moves from a 340px column to a line above its tiles, so the
+// five tiles get the full width: about 175px each instead of 150.
+const PORTRAIT_CSS = `
+
+      /* ── vertical 1080x1920 ── */
+      #hookwrap { flex-direction: column; gap: 72px; }
+      #coin { width: 300px; height: 300px; border-width: 14px; font-size: 180px; box-shadow: 0 12px 0 #16161A; }
+      .hooktext { display: flex; flex-direction: column; align-items: center; }
+      .hookline { font-size: 150px; }
+      #hk${HOOK_BREAK} { display: none; }
+      #board { justify-content: center; padding-top: 0; }
+      .capslot { width: 1000px; height: 200px; }
+      .cap { font-size: 92px; line-height: 1.02; text-align: center; text-wrap: balance; }
+      #panel { width: 1000px; margin-top: 22px; border-radius: 28px; }
+      .bar { padding: 20px 36px; font-size: 26px; }
+      .pbody { padding: 26px 36px 30px; gap: 18px; }
+      .field { height: 96px; font-size: 42px; }
+      #ph, .typed { left: 34px; }
+      #go { width: 120px; height: 96px; font-size: 50px; }
+      .pip { width: 60px; height: 12px; }
+      .grid, .row { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .grid > :first-child { display: none; }
+      .head { font-size: 25px; }
+      .rows { gap: 20px; }
+      .row { row-gap: 14px; }
+      .label { grid-column: 1 / -1; height: 60px; gap: 14px; }
+      .label img { width: 56px; height: 56px; border-radius: 12px; }
+      .lt { display: flex; align-items: baseline; gap: 14px; }
+      .tk { font-size: 40px; }
+      .nm { font-size: 28px; }
+      /* a value that wraps ("Own chain") must centre each line, not just its box */
+      .tile { height: 156px; padding: 0 10px; font-size: 40px; text-align: center; }
+      .dir { font-size: 28px; }
+      /* behind the tiles only: 60px label + 14px gap, less the 12px bleed */
+      .glow { left: -12px; right: -12px; top: 62px; bottom: -12px; margin-left: 0; }
+      #lockup { gap: 40px; }
+      .lock { flex-direction: column; gap: 30px; }
+      #mark { height: 300px; }
+      .word { font-size: 220px; }
+      #tag { font-size: 60px; line-height: 1.15; text-align: center; }
+      #tag .tl { display: block; }
+      #url { font-size: 44px; }`;
+
+// The tagline breaks at its full stop. text-wrap: balance split it as
+// "One memecoin a / day. Six guesses.", which reads as nonsense.
+const TAG = ['One memecoin a day.', 'Six guesses.'];
+const FORMATS = [
+  { dir: 'composition', w: 1920, h: 1080, css: '', hook: `<div class="hookline">${hookSpans}</div>`, tag: TAG.join(' ') },
+  { dir: 'composition-9x16', w: 1080, h: 1920, css: PORTRAIT_CSS, hook: `<div class="hooktext">${hookLines}</div>`,
+    tag: TAG.map((t) => `<span class="tl">${t}</span>`).join(' ') },
+];
+
+const page = (f) => `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=1920, height=1080" />
+    <meta name="viewport" content="width=${f.w}, height=${f.h}" />
     <title>memedle brag</title>
     <script src="assets/js/gsap.min.js"></script>
     <style>
@@ -266,16 +332,16 @@ const html = `<!doctype html>
       .word { font-family: "Baloo 2", sans-serif; font-weight: 800; font-size: 212px; letter-spacing: -0.035em; line-height: 1; }
       .word span { display: inline-block; opacity: 0; }
       #tag { font-size: 54px; font-weight: 700; color: #4A4A52; opacity: 0; }
-      #url { font-size: 40px; font-weight: 800; color: #16161A; background: #BCF23F; padding: 12px 30px; border-radius: 999px; border: 3px solid #16161A; opacity: 0; }
+      #url { font-size: 40px; font-weight: 800; color: #16161A; background: #BCF23F; padding: 12px 30px; border-radius: 999px; border: 3px solid #16161A; opacity: 0; }${f.css}
     </style>
   </head>
   <body>
-    <div id="root" data-composition-id="main" data-start="0" data-width="1920" data-height="1080" data-duration="${DURATION}" data-fps="30">
+    <div id="root" data-composition-id="main" data-start="0" data-width="${f.w}" data-height="${f.h}" data-duration="${DURATION}" data-fps="30">
 
       <section id="hook" class="clip" data-start="0" data-duration="2.9" data-track-index="1">
         <div id="hookwrap">
           <div id="coin">?</div>
-          <div class="hookline">${hookSpans}</div>
+          ${f.hook}
         </div>
       </section>
 
@@ -301,7 +367,7 @@ const html = `<!doctype html>
           <img id="mark" src="assets/img/mark.webp" alt="" width="262" height="256" />
           <div class="word">${wordSpans}</div>
         </div>
-        <div id="tag">One memecoin a day. Six guesses.</div>
+        <div id="tag">${f.tag}</div>
         <div id="url">memedle-weld.vercel.app</div>
       </section>
 
@@ -315,7 +381,13 @@ const html = `<!doctype html>
   </body>
 </html>
 `;
-writeFileSync(OUT, html);
-console.log(`wrote ${OUT}`);
+for (const f of FORMATS) {
+  const dir = join(HERE, f.dir);
+  mkdirSync(dir, { recursive: true });
+  // composition/assets is the one real copy; the other cuts get a fresh copy
+  if (f.dir !== 'composition') cpSync(join(HERE, 'composition', 'assets'), join(dir, 'assets'), { recursive: true });
+  writeFileSync(join(dir, 'index.html'), page(f));
+  console.log(`wrote ${join(dir, 'index.html')} (${f.w}x${f.h})`);
+}
 console.log(`${tl.length} timeline entries, ${sfx.length} sfx cues, ${DURATION}s`);
 console.log(`final row: first flip ${ROUND[2].flip}s, last tile lands ${r2(ROUND[2].flip + 4 * ROUND[2].step + HALF)}s (cue ${WIN}s)`);

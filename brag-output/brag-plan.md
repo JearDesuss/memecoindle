@@ -36,7 +36,19 @@ turn over -> read the colours -> guess again -> all green.
 - Interpretation: clean and playful, the board does the talking; captions are
   short and hold long enough to read; the only joke is the dog-dog-cat turn.
 
-## Format: landscape - 1920x1080
+## Format: landscape - 1920x1080, plus two phone cuts
+- `brag.mp4` 1920x1080, `brag-9x16.mp4` 1080x1920, `brag-4x5.mp4` 1080x1350.
+- The vertical cut is its own layout (composition-9x16/): each row's logo and
+  ticker sit on a line above its tiles, so the five tiles get the full width.
+  Everything that carries meaning stays inside the central 1080x1350 band
+  (y 285 to 1635), clear of a 9:16 player's own chrome, which is why the 4:5
+  feed cut is a plain `crop=1080:1350:0:285` of the 9:16 render.
+- Finishing, all three: poster baked into frame 0, then
+  `volume=9dB,alimiter=limit=0.8:level=0` on the audio. The raw mix is
+  -25.1 LUFS, too quiet for a phone speaker; this lands -16.8 LUFS at
+  -1.6 dBTP (measured after AAC). +10 dB reached -15.9 but made the limiter
+  take up to 12.6 dB off the thuds and the bell. `loudnorm` is not used: on
+  an earlier BRAG mix it left +3.5 dBTP peaks after AAC.
 ## Duration: 23s
 
 ## Visual identity (from the project)

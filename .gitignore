@@ -17,9 +17,12 @@ tools/.logo-src.json
 output/
 
 # BRAG render outputs (rebuild: node brag-output/build-composition.mjs, then
-# npx hyperframes render --quality delivery from brag-output/composition)
-brag-output/brag.mp4
-brag-output/brag.jpg
+# npx hyperframes render --quality delivery in each composition folder; the
+# ffmpeg finishing steps are in brag-output/brag-plan.md)
+brag-output/*.mp4
+brag-output/*.jpg
+# the vertical cut's assets are copied from composition/assets on every build
+brag-output/composition-9x16/assets/
 # the music bed is not ours to redistribute (licence undocumented upstream);
 # copy it back from github.com/latent-spaces/brag skills/brag/assets/music/
 brag-output/composition/assets/music/*.mp3
