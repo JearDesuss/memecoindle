@@ -24,14 +24,18 @@
   --near: #FFC53D;     --near-ink: #3A2A00;
   --miss: #FB6F84;     --miss-ink: #3A0C14;
 
-  /* ── scenery. Illustration only — never a UI surface. ── */
-  --g-top: #C9EF5A;
-  --g-face: #A9DF2C;
-  --g-side: #8CC71C;
-  --g-deep: #6FA714;
-  --g-edge: #5C8E10;
-  --cloud: #FFFFFF;
-  --cloud-line: #CDEE7C;
+  /* ── scenery. Illustration only — never a UI surface. The hills are the
+        two pale steps; the block ramp is brighter and more saturated, which
+        is what separates a solid object from the bush behind it. ── */
+  --g-top: #D3F175;
+  --g-face: #B4E844;
+  /* The block ramp is deliberately a wide value spread. A cube whose three
+     faces are near neighbours reads as a flat tile however good the outline
+     is — the separation is what makes it solid. */
+  --g-block: #8BE81F;
+  --g-side: #4CB40A;
+  --g-deep: #2F8B04;
+  --cloud-line: #B6E84A;
 
   /* ── two families. That is the whole list. ── */
   /* Figtree carries every digit: it has real tabular figures, so a counter
@@ -86,13 +90,15 @@
     border-color var(--dur-tint) ease,
     color var(--dur-tint) ease;
 
-  /* layout numbers */
-  --page: 1340px;
-  --rail: 300px;
-  --rail-2: 320px;
-  --gap: 12px;
-  --pad: 18px;
-  --section: 28px;
+  /* Layout numbers, all fluid. Fixed rails look right at exactly one width:
+     on a 2560px screen a 1340px page is an island, and at 1200px the same
+     rails crush the board. clamp() lets one set of numbers cover both. */
+  --page: clamp(960px, 88vw, 1720px);
+  --rail: clamp(232px, 18vw, 320px);
+  --rail-2: clamp(248px, 19.5vw, 340px);
+  --gap: clamp(8px, 0.8vw, 14px);
+  --pad: clamp(14px, 1.2vw, 20px);
+  --section: clamp(18px, 1.9vw, 32px);
 }
 
 /* colourblind play swaps only the two status hues; Lime and Near are untouched */
@@ -109,7 +115,10 @@ body {
   display: flex;
   flex-direction: column;
   font-family: var(--font-ui);
-  font-size: 15px;
+  /* Fluid, not fixed: 15px on a 2560px monitor is a different reading distance
+     from 15px on a laptop, and a fixed body size is what makes a big screen
+     look like a small screen with margins. */
+  font-size: clamp(14px, 0.26vw + 12.6px, 18px);
   line-height: 1.5;
   color: var(--ink);
   background: var(--paper);
@@ -126,11 +135,23 @@ button { background: none; border: 0; cursor: pointer; }
 /* ═══════════════════ the world ═══════════════════ */
 /* A fixed play mat. It is the table the cards lie on — it never scrolls with
    the content, because a table that slides away is parallax, and this system
-   does not have parallax. */
+   does not have parallax.
+
+   The whole scene — hills, blocks, characters, coins — is ONE inline SVG in a
+   single 1536x440 coordinate space. A background assembled from an SVG plus
+   absolutely-positioned HTML lines up at exactly one viewport width and drifts
+   apart everywhere else, because the drawn ledge and the character standing on
+   it are sized by different rules. Inside one viewBox the browser scales the
+   whole illustration as a unit, so it is aligned at every resolution by
+   construction. Do not move any part of it back out into HTML. */
 .world {
   position: fixed;
   inset: auto 0 0 0;
-  height: min(46vh, 520px);
+  /* Height tracks WIDTH, not viewport height, so the box keeps roughly the
+     scene's own aspect and `slice` crops the top rather than the sides — the
+     cast lives at the left and right edges, and cropping sideways beheads it.
+     Capped against vh so a short window does not hand the screen to scenery. */
+  height: clamp(240px, calc(100vw * 520 / 1536), 56vh);
   pointer-events: none;
   z-index: 0;
 }
@@ -141,154 +162,32 @@ button { background: none; border: 0; cursor: pointer; }
   height: 100%;
   display: block;
 }
+
+/* ── hills: scalloped and unstroked, so overlapping circles union for free ── */
 .hills .l-1 { fill: var(--g-top); }
-.hills .d-1 { fill: var(--g-face); }
 .hills .l-2 { fill: var(--g-face); }
-.hills .d-2 { fill: var(--g-side); }
-.hills .l-3 { fill: var(--g-side); }
-.hills .d-3 { fill: var(--g-deep); }
 
-.hills .cube .c-t { fill: var(--g-top); }
-.hills .cube .c-l { fill: var(--g-side); }
-.hills .cube .c-r { fill: var(--g-deep); }
-.hills .p-s .c-t { fill: var(--g-face); }
-.hills .p-s .c-l { fill: var(--g-deep); }
-.hills .p-s .c-r { fill: var(--g-edge); }
+/* ── slime blocks: the one part of the scenery that carries the die line.
+      That outline is what makes them read as objects sitting ON the landscape
+      rather than as another shade of it. ── */
+.hills .blocks { stroke: var(--ink); stroke-width: 4; stroke-linejoin: round; }
+.hills .c-t { fill: var(--g-block); }
+.hills .c-l { fill: var(--g-side); }
+.hills .c-r { fill: var(--g-deep); }
 
-/* ── clouds: one closed silhouette each, white or lime outline ── */
-.clouds { position: absolute; inset: -34vh 0 auto 0; height: 60vh; overflow: hidden; }
-.cloud { position: absolute; will-change: transform; }
-.cloud svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.cloud path {
-  fill: var(--cloud);
-  stroke: var(--cloud-line);
-  stroke-width: 2.5;
-  stroke-linejoin: round;
-}
-/* the hollow variant is the same silhouette with the fill taken away, so the
-   two kinds of cloud are the same drawing and cannot drift apart */
-.cloud.hollow path { fill: none; stroke-width: 3; }
+/* ── clouds: outline only, one closed path each ── */
+.hills .clouds { fill: none; stroke: var(--cloud-line); stroke-width: 3.5; stroke-linejoin: round; }
+.hills .cloud { will-change: transform; }
 
-/* ── the floating coins ── */
-.coins { position: absolute; inset: 0; }
-.coin {
-  position: absolute;
-  width: var(--sz, 64px);
-  height: var(--sz, 64px);
-  border-radius: 50%;
-  background: var(--card);
-  border: var(--cut) solid var(--ink);
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  box-shadow: inset 0 calc(var(--sz, 64px) * -.14) 0 rgba(22, 22, 26, .13);
-  will-change: transform;
-}
-.coin img { width: 74%; height: 74%; object-fit: contain; }
+/* ── coins: a chain token, not a memecoin — a memecoin logo out here competes
+      with the ones inside the board ── */
+.hills .co-face { fill: var(--card); }
+.hills .co-shade { fill: rgba(22, 22, 26, .12); }
+.hills .co-ring { fill: none; stroke: var(--ink); stroke-width: 3.5; }
+.hills .coin { will-change: transform; }
 
-/* ── the two mascots, standing on the block ledges ── */
-/* A flex row, not absolute children: the prop has to sit beside the art at
-   every width, and an absolute offset measured against the image box moves
-   with the image and lands on the character's face. */
-.mascot {
-  position: absolute;
-  bottom: 11%;
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-}
-.mascot .m-art {
-  display: block;
-  height: clamp(130px, 15vw, 210px);
-  width: auto;
-  flex: none;
-  will-change: transform;
-}
-.mascot .prop { flex: none; }
-.m-left { left: clamp(8px, 8vw, 132px); }
-.m-right { right: clamp(8px, 4vw, 74px); }
-.m-right .m-art { transform: scaleX(-1); }
-
-/* the flag: the one dark object on the left of the view */
-.flag {
-  position: relative;
-  width: clamp(120px, 12vw, 168px);
-  margin-bottom: 26px;
-  margin-right: 10px;
-}
-.flag-cloth {
-  display: block;
-  background: var(--ink);
-  color: var(--paper);
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 19px;
-  line-height: 1.05;
-  letter-spacing: -.01em;
-  text-transform: uppercase;
-  padding: 14px 16px 16px;
-  border-radius: 4px 4px 4px 0;
-  /* a cloth, not a card: the free edge waves */
-  clip-path: polygon(0 0, 100% 3%, 100% 100%, 0 96%);
-}
-.flag-pole {
-  position: absolute;
-  left: -6px;
-  top: -10px;
-  width: 6px;
-  /* reaches the ground beside the mascot and stops: a longer pole runs
-     straight through the motto pinned to that corner */
-  height: calc(100% + 34px);
-  background: var(--ink);
-  border-radius: var(--r-pill);
-}
-.flag-pole::before {
-  content: "";
-  position: absolute;
-  top: -9px;
-  left: -4px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--lime);
-  border: var(--cut) solid var(--ink);
-}
-
-/* the speech bubble on the right */
-.bubble {
-  position: relative;
-  width: clamp(112px, 11vw, 152px);
-  margin-bottom: clamp(70px, 9vw, 130px);
-  margin-right: -14px;
-  background: var(--card);
-  border: var(--cut) solid var(--ink);
-  border-radius: var(--r-1);
-  padding: 10px 12px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 15px;
-  line-height: 1.15;
-  text-transform: uppercase;
-  text-align: center;
-  box-shadow: var(--shadow);
-}
-.bubble::after {
-  content: "";
-  position: absolute;
-  right: 20px;
-  bottom: calc(var(--cut) * -1 - 12px);
-  border: 8px solid transparent;
-  border-top: 14px solid var(--ink);
-}
-.bubble::before {
-  content: "";
-  position: absolute;
-  right: 22px;
-  bottom: -9px;
-  border: 6px solid transparent;
-  border-top: 11px solid var(--card);
-  z-index: 1;
-}
+/* ── the cast: cut-outs standing on the two ledges ── */
+.hills .ch { will-change: transform; }
 
 #confetti {
   position: fixed;
@@ -1468,15 +1367,16 @@ button { background: none; border: 0; cursor: pointer; }
     gap: var(--gap);
     align-items: start;
   }
-  .mascot .m-art { height: clamp(120px, 15vw, 190px); }
 }
 @media (max-width: 860px) {
   .layout { grid-template-columns: minmax(0, 1fr); }
   .col-left { order: -1; }
   .mode-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .mode-blurb, .mode-prog { display: none; }
-  .mode-card { grid-template-columns: auto minmax(0, 1fr); padding: 11px; gap: 10px; }
-  .mode-flag { grid-column: 1 / -1; }
+  /* Keep the counter inline. Spanning it to a second row made every card a
+     name over a full-width pill, which reads as a progress bar, not a score. */
+  .mode-card { grid-template-columns: auto minmax(0, 1fr) auto; padding: 11px; gap: 9px; }
+  .mode-flag { min-width: 38px; padding: 4px 7px; }
   .dock { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .app { padding-bottom: clamp(240px, 30vh, 320px); }
 }
@@ -1495,7 +1395,6 @@ button { background: none; border: 0; cursor: pointer; }
   .flag-cloth { font-size: 14px; padding: 10px 11px 12px; }
   .flag-pole { height: 190px; }
   .bubble { width: 120px; font-size: 12px; }
-  .mascot .m-art { height: clamp(96px, 26vw, 140px); }
 }
 
 /* ═══════════════════ reduced motion ═══════════════════ */
@@ -1504,7 +1403,7 @@ button { background: none; border: 0; cursor: pointer; }
    "* { transition-duration: .01ms }" — it makes descendants transition
    visibility and quietly breaks focus into a newly opened dialog. */
 @media (prefers-reduced-motion: reduce) {
-  .cloud, .coin, .mascot .m-art { animation: none !important; transform: none !important; }
+  .hills .cloud, .hills .coin, .hills .ch { animation: none !important; transform: none !important; }
   .tile.flip { animation: fade-in var(--dur-flip) var(--ease-out) both; }
   .pip.fresh { animation: none; }
   .input-wrap.refuse { animation: none; }
@@ -1624,7 +1523,7 @@ button { background: none; border: 0; cursor: pointer; }
 
 /* Once the grid has rows in it, the mystery coin is a 168px band of nothing
    sitting above the thing the player is actually reading. Shrink it, and the
-   whole page comes back up off the mascots. */
+   whole page comes back up off the landscape. */
 .stage.tight {
   flex-direction: row;
   gap: 14px;
@@ -1654,17 +1553,19 @@ button { background: none; border: 0; cursor: pointer; }
   .topbar {
     grid-template-columns: 1fr auto;
     grid-template-areas: "left right" "brand brand";
-    row-gap: 6px;
+    /* line-height .9 on a 54px wordmark leaves almost no leading above the
+       caps, so a 6px gap put the ascenders inside the button row */
+    row-gap: 14px;
   }
   .topbar-side.left { grid-area: left; }
   .topbar-side.right { grid-area: right; }
   .brand { grid-area: brand; text-align: center; }
   .tagline { margin-bottom: 20px; }
 
-  /* A fixed world behind a page this tall surfaces in every gap between cards
-     as a mascot's ear or half a speech bubble. The hills are a backdrop and
-     survive that; the characters do not. */
-  .mascot, .coins { display: none; }
+  /* A fixed world behind a page this tall surfaces in every gap between the
+     cards as half a character. The hills are a backdrop and survive that; the
+     cast does not. SVG groups take display like anything else. */
+  .hills .cast, .hills .coins { display: none; }
 
   .mode-card { flex-wrap: wrap; }
   .mode-name { font-size: 15px; }

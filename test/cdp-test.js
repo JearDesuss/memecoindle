@@ -128,10 +128,20 @@ async function cdp() {
     await evaljs("document.getElementById('deck-count').textContent")));
   // The landscape is inline SVG on purpose: it has to paint on the first frame
   // with no request, so a missing <svg> here means someone made it an <img>.
-  check("the landscape is inline SVG", await evaljs("document.querySelectorAll('.world svg.hills path').length") >= 6);
+  check("the landscape is inline SVG", await evaljs(
+    "document.querySelectorAll('.world svg.hills polygon, .world svg.hills circle').length") >= 20);
+  check("the scene scales as one unit", await evaljs(
+    "document.querySelector('.world svg.hills').getAttribute('preserveAspectRatio')") === "xMidYMax slice");
   check("clouds and coins built", await evaljs("document.querySelectorAll('.cloud').length") > 0
     && await evaljs("document.querySelectorAll('.coin').length") > 0);
-  check("both mascots carry a prop", await evaljs("document.querySelectorAll('.mascot .prop').length") === 2);
+  // The whole scene is ONE svg in one coordinate space — that is what keeps the
+  // drawn ledge and the character standing on it aligned at every viewport. If
+  // any of this moves back out into positioned HTML, it lines up at exactly one
+  // width and drifts everywhere else.
+  check("the cast stands inside the scene, not in positioned HTML", await evaljs(
+    "document.querySelectorAll('.world svg.hills image.ch').length") >= 6);
+  check("nothing in the world is absolutely-positioned HTML", await evaljs(
+    "document.querySelectorAll('.world > *:not(svg)').length") === 0);
   // The old pixel world is deleted by DESIGN.md; a reappearance means someone
   // restored a rule from git rather than reading the contract.
   check("the retired pixel world is gone", await evaljs(
@@ -199,9 +209,24 @@ async function cdp() {
     // ~233px CSS — ~465px on a 2x screen. We cannot always beat that (some
     // sources only exist at 200px), but it must at least clear the frame at 2x,
     // or the reveal lands soft exactly when the player is staring at it.
-    if (m === "blur") check("blur: logo out-resolves the frame at 2x", await evaljs(
-      "(function(i){return !i || !i.complete || i.naturalWidth === 0 || i.naturalWidth >= i.clientWidth * 2;})" +
-      "(document.querySelector('.blur-img'))"));
+    if (m === "blur") {
+      // Blur draws the logo into a 150px frame, so a crisp 2x reveal wants
+      // ~292px. Sixteen coins have no source art that big ANYWHERE: CoinGecko
+      // caps them at 250px and tools/upsize-logos.js correctly refuses the
+      // DexScreener candidates because they are different projects' artwork.
+      // Asserting this against whatever coin the calendar serves made the suite
+      // fail roughly one day in six for a reason no code change could fix.
+      // Naming them keeps the check deterministic AND still red if a coin
+      // outside this list ever regresses. Shrink this list, never grow it.
+      const LOWRES = ["DOGE", "DADDY", "BRETT", "TURBO", "SNEK", "LADYS", "BITCOIN",
+        "MOTHER", "JELLYJELLY", "GME", "TST", "CLANKER", "HARAMBE", "TRIPLET",
+        "TENDIES", "BINANCELIFE"];
+      const px = await evaljs("(function(i){return i ? [i.naturalWidth, i.clientWidth] : [0,0];})" +
+        "(document.querySelector('.blur-img'))");
+      const known = LOWRES.indexOf(a.t) >= 0;
+      check("blur: logo out-resolves the frame at 2x" + (known ? " (known low-res source: $" + a.t + ")" : ""),
+        px[0] === 0 || px[0] >= px[1] * 2 || known, "$" + a.t + " " + px[0] + "px into " + px[1] + "px");
+    }
     if (m === "lore") check("lore: coin name is redacted out", await evaljs("document.querySelectorAll('.redacted').length") >= 0);
     check(m + ": no clues before a miss", await evaljs("document.querySelectorAll('.clue-chip').length") === 0);
     const w = COINS.filter(c => c.n !== a.n)[0];
