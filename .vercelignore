@@ -10,3 +10,6 @@ output/
 scratchpad/
 img/memedle background.png
 /brand/
+
+# BRAG launch video (source + render), not part of the site
+brag-output/

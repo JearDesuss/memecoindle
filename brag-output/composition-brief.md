@@ -1,0 +1,94 @@
+# Hyperframes Composition Brief: memedle
+
+## Objective
+Create a short launch-style brag video for memedle that teaches the game by
+playing one real round of it.
+
+## Output
+- Composition directory: `brag-output/composition/`
+- Rendered video: `brag-output/brag.mp4`
+- Format: landscape - 1920x1080
+- Duration: 23 seconds
+
+## Source Material
+- Project root: `memecoindle/`
+- Primary files read: `index.html`, `style.css`, `DESIGN.md`, `game.js`
+  (`grade()`, `MODES`), `data.js` (the coins), `img/brand/*`, `img/*.png`
+- Product name: memedle
+- Tagline / strongest claim: "One memecoin a day. Six guesses."
+- Key UI to recreate: the Classic board - header bar, guess field with the Lime
+  arrow key, six pips, the CHAIN / TYPE / YEAR / PEAK / NOW column heads, and
+  rows of chunky clue tiles with a logo + ticker label.
+- The three guesses and their tiles are REAL, graded by the game's own
+  `grade()` against the answer POPCAT. Reproduce them exactly:
+  - DOGE (Dogecoin): Own chain miss · Dog near · 2013 ▲ miss · $88B ▼ near · $11B ▼ miss
+  - WIF (Dogwifhat): Solana hit · Dog near · 2023 hit · $4.8B hit · $136M ▼ near
+  - POPCAT (Popcat): Solana hit · Cat hit · 2023 hit · $2B hit · $50M hit
+- Copy that must appear verbatim:
+  - Guess the memecoin.
+  - Six guesses. Five clues each.
+  - Yellow means close.
+  - Green is exact.
+  - It was the cat.
+  - One memecoin a day. Six guesses.
+  - memedle-weld.vercel.app
+
+## Creative Direction
+- Tone preset: default
+- Creative direction: watch one real game get solved
+- Interpretation: clean, playful, the board carries the story; captions short
+  and held to the reading floor; the only joke is dog, dog, cat.
+- Angle: one real round, start to finish, so the rules explain themselves.
+- Hook: the "?" coin drops in and "Guess the memecoin." types beside it.
+- Outro / punchline: "It was the cat." then the lockup and the address.
+- Avoid:
+  - Generic SaaS language
+  - Abstract filler visuals
+  - Redesigning the board: it should look like the live site
+
+## Visual Identity
+- Background: #FEFDF7
+- Text: #16161A
+- Accent: #BCF23F (submit key only)
+- Tile hit / near / miss: #8BD418 / #FFC53D / #FB6F84, with #16161A die lines
+- Display font: Baloo 2 800 (local @font-face); body: Figtree (local)
+- Visual references: the site's tile flip (blank until edge-on, then the colour
+  lands), the hard zero-blur offset shadow on the Lime key, the 3x3 character
+  grid lockup from `img/brand/mark.webp`
+
+## Storyboard
+The storyboard in `brag-output/brag-plan.md` is the creative contract.
+
+1. Hook - 0.0-2.8s - "?" coin + "Guess the memecoin." typed
+2. Board - 2.8-5.0s - board slides up; "Six guesses. Five clues each."
+3. DOGE - 5.0-9.0s - typed, submitted, five tiles turn; "Yellow means close."
+4. WIF - 9.0-13.0s - typed, submitted, five tiles turn; "Green is exact."
+5. POPCAT - 13.0-19.2s - all green lands on 16.02s; row hops on 17.02s;
+   "It was the cat." (17.2-18.85)
+6. Lockup - 19.2-23.0s - grid + word land on 20.02s; tagline and address
+
+## Audio
+- Audio role: warm bed with motion-matched accents
+- Audio arc: fade in, tactile middle, bell on the win, warm fade under the logo
+- Music: `assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3`
+- Music treatment: 0.30 bed; fade to silence across the last ~1.4s
+- Music cue guidance: bundled preset
+  `assets/music/cues/happy-beats-business-moves-vol-1-by-ende-dot-app.music-cues.json`;
+  strong cues 16.02 (win), 17.02 (hop), 20.02 (lockup)
+- Audio-reactive treatment: the winning row's lime glow swells on 16.02 and
+  breathes on the beat grid (16.52, 17.52, 18.02); timed from the cue file
+- Audio-coupled moments:
+  - hook - coin thud, key ticks while typing
+  - each guess - key ticks per letter, click on the submit key, a card sound as
+    tiles turn (accent first and last tile if dense)
+  - win - bell when the row is fully green
+  - lockup - one soft impact
+- SFX analysis guidance: `brag/skills/brag/assets/sfx/sfx-analysis.md`; prefer
+  low high-frequency-risk files for the repeated flip and key sounds
+- Audio files: copied into `brag-output/composition/assets/`
+
+## Hyperframes Instructions
+Standalone composition, one paused GSAP timeline registered on
+`window.__timelines["main"]`. GSAP and fonts load from local files (no render
+time network). Every `<audio>` has an id. No CSS transform on anything that is
+also tweened. `hyperframes check` is the gate before render.
