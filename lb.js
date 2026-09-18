@@ -49,7 +49,7 @@ var LB = (function () {
   var POT_LINE = "100% of the day's trading fees become the pot. It pays out at "
     + "00:00 UTC, split by rank across the top " + POT_TOP + " of each mode.";
   var POT_ORPHAN = "A ranked player with no wallet on file at 00:00 UTC drops out "
-    + "of the split — their parts go pro-rata to the ranked players who have one.";
+    + "of the split, and their share goes to the ranked players who have one, by the same rank weights.";
 
   // ── storage ─────────────────────────────────────────────────────────────
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -233,8 +233,8 @@ var LB = (function () {
     // this line is free to say the thing that actually decides it: the board
     // is what the pot pays, and no handle means no board.
     body.appendChild(el("p", "gate-sub", returning
-      ? "This is the name on your runs. It is claimed and yours — nobody else can take it."
-      : "It is how you show up on the daily board, and the board is what the daily pot pays out to. Claimed once, it stays yours."));
+      ? "This is the name on your runs. It's yours, and nobody else can take it."
+      : "This is your name on the daily board, and the board is who the pot pays. Once you claim it, it's yours."));
 
     var wrap = el("div", "field");
     wrap.appendChild(el("span", "field-at", "@"));
@@ -324,7 +324,7 @@ var LB = (function () {
         checking = v;
         checkName(v).then(function (r) {
           if (normalise(input.value) !== checking) return;
-          if (r._failed) { say("wait", "Can't reach the board — you can still claim it."); allow(true); return; }
+          if (r._failed) { say("wait", "Can't reach the board. You can still claim it."); allow(true); return; }
           if (r.available) {
             say("ok", r.mine ? "Already yours." : "Free.");
             allow(true);
@@ -388,7 +388,7 @@ var LB = (function () {
     var body = $("gate-body");
     clear(body);
     body.appendChild(el("p", "gate-sub",
-      "Your name on the board becomes a link to your profile. It goes up as typed — nothing is checked."));
+      "Your name on the board will link to your X profile. It goes up exactly as you type it, and nothing checks it."));
 
     var form = el("div", "gate-form");
     var wrap = el("div", "field");
@@ -466,7 +466,7 @@ var LB = (function () {
     clear(body);
     body.appendChild(el("p", "gate-sub", POT_LINE));
     body.appendChild(el("p", "gate-sub",
-      "Paste the address it should land in — Solana or EVM. Nothing here can check an address, so paste it, never type it."));
+      "Paste the address your share should go to, Solana or EVM. Nothing here checks it, so paste it instead of typing it."));
 
     var form = el("div", "gate-form stack");
     var wrap = el("div", "field");
@@ -688,7 +688,7 @@ var LB = (function () {
         // paid — and saying so is the whole reason the flag is on the row.
         if (i < POT_TOP && s.w === 0) {
           var tag = el("span", "lb-tag", "no wallet");
-          tag.title = "no wallet on file — this slice goes to the players who have one";
+          tag.title = "No wallet on file, so this share goes to the ranked players who have one";
           r.appendChild(tag);
         }
 

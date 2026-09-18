@@ -228,36 +228,41 @@ button { background: none; border: 0; cursor: pointer; }
 
 /* the wordmark: Ink type over a Lime Deep copy offset behind it. The offset is
    a real element, not a text-shadow, so motion can move it on its own. */
+/* The supplied lockup: the character grid beside a plain black wordmark.
+   The Lime offset shadow and the sparkle were this site's own invention before
+   there was a real logo; the brand has neither, so they are gone.
+
+   Proportion is taken from the banner, then tightened for a header: there the
+   grid stands ~2.3x the height of the word's ascenders, which in a top bar
+   would push the whole centred layout down a full row. 1.55em keeps it
+   unmistakably the same mark at a header's size. */
 .brand {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .16em;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: clamp(44px, 7vw, 74px);
-  line-height: .9;
+  font-size: clamp(40px, 5.4vw, 66px);
+  line-height: 1;
   letter-spacing: -.035em;
   text-transform: lowercase;
   white-space: nowrap;
   color: var(--ink);
   user-select: none;
 }
-.brand .b-under {
-  position: absolute;
-  inset: 0;
-  color: var(--lime-2);
-  transform: translate(3px, 5px);
-  z-index: -1;
-  -webkit-text-stroke: 5px var(--lime-2);
-  paint-order: stroke fill;
+.brand .b-mark {
+  display: block;
+  height: 1.55em;
+  width: auto;
+  flex: none;
+  cursor: pointer;
+  will-change: transform;
 }
-.brand .b-spark {
-  position: absolute;
-  top: -.12em;
-  right: -.42em;
-  font-size: .3em;
-  color: var(--lime-2);
-  -webkit-text-stroke: 2px var(--ink);
-  paint-order: stroke fill;
-}
+/* Baloo 2 sits high in its own line box; this lands the word's optical centre
+   on the grid's centre, which is how the banner aligns them. */
+.brand .b-face { position: relative; top: .06em; }
 
 .tagline {
   text-align: center;
@@ -1005,6 +1010,25 @@ button { background: none; border: 0; cursor: pointer; }
 .help-mode-name { font-family: var(--font-display); font-weight: 800; font-size: 15px; }
 .help-mode-desc { font-size: 13px; color: var(--ink-2); }
 
+/* The Classic legend is keyed to the board: each term is set exactly like the
+   column header it explains (CHAIN, TYPE, YEAR...), so the modal reads as a
+   key to the thing on screen rather than a list of bold-labelled claims. Two
+   children per row on purpose: a bare text node in a grid becomes its own
+   item, which is how a sentence ends up squeezed into the label column. */
+.help-legend { list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+.help-legend li {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+}
+.help-term {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
 .help-list { list-style: none; display: flex; flex-direction: column; gap: 9px; font-size: 14px; }
 .help-list li { padding-left: 14px; position: relative; }
 .help-list li::before {
@@ -1785,9 +1809,8 @@ button { background: none; border: 0; cursor: pointer; }
    cheapest — both are seen rarely enough to stay charming, and neither sits on
    a path the player has to take to play. */
 
-/* Each letter is its own box so it can leave the Lime shadow behind when it
-   jumps: the shadow copy stays put, and the gap between them is what makes it
-   read as a sticker lifting off the sheet. */
+/* Each letter is its own box so it can jump on its own. The grid mark beside
+   it hops first when the word is clicked, as if it set the wave off. */
 .brand .b-face { display: inline-flex; }
 .brand .b-l {
   display: inline-block;

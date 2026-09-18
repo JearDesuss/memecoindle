@@ -299,13 +299,14 @@
     return img;
   }
 
-  // ──────────────── brand: heavy rounded type over a Lime offset ────────────────
-  // The offset is a real element rather than a text-shadow so motion.js can
-  // move it on its own when a guess lands.
+  // ──────────────── brand: the supplied lockup ────────────────
+  // The character grid is the owner's artwork (img/brand/mark.webp, cut from
+  // the banner by tools/build-brand.mjs). The word stays live text rather than
+  // a picture of text: it is crisp at every size, it is read out by a screen
+  // reader, and motion.js can still make each letter jump.
   function brandHTML() {
-    return '<span class="b-under" aria-hidden="true">memedle</span>' +
-      '<span class="b-face">memedle</span>' +
-      '<span class="b-spark" aria-hidden="true">✦</span>';
+    return '<img class="b-mark" src="img/brand/mark.webp" alt="" width="104" height="101" decoding="async">' +
+      '<span class="b-face">memedle</span>';
   }
 
   // The world layer (hills, clouds, coins, mascots) belongs to motion.js now.
@@ -374,7 +375,7 @@
     return location.origin + location.pathname + "#/" + modeId;
   }
   function invite() {
-    var text = "Memedle — one memecoin a day, six guesses. Can you beat me?";
+    var text = "Memedle: one memecoin a day, six guesses. Can you beat me?";
     if (navigator.share) {
       navigator.share({ title: "Memedle", text: text, url: inviteLink() })
         .catch(function () {});
@@ -488,7 +489,7 @@
     // printed the answer to the archive puzzle being played right now.
     var d = (unlimited ? dayNumber() : playDay) - 1;
     if (d < 0) {
-      box.appendChild(el("p", "lb-empty", "Nothing yet — today is puzzle #1."));
+      box.appendChild(el("p", "lb-empty", "Nothing yet. Today is puzzle #1."));
       return;
     }
     var coin = dailyCoin(modeId, d);
@@ -983,8 +984,8 @@
     var m = MODE_BY_ID[modeId];
     var score = (won ? guesses.length : "X") + "/" + MAX_GUESSES;
     var head = unlimited
-      ? "Memedle " + m.name + " endless — " + score
-      : "Memedle " + m.name + " #" + (playDay + 1) + " — " + score;
+      ? "Memedle " + m.name + " endless · " + score
+      : "Memedle " + m.name + " #" + (playDay + 1) + " · " + score;
     if (hintAxis >= 0 && modeId === "classic" && !unlimited) head += " · hint";
     return head + ". https://" + SITE_URL;
   }
@@ -1028,8 +1029,8 @@
     btn.disabled = true;
     SHARE.postToX(cardState(), shareCaption()).then(function (how) {
       btn.disabled = false;
-      if (how === "clipboard") flash("Card copied — paste it into the post.");
-      else if (how === "download") flash("Card saved — attach it to the post.");
+      if (how === "clipboard") flash("Card copied. Paste it into your post.");
+      else if (how === "download") flash("Card saved. Attach it to your post.");
       else if (how === "text") flash("Couldn't build the card. The words went over.");
     }, function () {
       btn.disabled = false;
@@ -1227,7 +1228,7 @@
     if (st.played) {
       count("st-winpct", Math.round(100 * st.wins / st.played), function (v) { return Math.round(v) + "%"; });
     } else {
-      $("st-winpct").textContent = "—";
+      $("st-winpct").textContent = "0%";
     }
     // Same freshness test the header pill uses. Without it the modal kept reporting a
     // streak that had been dead for weeks, while the pill correctly hid it.
@@ -1324,7 +1325,7 @@
       });
       rows++;
     }
-    if (!rows) box.appendChild(el("p", "lb-empty", "No past puzzles yet — come back tomorrow."));
+    if (!rows) box.appendChild(el("p", "lb-empty", "No past puzzles yet. Come back tomorrow."));
     openModal("modal-archive");
   }
 
@@ -1363,7 +1364,7 @@
         node.title = s.title; node.setAttribute("aria-label", s.title);
       } else {
         node.type = "button";
-        node.title = s.title + " — not up yet";
+        node.title = s.title + " (not up yet)";
         node.setAttribute("aria-label", s.title + ", not up yet");
         node.appendChild(el("span", "soon-tag", "soon"));
         node.addEventListener("click", function () {

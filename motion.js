@@ -93,12 +93,22 @@
 
   // ═════════════ cues the game calls into ═════════════
 
-  // the wordmark takes the hit when a guess lands
+  // The grid mark takes the hit when a guess lands: a quick squash-and-rise,
+  // the logo reacting to the play. It used to nudge the Lime shadow behind the
+  // word, which no longer exists — the supplied lockup has no shadow.
   MO.brandKick = function () {
     if (!g || reduced() || STILL) return;
-    var u = d.querySelector(".brand .b-under");
-    if (!u) return;
-    g.fromTo(u, { x: 3, y: 5 }, { x: 7, y: 10, duration: 0.11, ease: "power2.out", yoyo: true, repeat: 1 });
+    var mk = d.querySelector(".brand .b-mark");
+    if (!mk) return;
+    g.fromTo(mk, { scaleY: 1, scaleX: 1, y: 0 }, {
+      keyframes: [
+        { scaleY: 0.88, scaleX: 1.08, y: 3, duration: 0.08, ease: "power2.out" },
+        { scaleY: 1.06, scaleX: 0.96, y: -5, duration: 0.14, ease: "power2.out" },
+        { scaleY: 1, scaleX: 1, y: 0, duration: 0.2, ease: "back.out(2)" }
+      ],
+      transformOrigin: "50% 100%",
+      clearProps: "transform"
+    });
   };
 
   // a card drawing attention to itself without moving the layout
@@ -130,9 +140,9 @@
   function live() { return g && !reduced() && !STILL; }
 
   // ═════════════ toy: the wordmark ═════════════
-  // Split once into one box per letter, so a letter can jump and leave its Lime
-  // shadow copy behind — the gap between them is what reads as a sticker
-  // peeling off the sheet. The shadow is left whole on purpose.
+  // Split once into one box per letter, so each can jump on its own. The
+  // wordmark is live text on purpose (see brandHTML), which is what makes
+  // this possible at all — a logo baked into an image could only move whole.
   var letters = [];
   function splitBrand() {
     var face = d.querySelector(".brand .b-face");
@@ -159,9 +169,18 @@
     });
   }
 
-  // the whole word goes up as a wave, each letter a beat after the last
+  // the whole word goes up as a wave, each letter a beat after the last, and
+  // the grid mark jumps first as if it kicked the wave off
   MO.brandWave = function (withSound) {
     if (!live() || !letters.length) return;
+    var mk = d.querySelector(".brand .b-mark");
+    if (mk) {
+      g.fromTo(mk, { y: 0, rotate: 0 }, {
+        y: -10, rotate: -6, duration: 0.16, ease: "power2.out", yoyo: true, repeat: 1,
+        transformOrigin: "50% 100%",
+        onComplete: function () { g.set(mk, { clearProps: "transform" }); }
+      });
+    }
     letters.forEach(function (l, i) {
       hop(l, 16, i * 0.05);
       if (withSound) setTimeout(function () { sfx("pop", i); }, i * 50);

@@ -57,7 +57,7 @@ Nine steps, named. Never write one as a hex in a component.
 | token | hex | name | role |
 | --- | --- | --- | --- |
 | `--lime` | `#BCF23F` | **Lime** | the active mode card, the submit key, the rule numerals |
-| `--lime-2` | `#A6DE23` | **Lime Deep** | the pressed/hover state of anything Lime, the wordmark shadow |
+| `--lime-2` | `#A6DE23` | **Lime Deep** | the pressed/hover state of anything Lime |
 | `--lime-3` | `#EDFBC4` | **Lime Wash** | a Lime tint on a white card: the dock icon plates |
 
 **Accent scarcity is the rule that makes this page not look generic.** Lime is
@@ -291,7 +291,7 @@ shared variable lets both animations read the same number.
 ### the toys
 
 Two things on the page do nothing useful and exist to be poked: **the wordmark**
-(each letter jumps on hover and leaves its Lime shadow behind; a click sends the
+(each letter jumps on hover; a click makes the grid mark hop and then sends the
 whole word up as a wave) and **the mystery coin** (click to spin it twice). They
 are where the delight budget is cheapest — both are seen rarely, and neither is
 on a path the player must take to play. Do not add a third toy to anything the
@@ -364,7 +364,7 @@ merged.
 | name | role |
 | --- | --- |
 | `.world` | fixed-position landscape layer: hills, clouds, coins, mascots. `aria-hidden`, `pointer-events: none`. |
-| `.brand` | the wordmark — Ink type over a Lime Deep offset copy at `translate(3px, 4px)`, plus one sparkle. The offset is a second element, not a `text-shadow`, so it can be animated independently. |
+| `.brand` | the supplied lockup: the owner's 3x3 character grid (`img/brand/mark.webp`) beside a plain black Baloo 2 wordmark. The word is live text so it stays crisp, is read aloud, and can animate per letter. Never replace it with a picture of the word. All brand images are derived by `tools/build-brand.mjs` from `brand/*-src.png`. |
 | `.mode-card` | one per game mode. Calm when idle; **Live and Lime-filled when active**. Carries a logo plate, a name, a blurb, a `x/6` counter and a progress rail. |
 | `.panel` | the calm white card. A `panel-bar` title row over a `panel-body`. |
 | `.tile` | one clue cell. `--r-1`, `--cut-in` edge, status fill, flips on reveal. |

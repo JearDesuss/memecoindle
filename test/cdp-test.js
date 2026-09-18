@@ -353,7 +353,10 @@ async function cdp() {
     "document.getElementById('btn-help-2').className")).split(" ")[0] === "btn");
   check("the full rules explain the pot", await evaljs(`(function(){
     var t=document.getElementById('modal-help').textContent;
-    return /00:00 UTC/.test(t) && /pro-rata/.test(t) && /wallet/i.test(t);
+    // Asserts the RULE, not a word: it used to require the literal 'pro-rata',
+    // which pinned jargon in place. What matters is that the payout time and
+    // what happens to a ranked player with no wallet are both explained.
+    return /00:00 UTC/.test(t) && /no wallet/i.test(t) && /ranked players who do/i.test(t);
   })()`));
   check("settings has a wallet section", await evaljs("!!document.getElementById('wallet-body')"));
   check("no handle means no wallet row, and it says why", await evaljs(`(function(){

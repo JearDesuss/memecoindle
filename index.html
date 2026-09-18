@@ -9,15 +9,24 @@
 <meta property="og:description" content="One memecoin a day, three ways to guess it. Six guesses each.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://memedle-weld.vercel.app/">
+<meta property="og:image" content="https://memedle-weld.vercel.app/img/brand/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Memedle logo: a grid of nine meme characters beside the word memedle">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Memedle">
 <meta name="twitter:description" content="One memecoin a day, three ways to guess it. Six guesses each.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪙</text></svg>">
-<meta name="theme-color" content="#F4F1E8">
+<meta name="twitter:image" content="https://memedle-weld.vercel.app/img/brand/og.jpg">
+<link rel="icon" href="img/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="img/brand/favicon-16.png" type="image/png" sizes="16x16">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="img/brand/apple-touch-icon.png">
+<meta name="theme-color" content="#FEFDF7">
+<link rel="preload" as="image" href="img/brand/mark.webp" type="image/webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600..800&family=Figtree:wght@400..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=105b439a">
+<link rel="stylesheet" href="style.css?v=e2f8d4dd">
 </head>
 <body>
 
@@ -95,10 +104,10 @@
         <div class="panel-body">
           <ol class="rule-list">
             <li>Guess the memecoin of the day</li>
-            <li>Every guess hands back five clues</li>
+            <li>Every wrong guess gives you a clue</li>
             <li>You get six tries</li>
-            <li>A new coin daily, in all three modes</li>
-            <li><b>100%</b> of trading fees, paid out daily</li>
+            <li>New coin every day, in all three modes</li>
+            <li><b>100%</b> of trading fees paid out daily</li>
           </ol>
           <button class="btn btn-block" id="btn-help-2">View full rules</button>
         </div>
@@ -129,31 +138,31 @@
   <div class="modal">
     <button class="modal-close" data-close aria-label="Close">✕</button>
     <h2 id="help-h">How to play</h2>
-    <p>A new coin every day in <strong>all three modes</strong>. Six guesses each. Miss a day and the streak dies.</p>
+    <p>A new coin every day in all three modes, with six guesses at each. Miss a day and your streak dies.</p>
     <div id="help-modes" class="help-modes"></div>
-    <h3>Classic feedback</h3>
-    <ul class="help-list">
-      <li><strong>Chain</strong> — where it launched. <span class="chip cy">Yellow</span> means both are EVM chains.</li>
-      <li><strong>Type</strong> — the mascot: dog, cat, frog, AI, politics… <span class="chip cy">Yellow</span> means same family.</li>
-      <li><strong>Year</strong> — launch year. <span class="chip cy">Yellow</span> is within one year. ▲▼ point at the answer.</li>
-      <li><strong>Peak</strong> — highest market cap ever, by range (&lt;$10M · $10M+ · $100M+ · $1B+ · $10B+).</li>
-      <li><strong>Now</strong> — market cap today, by range (&lt;$1M · $1M+ · $10M+ · $100M+ · $1B+).</li>
-    </ul>
+    <h3>Classic clues</h3>
     <div class="help-demo">
       <div class="tile s-g demo"><span class="tile-val">Solana</span></div>
       <div class="tile s-y demo"><span class="tile-val">Cat</span></div>
       <div class="tile s-x demo"><span class="tile-val">2021</span><span class="tile-dir">▲</span></div>
     </div>
     <p class="demo-caption">exact · close · wrong</p>
-    <h3>The daily pot</h3>
-    <p>Every day, <strong>100% of the token's trading fees</strong> become that day's pot. It pays out at <strong>00:00 UTC</strong> — the board as it stands at that moment is the board that gets paid.</p>
-    <ul class="help-list">
-      <li><strong>Three boards, three pots</strong> — the day's fees split evenly across Classic, Blur and Lore, so a Lore win pays what a Classic win pays.</li>
-      <li><strong>The top ten are in</strong> — and the slices are ranked: ten parts at #1, nine at #2, down to one part at #10.</li>
-      <li><strong>A slice needs a wallet</strong> — paste an address into Settings. Whatever is on file at 00:00 UTC is where your slice goes.</li>
-      <li><strong>Nothing is held back</strong> — a ranked player with no wallet drops out of the split, and their parts go pro-rata to the ranked players who have one. An unclaimed slice is not carried over to tomorrow; it is paid out today, to someone else.</li>
+    <ul class="help-legend">
+      <li><span class="help-term">Chain</span><span>Where it launched. Yellow means both are EVM chains.</span></li>
+      <li><span class="help-term">Type</span><span>What the mascot is: dog, cat, frog, AI, politics and so on. Yellow means the same family.</span></li>
+      <li><span class="help-term">Year</span><span>Launch year. Yellow means within a year, and the arrow points toward the answer.</span></li>
+      <li><span class="help-term">Peak</span><span>Highest market cap ever, in bands: under $10M, $10M+, $100M+, $1B+, $10B+.</span></li>
+      <li><span class="help-term">Now</span><span>Market cap today, in bands: under $1M, $1M+, $10M+, $100M+, $1B+.</span></li>
     </ul>
-    <p class="fine">Solana or EVM address, whichever chain the token trades on. Nothing here verifies an address — an address typed wrong is a payment sent wrong, so paste it.</p>
+    <h3>The daily pot</h3>
+    <p>100% of the token's trading fees go into that day's pot. It pays out at 00:00 UTC to whoever is on the board at that moment.</p>
+    <ul class="help-list">
+      <li>The fees split evenly across Classic, Blur and Lore, so a win in any mode is worth the same.</li>
+      <li>The top ten on each board get paid by rank: ten shares for #1, nine for #2, down to one for #10.</li>
+      <li>You need a wallet address in Settings to get paid. The payout goes to whatever is on file at 00:00 UTC.</li>
+      <li>If a ranked player has no wallet, their share goes to the ranked players who do, split the same way. Nothing rolls over to the next day.</li>
+    </ul>
+    <p class="fine">Use a Solana or EVM address, whichever chain the token trades on. Nothing here checks it, so paste it. A typo sends the payment somewhere else.</p>
     <label class="cb-row"><input type="checkbox" id="cb-toggle"> High-contrast tiles (blue / orange)</label>
   </div>
 </div>
@@ -165,7 +174,7 @@
     <h3>Your handle</h3>
     <div id="profile-body" class="profile-body"></div>
     <h3>Reward wallet</h3>
-    <p class="fine">Where your slice of the daily pot is sent at 00:00 UTC. Solana or EVM, paste it rather than type it — nothing here can check an address.</p>
+    <p class="fine">Your share of the daily pot goes here at 00:00 UTC. Solana or EVM. Paste it instead of typing it, since nothing here checks the address.</p>
     <div id="wallet-body" class="profile-body"></div>
     <label class="cb-row"><input type="checkbox" id="cb-toggle-2"> High-contrast tiles (blue / orange)</label>
     <label class="cb-row"><input type="checkbox" id="sfx-toggle"> Sound effects</label>
@@ -182,7 +191,7 @@
     <div class="stat-tabs" id="stat-tabs"></div>
     <div class="stat-grid">
       <div class="stat"><span id="st-played" class="stat-num">0</span><span class="stat-label">played</span></div>
-      <div class="stat"><span id="st-winpct" class="stat-num">—</span><span class="stat-label">win rate</span></div>
+      <div class="stat"><span id="st-winpct" class="stat-num">0%</span><span class="stat-label">win rate</span></div>
       <div class="stat"><span id="st-streak" class="stat-num">0</span><span class="stat-label">streak</span></div>
       <div class="stat"><span id="st-max" class="stat-num">0</span><span class="stat-label">best</span></div>
     </div>
@@ -199,8 +208,7 @@
     <input id="coins-search" class="coins-search" type="search" autocomplete="off"
            placeholder="Filter by name, ticker or chain…" aria-label="Filter the coin list">
     <div id="coins-body" class="coins-body"></div>
-    <p class="fine coins-note">We add new coins regularly — this list grows over time.
-      Follow along for the latest drops.</p>
+    <p class="fine coins-note">We add new coins regularly. Follow along for the latest drops.</p>
     <div class="social-row" id="coins-social"></div>
   </div>
 </div>
@@ -238,13 +246,13 @@
 
 <div class="flash-layer" id="flash-layer" aria-live="polite"></div>
 
-<script src="vendor/gsap.min.js?v=105b439a"></script>
-<script src="data.js?v=105b439a"></script>
-<script src="logos.js?v=105b439a"></script>
-<script src="sfx.js?v=105b439a"></script>
-<script src="motion.js?v=105b439a"></script>
-<script src="lb.js?v=105b439a"></script>
-<script src="share.js?v=105b439a"></script>
-<script src="game.js?v=105b439a"></script>
+<script src="vendor/gsap.min.js?v=e2f8d4dd"></script>
+<script src="data.js?v=e2f8d4dd"></script>
+<script src="logos.js?v=e2f8d4dd"></script>
+<script src="sfx.js?v=e2f8d4dd"></script>
+<script src="motion.js?v=e2f8d4dd"></script>
+<script src="lb.js?v=e2f8d4dd"></script>
+<script src="share.js?v=e2f8d4dd"></script>
+<script src="game.js?v=e2f8d4dd"></script>
 </body>
 </html>

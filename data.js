@@ -40,7 +40,7 @@ var COINS = [
   { n: "HAWK", t: "HAWK", c: "Solana", y: 2024, m: 490, cm: 1.14, g: "Celebrity", s: "Scandal", l: "Hawk Tuah girl's coin: -90% within hours, lawsuit, federal inquiry.", w: "hawk" },
   { n: "YZY", t: "YZY", c: "Solana", y: 2025, m: 3000, cm: 40, g: "Celebrity", s: "Scandal", l: "Kanye's token touched $3B within hours, then collapsed amid insider allegations.", w: "yzy" },
   { n: "SafeMoon", t: "SFM", c: "BNB Chain", y: 2021, m: 8000, cm: 0.388, g: "Joke", s: "Scandal", l: "The reflection-token mania of 2021. CEO got 100 months in prison.", w: "safemoon" },
-  { n: "Squid Game", t: "SQUID", c: "BNB Chain", y: 2021, m: 25, cm: 1.45, g: "Brand", s: "Scandal", l: "The rug that made 'rug pull' mainstream news — you could buy, but never sell.", w: null },
+  { n: "Squid Game", t: "SQUID", c: "BNB Chain", y: 2021, m: 25, cm: 1.45, g: "Brand", s: "Scandal", l: "The rug that made 'rug pull' mainstream news. You could buy it, but you could never sell.", w: null },
   { n: "SLERF", t: "SLERF", c: "Solana", y: 2024, m: 700, cm: 2.219, g: "Animal", s: "Scandal", l: "Dev fat-fingered $10M of presale funds into the burn address. It mooned anyway.", w: "slerf" },
   { n: "Pippin", t: "PIPPIN", c: "Solana", y: 2024, m: 900, cm: 18, g: "AI", s: "Scandal", l: "Stick-figure unicorn by the BabyAGI author. Second peak near $900M, then an insider-blamed crash.", w: "pippin" },
   { n: "Zerebro", t: "ZEREBRO", c: "Solana", y: 2024, m: 500, cm: 38.1, g: "AI", s: "Scandal", l: "Its creator staged his own death as a stunt. Twice, arguably.", w: "zerebro" },
@@ -59,7 +59,7 @@ var COINS = [
   { n: "Dogelon Mars", t: "ELON", c: "Ethereum", y: 2021, m: 1100, cm: 50, g: "Dog", s: "Faded", l: "Doge, but on Mars, in 2021's most honest ticker grab.", w: null },
   { n: "Book of Meme", t: "BOME", c: "Solana", y: 2024, m: 1500, cm: 30, g: "Joke", s: "Faded", l: "Darkfarms' attempt to archive meme culture on-chain forever. Presale to $1.5B in days.", w: "book_of_meme" },
   { n: "Dog Go To The Moon", t: "DOG", c: "Bitcoin", y: 2024, m: 1000, cm: 118, g: "Dog", s: "Alive", l: "The flagship of Bitcoin Runes, etched at the 2024 halving, airdropped free.", w: "dog_go_to_the_moon" },
-  { n: "PENGU", t: "PENGU", c: "Solana", y: 2024, m: 2800, cm: 450, g: "Animal", s: "Alive", l: "Pudgy Penguins' token — the NFT brand that made it out, complete with ETF filing.", w: "pengu" },
+  { n: "PENGU", t: "PENGU", c: "Solana", y: 2024, m: 2800, cm: 450, g: "Animal", s: "Alive", l: "Pudgy Penguins' token, from the NFT brand that made it out, complete with an ETF filing.", w: "pengu" },
   { n: "Snek", t: "SNEK", c: "Cardano", y: 2023, m: 500, cm: 30, g: "Animal", s: "Alive", l: "Cardano's fair-launched house snake, its most valuable native token.", w: "snek" },
   { n: "SPX6900", t: "SPX", c: "Ethereum", y: 2023, m: 2100, cm: 260, g: "Joke", s: "Alive", l: "A parody of the S&P 500 that became the belief coin of the 2025 cycle.", w: "spx6900" },
   { n: "Gigachad", t: "GIGA", c: "Solana", y: 2024, m: 648, cm: 25, g: "Person", s: "Faded", l: "Ernest Khalimov's jawline, community-takeover edition.", w: "gigachad" },
@@ -69,8 +69,8 @@ var COINS = [
   { n: "HarryPotterObamaSonic10Inu", t: "BITCOIN", c: "Ethereum", y: 2023, m: 370, cm: 40, g: "Joke", s: "Faded", l: "Absurdism as a service. Trades under the ticker BITCOIN.", w: "harrypotterobamasonic10inu" },
   { n: "Samoyedcoin", t: "SAMO", c: "Solana", y: 2021, m: 600, cm: 1.787, g: "Dog", s: "Faded", l: "Widely recognized as Solana's first memecoin, from the 2021 bull.", w: "samoyedcoin" },
   { n: "PONKE", t: "PONKE", c: "Solana", y: 2023, m: 400, cm: 30, g: "Animal", s: "Alive", l: "An angry gambling monkey, one of the longest-lived mascots of its cohort.", w: "ponke" },
-  { n: "Jeo Boden", t: "BODEN", c: "Solana", y: 2024, m: 650, cm: 0.906, g: "Politics", s: "Collapsed", l: "The misspelled Biden parody that led 2024's PolitiFi wave — until Biden dropped out.", w: "jeo_boden" },
-  { n: "MOTHER", t: "MOTHER", c: "Solana", y: 2024, m: 227, cm: 0.7, g: "Celebrity", s: "Faded", l: "Iggy Azalea's coin — the celebrity launch that actually kept showing up.", w: "mother" },
+  { n: "Jeo Boden", t: "BODEN", c: "Solana", y: 2024, m: 650, cm: 0.906, g: "Politics", s: "Collapsed", l: "The misspelled Biden parody that led 2024's PolitiFi wave, until Biden dropped out.", w: "jeo_boden" },
+  { n: "MOTHER", t: "MOTHER", c: "Solana", y: 2024, m: 227, cm: 0.7, g: "Celebrity", s: "Faded", l: "Iggy Azalea's coin, a celebrity launch where the celebrity actually kept showing up.", w: "mother" },
   { n: "Jailstool", t: "JAILSTOOL", c: "Solana", y: 2025, m: 267, cm: 5, g: "Celebrity", s: "Collapsed", l: "Dave Portnoy's nine-figure pump, crashed within days.", w: "jailstool" },
   { n: "Vine Coin", t: "VINE", c: "Solana", y: 2025, m: 500, cm: 6.733, g: "Brand", s: "Collapsed", l: "Vine's cofounder rode the do-it-for-the-Vine revival rumors to $500M.", w: "vine_coin" },
   { n: "Jelly My Jelly", t: "JELLYJELLY", c: "Solana", y: 2025, m: 250, cm: 15, g: "Brand", s: "Faded", l: "A Venmo cofounder's video-app token that later set off the Hyperliquid short-squeeze crisis.", w: "jelly_my_jelly" },
@@ -84,7 +84,7 @@ var COINS = [
   { n: "Mubarak", t: "MUBARAK", c: "BNB Chain", y: 2025, m: 200, cm: 18, g: "Character", s: "Faded", l: "Anchor of the Arabic meme wave on BSC after CZ bought in.", w: "mubarak" },
   { n: "TST", t: "TST", c: "BNB Chain", y: 2025, m: 490, cm: 15, g: "Joke", s: "Faded", l: "A throwaway example token from a BNB tutorial video. Traders made it a $490M joke.", w: "tst" },
   { n: "Broccoli", t: "BROCCOLI", c: "BNB Chain", y: 2025, m: 400, cm: 16.3, g: "Dog", s: "Faded", l: "CZ revealed his dog's name and BSC launched a hundred broccolis by dinnertime.", w: "broccoli" },
-  { n: "Cheems", t: "CHEEMS", c: "BNB Chain", y: 2025, m: 170, cm: 103, g: "Dog", s: "Alive", l: "Balltze's memorial coin family — the Binance-listed flagship of Cheems lore.", w: "cheems" },
+  { n: "Cheems", t: "CHEEMS", c: "BNB Chain", y: 2025, m: 170, cm: 103, g: "Dog", s: "Alive", l: "Balltze's memorial coin family. This is its Binance-listed flagship.", w: "cheems" },
   { n: "Degen", t: "DEGEN", c: "Base", y: 2024, m: 160, cm: 33, g: "Joke", s: "Alive", l: "Farcaster's tipping token that grew its own layer-3 blockchain.", w: "degen_coin" },
   { n: "Clanker", t: "CLANKER", c: "Base", y: 2024, m: 143, cm: 12, g: "AI", s: "Alive", l: "The autonomous deployer bot that launches tokens on request. Acquired by Farcaster.", w: "clanker" },
   { n: "aixbt", t: "AIXBT", c: "Base", y: 2024, m: 800, cm: 40, g: "AI", s: "Faded", l: "The AI commentator that became CT's most-followed analyst.", w: "aixbt" },
@@ -97,7 +97,7 @@ var COINS = [
   { n: "The Black Bull", t: "ANSEM", c: "Solana", y: 2026, m: 362, cm: 288, g: "Person", s: "Alive", l: "An anon handed Ansem the supply; he airdropped the fees back.", w: "the_black_bull" },
   { n: "FEFER", t: "FEFER", c: "Stable Chain", y: 2026, m: 9, cm: 6, g: "Character", s: "Alive", l: "The first memecoin on Tether's gas chain; its frenzy set network records.", w: "fefer" },
   { n: "Frong", t: "FRONG", c: "Robinhood", y: 2026, m: 12, cm: 6.2, g: "Frog", s: "Alive", l: "Minted through Uniswap's unreleased launchpad contracts six days early.", w: "frong" },
-  { n: "Cash Cat", t: "CASHCAT", c: "Robinhood", y: 2026, m: 253, cm: 209, g: "Cat", s: "Alive", l: "The cat Robinhood almost named the company after — first memecoin in the Robinhood app.", w: "cash_cat" },
+  { n: "Cash Cat", t: "CASHCAT", c: "Robinhood", y: 2026, m: 253, cm: 209, g: "Cat", s: "Alive", l: "The cat Robinhood almost named the company after, and the first memecoin in the Robinhood app.", w: "cash_cat" },
   { n: "Hoodrat", t: "HOODRAT", c: "Robinhood", y: 2026, m: 17, cm: 2.9, g: "Animal", s: "Alive", l: "A Night Riders-linked rat from the chain's July takeover.", w: "hoodrat" },
   { n: "Pons", t: "PONS", c: "Robinhood", y: 2026, m: 351, cm: 318, g: "Brand", s: "Alive", l: "The chain's dominant launchpad token: by late July 2026 it was handling about 54% of all transactions on it.", w: "pons" },
   { n: "TENDIES", t: "TENDIES", c: "Robinhood", y: 2026, m: 33, cm: 16, g: "Joke", s: "Alive", l: "WallStreetBets flavor for the chain's first meme summer.", w: "tendies" },
@@ -109,7 +109,7 @@ var COINS = [
   { n: "YOLO", t: "YOLO", c: "Robinhood", y: 2026, m: 21, cm: 10.7, g: "Joke", s: "Alive", l: "The oldest word in retail trading, finally given a ticker on the retail-trading chain.", w: null },
   { n: "Shibinhood", t: "WOOF", c: "Robinhood", y: 2026, m: 7, cm: 0.77, g: "Dog", s: "Alive", l: "A shiba in a feathered cap. The pun wrote itself, and then somebody deployed it.", w: null },
   { n: "Vladhood", t: "VLAD", c: "Robinhood", y: 2026, m: 2.5, cm: 0.228, g: "Person", s: "Scandal", l: "Hackers took over Vlad Tenev's own X account and shilled a 46-minute-old coin as the official mascot. They left with 650 ETH.", w: null },
-  { n: "Robin Hood", t: "FOX", c: "Robinhood", y: 2026, m: 8, cm: 1.8, g: "Animal", s: "Alive", l: "Disney's 1973 fox — the Robin Hood most people actually picture.", w: null },
+  { n: "Robin Hood", t: "FOX", c: "Robinhood", y: 2026, m: 8, cm: 1.8, g: "Animal", s: "Alive", l: "Disney's 1973 fox, and the Robin Hood most people actually picture.", w: null },
   { n: "NASDANQ", t: "NASDANQ", c: "Robinhood", y: 2026, m: 4, cm: 2.6, g: "Joke", s: "Alive", l: "r/MemeEconomy's fictional meme stock exchange from 2017, finally listed somewhere real.", w: null },
 
   // ── Base ────────────────────────────────────────────────────────────────
@@ -120,17 +120,17 @@ var COINS = [
 
   // ── BNB Chain, including the Chinese meme waves ─────────────────────────
   { n: "Binance Life", t: "BINANCELIFE", c: "BNB Chain", y: 2025, m: 890, cm: 506, g: "Joke", s: "Alive", a: ["币安人生"], l: "He Yi answered a joke about 'Apple Life, Android Life' and the community CTO'd 币安人生 into the biggest meme on BNB Chain.", w: null },
-  { n: "Giggle Fund", t: "GIGGLE", c: "BNB Chain", y: 2025, m: 277, cm: 36, g: "Brand", s: "Faded", l: "Donates 5% of every trade to CZ's free-school project — which then publicly distanced itself from the coin.", w: null },
+  { n: "Giggle Fund", t: "GIGGLE", c: "BNB Chain", y: 2025, m: 277, cm: 36, g: "Brand", s: "Faded", l: "Donates 5% of every trade to CZ's free-school project, which then publicly distanced itself from the coin.", w: null },
 
   // ── Elsewhere, but too recent or too good to leave out ──────────────────
   { n: "Asteroid Shiba", t: "ASTEROID", c: "Ethereum", y: 2024, m: 200, cm: 24, g: "Dog", s: "Alive", l: "A plush shiba designed by a teenage cancer patient that actually flew on Polaris Dawn. It peaked two years after launch.", w: "asteroid_shiba" },
 
   // ── Robinhood Chain, the 2026 expansion ──────────────────────────────────
   { n: "Goose Token", t: "GOOSE", c: "Robinhood", y: 2026, m: 133, cm: 80, g: "Animal", s: "Alive", l: "Executive Order No. 001 declares it the official currency of the Flock, under the slogan 'Make Waterfowl Great Again'; it ran 63x to a $132M peak in three days.", w: null },
-  { n: "The Index", t: "INDEX", c: "Robinhood", y: 2026, m: 40, cm: 29, g: "Brand", s: "Alive", l: "A 3% fee on every trade buys Robinhood's tokenized stocks and pushes them straight into holders' wallets — a memecoin that pays its dividend in equities.", w: null },
+  { n: "The Index", t: "INDEX", c: "Robinhood", y: 2026, m: 40, cm: 29, g: "Brand", s: "Alive", l: "A 3% fee on every trade buys Robinhood's tokenized stocks and sends them straight to holders' wallets, so it pays its dividend in equities.", w: null },
   { n: "What IF", t: "IF", c: "Robinhood", y: 2026, m: 35, cm: 7.4, g: "Joke", s: "Alive", l: "Left for dead by its dev and taken over by one holder on 21 July 2026, it asks the hypothetical where nobody ever sells; it peaked at $35M twelve days later.", w: null },
-  { n: "Chump Coin", t: "CHUMP", c: "Robinhood", y: 2026, m: 35, cm: 31, g: "Politics", s: "Alive", l: "A chicken in a suit signing executive orders from the Gold House, and going by CC21B — the last five characters of its own contract address.", w: null },
-  { n: "Hookr.fun", t: "HOOKR", c: "Robinhood", y: 2026, m: 20, cm: 12, g: "Brand", s: "Alive", l: "A launchpad that bolts up to five Uniswap v4 rules — Anti-Snipe, Auto Burn, Nth-buy Pot — onto a new pool, no Solidity; $0.3M in mid-August 2026, $20M by the 31st.", w: null },
+  { n: "Chump Coin", t: "CHUMP", c: "Robinhood", y: 2026, m: 35, cm: 31, g: "Politics", s: "Alive", l: "A chicken in a suit signing executive orders from the Gold House. It goes by CC21B, the last five characters of its own contract address.", w: null },
+  { n: "Hookr.fun", t: "HOOKR", c: "Robinhood", y: 2026, m: 20, cm: 12, g: "Brand", s: "Alive", l: "A launchpad that adds up to five Uniswap v4 rules (Anti-Snipe, Auto Burn, Nth-buy Pot) to a new pool without writing Solidity. $0.3M in mid-August 2026, $20M by the 31st.", w: null },
   { n: "The Juggernaut", t: "JUGGERNAUT", c: "Robinhood", y: 2026, m: 21, cm: 5.5, g: "Character", s: "Alive", l: "Asked on X in May 2025 to name his favorite meme, Vlad Tenev replied with two words; a comic-book bruiser by that name reached Robinhood Chain a year later.", w: null },
   { n: "Longbow", t: "BOW", c: "Robinhood", y: 2026, m: 9.3, cm: 5.7, g: "Brand", s: "Alive", l: "Robin Hood's weapon, repurposed as the chain's credit market: borrow dollars against your tokenized stocks instead of selling them.", w: null },
   { n: "4663", t: "4663", c: "Robinhood", y: 2026, m: 7.9, cm: 0.3, g: "Joke", s: "Faded", l: "Robinhood Chain's own EVM chain ID, minted as a token; the digits spell HOOD on a phone keypad, and in July it was named with CASHCAT among the chain's top memes.", w: null },
