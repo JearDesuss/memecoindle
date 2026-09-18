@@ -1167,29 +1167,134 @@ button { background: none; border: 0; cursor: pointer; }
 .wiki-link { font-size: 13px; color: var(--ink-2); text-align: center; }
 
 /* ═══════════════════ handle, wallet + board ═══════════════════ */
-.profile-body, .gate-form { display: flex; flex-direction: column; gap: 10px; }
+/* #gate-body is a bare <div> in the markup, so it laid its children out as
+   blocks and every align-self on them was inert — which is why the skip button
+   would not stretch. Making it a column is what lets the dialog control its
+   own rhythm. */
+.profile-body, .gate-form, #gate-body { display: flex; flex-direction: column; gap: 11px; }
 .profile-row { display: flex; align-items: center; gap: 11px; flex-wrap: wrap; }
 .profile-name { font-family: var(--font-display); font-weight: 800; font-size: 19px; }
 .profile-x { font-size: 13px; color: var(--ink-3); }
-.field { display: flex; gap: 9px; }
-.field-input {
-  flex: 1;
-  min-width: 0;
-  height: 48px;
+/* One shell, not three parts in a row. The @ used to be a flex SIBLING of the
+   input, so it floated in the gap beside a pill-shaped box and read as a
+   stranded character rather than as part of the field. */
+.field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 52px;
   padding: 0 16px;
   border-radius: var(--r-pill);
   background: var(--card-2);
   border: var(--cut-in) solid var(--line);
+  transition: border-color var(--dur-tint) ease, background-color var(--dur-tint) ease;
 }
-.field-input:focus { outline: 0; background: var(--card); border-color: var(--ink); }
-.field-at { display: flex; align-items: center; color: var(--ink-3); font-weight: 700; }
+.field:focus-within { background: var(--card); border-color: var(--ink); }
+.field.is-ok { border-color: var(--hit); }
+.field.is-bad { border-color: var(--miss); }
+.field-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+.field-input:focus { outline: 0; }
+.field-at { display: flex; align-items: center; color: var(--ink-3); font-weight: 700; flex: none; }
+/* The 3-to-16 rule was prose the player had to remember. Counting in place is
+   the same information at the moment it is needed. */
+.field-count {
+  flex: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.field-count.short { color: var(--miss); }
+
 .gate-sub { font-size: 14px; color: var(--ink-2); }
-.gate-note { font-size: 12.5px; color: var(--ink-3); }
-.gate-skip {
-  align-self: center;
+
+/* Reserved height and a state dot. Without the min-height the line appearing
+   shoved the skip button down on every keystroke pause; without the dot,
+   "Free." and "Taken." were the same grey text and said nothing at a glance. */
+.gate-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+.gate-note::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: transparent;
+}
+.gate-note.ok { color: var(--ink); }
+.gate-note.ok::before { background: var(--hit); }
+.gate-note.bad { color: var(--miss-ink); }
+.gate-note.bad::before { background: var(--miss); }
+.gate-note.wait::before { background: var(--ash); }
+
+/* A taken name used to be a dead end. Three one-tap alternatives turn it into
+   a choice; they are unchecked on purpose, and tapping one runs the normal
+   debounced lookup. */
+.gate-suggest { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+.gate-suggest-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.gate-chip {
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: var(--card-2);
+  border: var(--cut-in) solid var(--line);
   font-size: 13px;
-  color: var(--ink-2);
-  border-bottom: var(--cut-in) solid var(--line);
+  font-weight: 700;
+  transition: var(--press);
+}
+@media (hover: hover) and (pointer: fine) {
+  .gate-chip:hover { background: var(--lime-3); border-color: var(--lime-2); }
+}
+.gate-chip:active { transform: translateY(1px); }
+/* A ghost, not a bordered button. When the primary is disabled — which is
+   the gate's resting state — a bordered secondary sits at the same visual
+   weight and the two read as a choice between equals. It is not: one claims
+   your name, the other declines it. */
+.gate-skip {
+  align-self: stretch;
+  padding: 11px 18px;
+  border-radius: var(--r-1);
+  border: 0;
+  background: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-3);
+  transition: background-color var(--dur-tint) ease, color var(--dur-tint) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .gate-skip:hover { background: var(--card-2); color: var(--ink); }
+}
+.gate-skip:active { transform: translateY(1px); }
+
+/* A disabled primary is the gate's main state before anything is typed, so it
+   has to look deliberately inert rather than broken: the lift goes, the fill
+   drains to a neutral, and the cursor says so. */
+.btn:disabled {
+  background: var(--card-2);
+  color: var(--ink-3);
+  border-color: var(--line);
+  box-shadow: none;
+  transform: none;
+  cursor: not-allowed;
 }
 
 .lb-list { display: flex; flex-direction: column; gap: 5px; max-height: 44vh; overflow-y: auto; }

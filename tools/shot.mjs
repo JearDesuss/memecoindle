@@ -47,7 +47,7 @@ await context.addInitScript(() => {
   try {
     localStorage.setItem('md_seen', '1');
     localStorage.setItem('md_cid', 'shot-0000-0000-0000');
-    localStorage.setItem('md_name', 'shotrunner');
+    if (!location.search.includes('gate')) localStorage.setItem('md_name', 'shotrunner');
   } catch {}
 });
 
@@ -55,7 +55,7 @@ const route = opt('route');
 const pageFile = opt('page') || 'index.html';
 // motion.js reads ?still and freezes every timeline at its resting state, so a
 // screenshot is reproducible; pass 'live' to let the idle motion run.
-const q = actions.includes('live') ? '' : '?still';
+const q = (actions.includes('live') ? '?' : '?still') + (actions.includes('gate') ? '&gate' : '');
 await page.goto(`http://127.0.0.1:${PORT}/${pageFile}${q}` + (route ? '#/' + route : ''), { waitUntil: 'networkidle', timeout: 60000 });
 if (!actions.includes('live')) {
   await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}' });

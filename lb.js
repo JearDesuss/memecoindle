@@ -203,19 +203,39 @@ var LB = (function () {
     return h.replace(/^@+/, "").replace(/[^A-Za-z0-9_]/g, "").slice(0, 15);
   }
 
+  // Suggestions for a name that is already gone. Deliberately NOT checked
+  // against the API: a board render is one list() call and zero body fetches,
+  // which is what keeps this inside the free-tier op budget, and firing three
+  // more lookups on every rejection would undo that. Clicking one runs the
+  // normal debounced check, so the player finds out in the usual place.
+  function suggestFor(v) {
+    var out = [], seen = {};
+    ["1", "22", "_", "hq", "x"].forEach(function (suffix) {
+      var c = (v + suffix).slice(0, 16);
+      if (c !== v && NAME_RE.test(c) && !seen[c]) { seen[c] = 1; out.push(c); }
+    });
+    return out.slice(0, 3);
+  }
+
   function openGate(done, locked) {
     onGateDone = done || null;
     var modal = $("modal-gate");
     if (locked) modal.setAttribute("data-lock", "1");
     else modal.removeAttribute("data-lock");
-    $("gate-h").textContent = hasName() ? "Your handle" : "Pick a handle";
+    var returning = hasName();
+    $("gate-h").textContent = returning ? "Your handle" : "Pick a handle";
 
     var body = $("gate-body");
     clear(body);
-    body.appendChild(el("p", "gate-sub",
-      "It sits next to your score on the daily board. Lowercase letters, numbers and underscores, 3 to 16 of them."));
+    // The rules used to be prose here — "lowercase letters, numbers and
+    // underscores, 3 to 16 of them" — which asks the player to hold a spec in
+    // their head while typing. The field enforces and counts them instead, so
+    // this line is free to say the thing that actually decides it: the board
+    // is what the pot pays, and no handle means no board.
+    body.appendChild(el("p", "gate-sub", returning
+      ? "This is the name on your runs. It is claimed and yours — nobody else can take it."
+      : "It is how you show up on the daily board, and the board is what the daily pot pays out to. Claimed once, it stays yours."));
 
-    var form = el("div", "gate-form");
     var wrap = el("div", "field");
     wrap.appendChild(el("span", "field-at", "@"));
     var input = document.createElement("input");
@@ -225,17 +245,30 @@ var LB = (function () {
     input.autocomplete = "off";
     input.autocapitalize = "off";
     input.spellcheck = false;
-    input.placeholder = "your handle";
+    input.placeholder = "yourhandle";
     input.value = name();
+    input.setAttribute("aria-describedby", "gate-note");
     wrap.appendChild(input);
-    form.appendChild(wrap);
+    var count = el("span", "field-count", "");
+    wrap.appendChild(count);
+    body.appendChild(wrap);
 
-    var go = el("button", "btn btn-primary", "Take it");
-    form.appendChild(go);
-    body.appendChild(form);
-
-    var note = el("p", "gate-note", "");
+    // Order matters here. The verdict on the field and the way out of a bad
+    // one both belong BETWEEN the field and the button — with the button in
+    // the middle, a disabled "Take it" sat between the player's problem and
+    // its fix, which is exactly backwards.
+    // Reserved height, and announced: without it the line appearing shoved the
+    // rest of the dialog down every time the player paused typing.
+    var note = el("p", "gate-note");
+    note.id = "gate-note";
+    note.setAttribute("aria-live", "polite");
     body.appendChild(note);
+
+    var sugg = el("div", "gate-suggest hidden");
+    body.appendChild(sugg);
+
+    var go = el("button", "btn btn-primary btn-block", returning ? "Save" : "Take it");
+    body.appendChild(go);
 
     var skip = el("button", "gate-skip", locked ? "Play without one" : "Close");
     skip.addEventListener("click", function () { finishGate(false); });
@@ -243,7 +276,32 @@ var LB = (function () {
 
     function say(cls, msg) {
       note.className = "gate-note" + (cls ? " " + cls : "");
-      note.textContent = msg;
+      note.textContent = msg || "";
+      wrap.className = "field" + (cls === "ok" ? " is-ok" : cls === "bad" ? " is-bad" : "");
+      input.setAttribute("aria-invalid", cls === "bad" ? "true" : "false");
+    }
+    // Disabled ONLY when we positively know it cannot work — bad format, or
+    // confirmed taken. Never on uncertainty: the board is unreachable on a
+    // static host, and a button that stays dead because a fetch failed turns
+    // the gate into a trap with no way forward.
+    function allow(on) { go.disabled = !on; }
+
+    function showSuggestions(v) {
+      clear(sugg);
+      var list = suggestFor(v);
+      if (!list.length) { sugg.classList.add("hidden"); return; }
+      sugg.classList.remove("hidden");
+      sugg.appendChild(el("span", "gate-suggest-label", "Try"));
+      list.forEach(function (c) {
+        var b = el("button", "gate-chip", "@" + c);
+        b.type = "button";
+        b.addEventListener("click", function () {
+          input.value = c;
+          input.focus();
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+        sugg.appendChild(b);
+      });
     }
 
     var checkT = null, checking = "";
@@ -251,20 +309,31 @@ var LB = (function () {
       var v = normalise(input.value);
       if (input.value !== v) input.value = v;
       clearTimeout(checkT);
-      if (!v) { say("", ""); return; }
-      if (!NAME_RE.test(v)) { say("bad", "Three characters minimum."); return; }
-      say("", "checking…");
+      sugg.classList.add("hidden");
+      count.textContent = v ? v.length + "/16" : "";
+      count.className = "field-count" + (v && v.length < 3 ? " short" : "");
+      if (!v) { say("", ""); allow(false); return; }
+      if (!NAME_RE.test(v)) {
+        say("bad", v.length < 3 ? "Three characters minimum." : "Letters, numbers and underscores only.");
+        allow(false);
+        return;
+      }
+      say("wait", "Checking…");
+      allow(true);
       checkT = setTimeout(function () {
         checking = v;
         checkName(v).then(function (r) {
           if (normalise(input.value) !== checking) return;
-          if (r._failed) { say("bad", "Can't reach the board right now."); return; }
+          if (r._failed) { say("wait", "Can't reach the board — you can still claim it."); allow(true); return; }
           if (r.available) {
             say("ok", r.mine ? "Already yours." : "Free.");
+            allow(true);
             if (r.mine && r.x) lsSet("md_x", r.x);
             if (r.mine && r.w) lsSet("md_w", r.w);
           } else {
-            say("bad", r.reason === "reserved" ? "That one is spoken for." : "Taken. Try another.");
+            say("bad", r.reason === "reserved" ? "That one is spoken for." : "Taken.");
+            allow(false);
+            showSuggestions(v);
           }
         });
       }, 320);
@@ -273,10 +342,10 @@ var LB = (function () {
     go.addEventListener("click", function () {
       var v = normalise(input.value);
       if (!NAME_RE.test(v)) { say("bad", "Three to sixteen characters."); input.focus(); return; }
-      go.disabled = true;
-      say("", "claiming…");
+      allow(false);
+      say("wait", "Claiming…");
       claimName(v).then(function (r) {
-        go.disabled = false;
+        allow(true);
         if (r.ok) {
           lsSet("md_name", r.name);
           if (r.x) lsSet("md_x", r.x);
@@ -284,17 +353,21 @@ var LB = (function () {
           flushQueue();
           renderProfile();
           say("ok", "Yours.");
-          setTimeout(function () { finishGate(true); }, 380);
+          if (window.SFX) SFX.play("coin");
+          setTimeout(function () { finishGate(true); }, 420);
           return;
         }
-        if (r.taken) { say("bad", "Taken. Try another."); input.focus(); return; }
+        if (r.taken) { say("bad", "Taken."); showSuggestions(v); input.focus(); return; }
         say("bad", "Can't reach the board right now.");
       });
     });
 
     input.addEventListener("keydown", function (ev) {
-      if (ev.key === "Enter") { ev.preventDefault(); go.click(); }
+      if (ev.key === "Enter") { ev.preventDefault(); if (!go.disabled) go.click(); }
     });
+
+    // seed the counter and button state for a returning player's existing name
+    input.dispatchEvent(new Event("input", { bubbles: true }));
 
     show("modal-gate");
     setTimeout(function () { if (!("ontouchstart" in window)) input.focus(); }, 60);
