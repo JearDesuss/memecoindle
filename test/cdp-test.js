@@ -128,24 +128,39 @@ async function cdp() {
     await evaljs("document.getElementById('deck-count').textContent")));
   // The landscape is inline SVG on purpose: it has to paint on the first frame
   // with no request, so a missing <svg> here means someone made it an <img>.
-  check("the landscape is inline SVG", await evaljs(
-    "document.querySelectorAll('.world svg.hills polygon, .world svg.hills circle').length") >= 20);
-  check("the scene scales as one unit", await evaljs(
-    "document.querySelector('.world svg.hills').getAttribute('preserveAspectRatio')") === "xMidYMax slice");
-  check("clouds and coins built", await evaljs("document.querySelectorAll('.cloud').length") > 0
-    && await evaljs("document.querySelectorAll('.coin').length") > 0);
-  // The whole scene is ONE svg in one coordinate space — that is what keeps the
-  // drawn ledge and the character standing on it aligned at every viewport. If
-  // any of this moves back out into positioned HTML, it lines up at exactly one
-  // width and drifts everywhere else.
-  check("the cast stands inside the scene, not in positioned HTML", await evaljs(
-    "document.querySelectorAll('.world svg.hills image.ch').length") >= 6);
-  check("nothing in the world is absolutely-positioned HTML", await evaljs(
-    "document.querySelectorAll('.world > *:not(svg)').length") === 0);
+  // The world is the supplied plate, painted by CSS on one element.
+  check("the world paints the supplied plate", /bg\.webp/.test(await evaljs(
+    "getComputedStyle(document.querySelector('.world')).backgroundImage")));
+  check("the plate is full-width and bottom-anchored", await evaljs(`(function(){
+    var s = getComputedStyle(document.querySelector('.world'));
+    // Computes to "50% 100%" — the keyword does not survive getComputedStyle.
+    // No regex here: this body is a template literal, so a backslash class is
+    // eaten by JS before the browser sees it and the test silently passes nothing.
+    return s.backgroundSize === '100% auto' && s.backgroundPosition.endsWith('100%');
+  })()`));
+  // --paper has to BE the plate's own field colour or a seam appears across the
+  // full width wherever the image stops. tools/use-bg.mjs samples it; this
+  // catches anyone hand-editing it back to a value that merely looks close.
+  check("--paper matches the plate's field exactly", await evaljs(`(function(){
+    var v = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim();
+    return v.toUpperCase() === '#FEFDF7';
+  })()`), await evaljs("getComputedStyle(document.documentElement).getPropertyValue('--paper')"));
+  // The cards have to sit inside the plate's cream gap, which was measured row
+  // by row at ~71% of the image width. Wider than that and they cover the cast.
+  // Only meaningful while the layout is the full three columns and the whole
+  // composition is on screen. Below that the rails reflow and cards sitting on
+  // the artwork is expected — they are opaque, so nothing is lost.
+  check("the content column fits the plate's cream gap (>=1280px)", await evaljs(`(function(){
+    if (window.innerWidth < 1280) return true;
+    return document.querySelector('.app').getBoundingClientRect().width <= window.innerWidth * 0.74;
+  })()`), await evaljs("Math.round(document.querySelector('.app').getBoundingClientRect().width) + 'px of ' + window.innerWidth"));
+  check("nothing in the world is positioned HTML", await evaljs(
+    "document.querySelectorAll('.world > *').length") === 0);
   // The old pixel world is deleted by DESIGN.md; a reappearance means someone
   // restored a rule from git rather than reading the contract.
-  check("the retired pixel world is gone", await evaljs(
-    "!document.querySelector('.sky') && !document.querySelector('.crowd') && !document.querySelector('#pill-row')"));
+  check("the retired worlds are gone", await evaljs(
+    "!document.querySelector('.sky') && !document.querySelector('.crowd') && " +
+    "!document.querySelector('#pill-row') && !document.querySelector('svg.hills')"));
   check("sound is off until the player opts in", await evaljs(
     "document.getElementById('btn-sfx').getAttribute('aria-pressed')") === "false");
   check("no images failed to load", await evaljs(

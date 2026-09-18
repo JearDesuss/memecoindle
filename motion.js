@@ -1,6 +1,6 @@
 /* Memedle — motion.
    GSAP owns the two things CSS is bad at here: the endless idle life in the
-   world layer (clouds, coins, the cast) and the staggered entrance of the UI.
+   world layer and the staggered entrance of the UI.
    Everything a finger touches stays on a CSS transition, because a transition
    retargets from wherever it is and a timeline restarts from zero.
 
@@ -38,66 +38,24 @@
   // Every target is transform-only, which on an SVG node means GSAP writes a
   // transform attribute the browser composites; nothing here triggers layout.
 
+  // The world is the supplied plate — one flat image — so its clouds, coins and
+  // characters are pixels, not nodes, and none of them can move independently
+  // any more. That is the trade for using the real artwork instead of a redraw.
+  // The plate as a whole gets one very slow drift so the page is not dead
+  // behind the cards; it is deliberately small enough to read as light, not as
+  // a parallax effect, which this system does not have.
   function idle() {
     if (!g || reduced() || STILL) return;
-
-    var r = rnd(0x1D1E);
-
-    g.utils.toArray(".hills .cloud").forEach(function (el) {
-      // A sway, not a traverse. The clouds are placed in the gutters and the
-      // valley on purpose; one that crosses the page surfaces between cards.
-      g.to(el, {
-        x: 14 + r() * 22,
-        duration: 20 + r() * 16,
-        ease: "sine.inOut",
-        repeat: -1,
-        yoyo: true,
-        delay: -r() * 18
-      });
-      g.to(el, {
-        y: 5 + r() * 7,
-        duration: 5 + r() * 4,
-        ease: "sine.inOut",
-        repeat: -1,
-        yoyo: true,
-        delay: -r() * 6
-      });
-    });
-
-    g.utils.toArray(".hills .coin").forEach(function (el, i) {
-      // transform-box/origin matter on SVG: without them a rotate spins the
-      // coin around the viewBox origin and it flies off the corner of the page
-      g.set(el, { transformBox: "fill-box", transformOrigin: "50% 50%" });
-      g.to(el, {
-        y: -(10 + r() * 12),
-        duration: 2.6 + r() * 1.8,
-        ease: "sine.inOut",
-        repeat: -1,
-        yoyo: true,
-        delay: -r() * 3
-      });
-      g.to(el, {
-        rotate: (i % 2 ? -1 : 1) * (7 + r() * 7),
-        duration: 4 + r() * 3,
-        ease: "sine.inOut",
-        repeat: -1,
-        yoyo: true,
-        delay: -r() * 4
-      });
-    });
-
-    // the cast breathes, each on its own clock so they are never in sync
-    g.utils.toArray(".hills .ch").forEach(function (el, i) {
-      g.set(el, { transformBox: "fill-box", transformOrigin: "50% 100%" });
-      g.to(el, {
-        y: -(3 + r() * 4),
-        duration: 2.2 + r() * 1.6,
-        ease: "sine.inOut",
-        repeat: -1,
-        yoyo: true,
-        delay: -r() * 3
-      });
-    });
+    var world = d.querySelector(".world");
+    if (!world) return;
+    // Transform, NOT backgroundPositionY. The plate is anchored to the bottom
+    // with a computed background-position of "50% 100%"; writing a pixel value
+    // into background-position-y replaces that anchor and slams the artwork to
+    // the top of the screen.
+    // The drift is downward only. Moving it up would expose a strip of --paper
+    // along the bottom edge, and the plate's bottom edge is solid green, so the
+    // seam is obvious. Down just pushes a few pixels of green off-screen.
+    g.to(world, { y: 3, duration: 9, ease: "sine.inOut", repeat: -1, yoyo: true });
   }
 
   // ═════════════ the entrance ═════════════
@@ -154,28 +112,23 @@
     g.fromTo(el, { scale: 0.94 }, { scale: 1, duration: 0.34, ease: "back.out(2.2)", clearProps: "transform" });
   };
 
-  // the cast jumps when the board is solved. Each one is offset so the two
-  // clusters read as a crowd reacting, not as one rigid object moving.
+  // A win used to make the cast jump and the coins scatter. Both were nodes in
+  // the drawn scene; in the plate they are pixels. The whole world swells from
+  // its bottom edge instead — growing from the anchor means no edge of the
+  // viewport ever shows through, which a translate in any direction would risk.
   MO.cheer = function () {
     if (!g || reduced() || STILL) return;
-    g.utils.toArray(".hills .ch").forEach(function (el, i) {
-      g.fromTo(el, { y: 0 }, {
-        y: -26, duration: 0.28, ease: "power2.out",
-        repeat: 3, yoyo: true, delay: i * 0.07
-      });
+    var world = d.querySelector(".world");
+    if (!world) return;
+    g.set(world, { transformOrigin: "50% 100%" });
+    g.fromTo(world, { scale: 1 }, {
+      scale: 1.015, duration: 0.3, ease: "power2.out", repeat: 3, yoyo: true
     });
   };
 
-  // the coins scatter upward when the board is solved
-  MO.coinBurst = function () {
-    if (!g || reduced() || STILL) return;
-    g.utils.toArray(".hills .coin").forEach(function (el, i) {
-      g.fromTo(el, { y: 0 }, {
-        y: -64 - i * 12, rotate: (i % 2 ? -1 : 1) * 40,
-        duration: 0.6, ease: "power2.out", yoyo: true, repeat: 1, delay: i * 0.05
-      });
-    });
-  };
+  // Kept as a no-op rather than deleted: game.js calls it on a win, and a
+  // missing function there throws mid-celebration.
+  MO.coinBurst = function () {};
 
   MO.build = function () {};
   MO.start = function () { idle(); enter(); };

@@ -11,7 +11,7 @@
   --line: #E4E2D9;   /* Rule       — the hairline on a calm card */
   --card-2: #F2F0E8; /* Shelf      — a recessed surface inside a card */
   --card: #FFFFFF;   /* Card       — the default card face */
-  --paper: #F4F1E8;  /* Paper      — the page itself */
+  --paper: #FEFDF7;  /* Paper      — the page itself */
   --paper-2: #EAE7DC;/* Paper Deep — the band under the fold */
 
   /* ── the accent. Exactly one, spent once per view. ── */
@@ -24,18 +24,11 @@
   --near: #FFC53D;     --near-ink: #3A2A00;
   --miss: #FB6F84;     --miss-ink: #3A0C14;
 
-  /* ── scenery. Illustration only — never a UI surface. The hills are the
-        two pale steps; the block ramp is brighter and more saturated, which
-        is what separates a solid object from the bush behind it. ── */
-  --g-top: #D3F175;
-  --g-face: #B4E844;
-  /* The block ramp is deliberately a wide value spread. A cube whose three
-     faces are near neighbours reads as a flat tile however good the outline
-     is — the separation is what makes it solid. */
-  --g-block: #8BE81F;
-  --g-side: #4CB40A;
-  --g-deep: #2F8B04;
-  --cloud-line: #B6E84A;
+  /* ── scenery ──
+     The landscape is now the supplied plate (img/bg.webp), not drawn in code,
+     so there is no scenery ramp to name. --paper carries the plate's own field
+     colour and is written by tools/use-bg.mjs — see the world section. The one
+     green the UI still needs is --lime, and that is an accent, not scenery. */
 
   /* ── two families. That is the whole list. ── */
   /* Figtree carries every digit: it has real tabular figures, so a counter
@@ -93,7 +86,11 @@
   /* Layout numbers, all fluid. Fixed rails look right at exactly one width:
      on a 2560px screen a 1340px page is an island, and at 1200px the same
      rails crush the board. clamp() lets one set of numbers cover both. */
-  --page: clamp(960px, 88vw, 1720px);
+  /* Measured against the plate, not chosen: its cream gap is ~71% of the
+     image width down to 64% of its height (tools/ measured it row by row), so
+     70vw is the widest the cards can be before they start sitting on top of
+     the characters. */
+  --page: clamp(900px, 70vw, 1400px);
   --rail: clamp(232px, 18vw, 320px);
   --rail-2: clamp(248px, 19.5vw, 340px);
   --gap: clamp(8px, 0.8vw, 14px);
@@ -133,61 +130,30 @@ button { background: none; border: 0; cursor: pointer; }
 :focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
 
 /* ═══════════════════ the world ═══════════════════ */
-/* A fixed play mat. It is the table the cards lie on — it never scrolls with
-   the content, because a table that slides away is parallax, and this system
-   does not have parallax.
+/* The supplied plate (img/bg.webp), used as the artwork rather than redrawn.
+   Fixed and behind everything: it is the table the cards lie on, and a table
+   that slides away is parallax, which this system does not have.
 
-   The whole scene — hills, blocks, characters, coins — is ONE inline SVG in a
-   single 1536x440 coordinate space. A background assembled from an SVG plus
-   absolutely-positioned HTML lines up at exactly one viewport width and drifts
-   apart everywhere else, because the drawn ledge and the character standing on
-   it are sized by different rules. Inside one viewBox the browser scales the
-   whole illustration as a unit, so it is aligned at every resolution by
-   construction. Do not move any part of it back out into HTML. */
+   ONE sizing rule at every viewport: full width, anchored to the bottom.
+   `cover` was tried and is wrong here — above the plate's 16:9 it scales to
+   fill the height and crops the SIDES, and the sides are the two character
+   clusters, so it throws away the part of the picture worth having. At
+   `100% auto` nothing is ever cropped horizontally, the plate's proportions
+   are identical at every width, and the cream gap the cards sit in stays a
+   fixed percentage of the viewport — which is what makes --page's clamp
+   predictable instead of a guess.
+
+   When the viewport is taller than the plate, the bare area above it is
+   --paper, which tools/use-bg.mjs set to the plate's OWN field colour
+   (#FEFDF7, sampled, not eyeballed). Hand-editing --paper puts a seam across
+   the full width wherever the image stops. */
 .world {
   position: fixed;
-  inset: auto 0 0 0;
-  /* Height tracks WIDTH, not viewport height, so the box keeps roughly the
-     scene's own aspect and `slice` crops the top rather than the sides — the
-     cast lives at the left and right edges, and cropping sideways beheads it.
-     Capped against vh so a short window does not hand the screen to scenery. */
-  height: clamp(240px, calc(100vw * 520 / 1536), 56vh);
-  pointer-events: none;
-  z-index: 0;
-}
-.hills {
-  position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
+  z-index: 0;
+  pointer-events: none;
+  background: url("img/bg.webp") no-repeat center bottom / 100% auto;
 }
-
-/* ── hills: scalloped and unstroked, so overlapping circles union for free ── */
-.hills .l-1 { fill: var(--g-top); }
-.hills .l-2 { fill: var(--g-face); }
-
-/* ── slime blocks: the one part of the scenery that carries the die line.
-      That outline is what makes them read as objects sitting ON the landscape
-      rather than as another shade of it. ── */
-.hills .blocks { stroke: var(--ink); stroke-width: 4; stroke-linejoin: round; }
-.hills .c-t { fill: var(--g-block); }
-.hills .c-l { fill: var(--g-side); }
-.hills .c-r { fill: var(--g-deep); }
-
-/* ── clouds: outline only, one closed path each ── */
-.hills .clouds { fill: none; stroke: var(--cloud-line); stroke-width: 3.5; stroke-linejoin: round; }
-.hills .cloud { will-change: transform; }
-
-/* ── coins: a chain token, not a memecoin — a memecoin logo out here competes
-      with the ones inside the board ── */
-.hills .co-face { fill: var(--card); }
-.hills .co-shade { fill: rgba(22, 22, 26, .12); }
-.hills .co-ring { fill: none; stroke: var(--ink); stroke-width: 3.5; }
-.hills .coin { will-change: transform; }
-
-/* ── the cast: cut-outs standing on the two ledges ── */
-.hills .ch { will-change: transform; }
 
 #confetti {
   position: fixed;
@@ -1403,7 +1369,7 @@ button { background: none; border: 0; cursor: pointer; }
    "* { transition-duration: .01ms }" — it makes descendants transition
    visibility and quietly breaks focus into a newly opened dialog. */
 @media (prefers-reduced-motion: reduce) {
-  .hills .cloud, .hills .coin, .hills .ch { animation: none !important; transform: none !important; }
+  .world { animation: none !important; transform: none !important; }
   .tile.flip { animation: fade-in var(--dur-flip) var(--ease-out) both; }
   .pip.fresh { animation: none; }
   .input-wrap.refuse { animation: none; }
@@ -1562,10 +1528,10 @@ button { background: none; border: 0; cursor: pointer; }
   .brand { grid-area: brand; text-align: center; }
   .tagline { margin-bottom: 20px; }
 
-  /* A fixed world behind a page this tall surfaces in every gap between the
-     cards as half a character. The hills are a backdrop and survive that; the
-     cast does not. SVG groups take display like anything else. */
-  .hills .cast, .hills .coins { display: none; }
+  /* The plate is one flat image, so the cast cannot be hidden separately the
+     way the drawn version could. The phone rule in the world section scales it
+     by height instead, which keeps the corners legible and pushes the middle
+     (empty field) off the sides. */
 
   .mode-card { flex-wrap: wrap; }
   .mode-name { font-size: 15px; }

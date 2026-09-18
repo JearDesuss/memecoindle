@@ -1,0 +1,25 @@
+/* ═══════════════════ the world ═══════════════════ */
+/* The supplied plate (img/bg.webp), used as the artwork rather than redrawn.
+   Fixed and behind everything: it is the table the cards lie on, and a table
+   that slides away is parallax, which this system does not have.
+
+   ONE sizing rule at every viewport: full width, anchored to the bottom.
+   `cover` was tried and is wrong here — above the plate's 16:9 it scales to
+   fill the height and crops the SIDES, and the sides are the two character
+   clusters, so it throws away the part of the picture worth having. At
+   `100% auto` nothing is ever cropped horizontally, the plate's proportions
+   are identical at every width, and the cream gap the cards sit in stays a
+   fixed percentage of the viewport — which is what makes --page's clamp
+   predictable instead of a guess.
+
+   When the viewport is taller than the plate, the bare area above it is
+   --paper, which tools/use-bg.mjs set to the plate's OWN field colour
+   (#FEFDF7, sampled, not eyeballed). Hand-editing --paper puts a seam across
+   the full width wherever the image stops. */
+.world {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: url("img/bg.webp") no-repeat center bottom / 100% auto;
+}
