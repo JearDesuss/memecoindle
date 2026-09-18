@@ -169,15 +169,37 @@ button { background: none; border: 0; cursor: pointer; }
 
 
 /* ═══════════════════ shell ═══════════════════ */
+/* Vertically centred, SAFELY. The block used to start 22px from the top at
+   every size, which left 440px+ of dead paper under it on a 2560x1440 screen,
+   and a 320-420px bottom padding (sized for mascots that no longer exist) made
+   every viewport scroll even when the content fitted.
+
+   Centred with AUTO MARGINS on the first and last child, not with
+   justify-content: center. On a column taller than the viewport, centre
+   overflows equally in both directions and pushes the top of the page above
+   the scroll origin, where it can never be scrolled back into view. An auto
+   margin just collapses to zero, so a short screen starts at the top and
+   scrolls normally, and a tall one centres.
+
+   The bottom padding is deliberately larger than the top: the lower third of
+   the viewport is the plate's green and its cast, so the geometric centre
+   reads as low. This puts the block at the optical centre instead. */
 .app {
   position: relative;
   z-index: 1;
   width: 100%;
   max-width: var(--page);
   margin: 0 auto;
-  padding: 22px clamp(14px, 3vw, 28px) clamp(320px, 34vh, 420px);
-  flex: 1;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding:
+    clamp(24px, 5vh, 64px)
+    clamp(14px, 3vw, 28px)
+    clamp(36px, 9vh, 128px);
 }
+.app > .topbar { margin-top: auto; }
+.app > .more { margin-bottom: auto; }
 
 /* ═══════════════════ topbar + wordmark ═══════════════════ */
 .topbar {
@@ -771,6 +793,10 @@ button { background: none; border: 0; cursor: pointer; }
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
+  /* width:100% is load-bearing. .app is a flex column, and there a horizontal
+     auto margin means "shrink to content, then centre" — without this the
+     720px tray silently collapsed to ~440px on every screen. */
+  width: 100%;
   max-width: 720px;
   margin: var(--section) auto 0;
   padding: 12px;
@@ -1521,11 +1547,13 @@ button { background: none; border: 0; cursor: pointer; }
   .mode-card { grid-template-columns: auto minmax(0, 1fr) auto; padding: 11px; gap: 9px; }
   .mode-flag { min-width: 38px; padding: 4px 7px; }
   .dock { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .app { padding-bottom: clamp(240px, 30vh, 320px); }
+  /* on narrow screens the plate is a band exactly 56.25vw tall (full width,
+     16:9): clear it by that much so the footer scrolls up off the green */
+  .app { padding-bottom: calc(56.25vw + 24px); }
 }
 @media (max-width: 620px) {
   body { font-size: 14px; }
-  .app { padding-top: 16px; }
+  .app { padding-top: 18px; }
   .col-right { grid-template-columns: minmax(0, 1fr); }
   /* On a phone the label shrinks to the logo and ticker; the five tiles are
      the answer and get what is left. */
@@ -1634,7 +1662,18 @@ button { background: none; border: 0; cursor: pointer; }
 /* The footer sits in the valley between the two hills, so it is on paper —
    but the valley floor is shallow at small heights. Give the line its own
    weight rather than trusting the gap. */
-.more { position: relative; }
+/* The footer is the lowest-priority block and the one most likely to land on
+   the plate's green — how low it sits depends on the viewport, because the
+   block above it is centred. Rather than fight the centring for every screen
+   height, it rests on a plaque of the plate's own paper, so the fine print is
+   legible over blocks as well as over cream. Calm tier: no die line, no lift. */
+.more {
+  position: relative;
+  align-self: center;
+  padding: 8px clamp(16px, 2.4vw, 32px) 6px;
+  border-radius: var(--r-2);
+  background: color-mix(in srgb, var(--paper) 90%, transparent);
+}
 .text-links { font-weight: 600; }
 .deck-count { color: var(--ink-2); font-weight: 700; }
 .fineprint { color: var(--ink-2); opacity: .72; }

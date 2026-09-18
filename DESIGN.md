@@ -316,6 +316,23 @@ The plate is **fixed** and never scrolls with the content; it is the table the
 cards are lying on, and a table that slides away is a parallax effect, which
 this system does not have.
 
+**The block is vertically centred, safely.** `.app` is a full-height flex column
+and the first and last children take `margin-top: auto` / `margin-bottom: auto`.
+Never `justify-content: center`: on a column taller than the viewport it
+overflows in BOTH directions and pushes the top of the page above the scroll
+origin, where it can never be scrolled back into view. An auto margin collapses
+to zero instead, so a short laptop starts at the top and scrolls normally while
+a tall screen centres. The bottom padding is larger than the top on purpose —
+the lower third of the viewport is the plate's green, so the geometric centre
+reads as low; this lands the block on the optical centre. `tools/vcenter.mjs`
+reports the gap above and below at eight viewports.
+
+Two things this broke, both fixed, both worth knowing: in a flex column a
+horizontal `margin: auto` means *shrink to content, then centre*, so the dock
+collapsed from 720px to ~440px until it got an explicit `width: 100%`; and the
+footer, whose height now depends on the viewport, sits on a plaque of the
+plate's own paper so its fine print stays legible over the blocks.
+
 There are **no corner mottos**. The four pinned taglines (`MEME TODAY / SMARTER
 TOMORROW` and the rest) were removed at the owner's request on 2026-09-18 — do
 not bring them back as decoration.
